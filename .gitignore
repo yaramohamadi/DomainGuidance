@@ -1,0 +1,4 @@
+# Ignore model
+pretrained_models/
+pretrained_models/*
+pretrained_models/**
