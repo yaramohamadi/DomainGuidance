@@ -152,7 +152,6 @@ def center_crop_arr(pil_image, image_size):
     crop_x = (arr.shape[1] - image_size) // 2
     return Image.fromarray(arr[crop_y: crop_y + image_size, crop_x: crop_x + image_size])
 
-
 #################################################################################
 #                                  Training Loop                                #
 #################################################################################
@@ -245,8 +244,10 @@ def main(args):
     running_loss = 0
     start_time = time()
 
-    logger.info(f"Training for {args.epochs} epochs...")
-    for epoch in range(args.epochs):
+    logger.info(f"Training for {args.total_steps} steps...")
+    epochs = 999999999 # Set to a large number to avoid epoch-based training
+
+    for epoch in range(epochs):
         sampler.set_epoch(epoch)
         logger.info(f"Beginning epoch {epoch}...")
         for x, y in loader:
@@ -279,6 +280,7 @@ def main(args):
             running_loss += loss.item()
             log_steps += 1
             train_steps += 1
+
             if train_steps % args.log_every == 0:
                 # Measure training speed:
                 torch.cuda.synchronize()
@@ -308,6 +310,9 @@ def main(args):
                     logger.info(f"Saved checkpoint to {checkpoint_path}")
                 dist.barrier()
 
+        if train_steps > args.total_steps:
+            break
+
     model.eval()  # important! This disables randomized embedding dropout
     # do any sampling/FID calculation/etc. with ema (or model) in eval mode ...
 
@@ -323,7 +328,8 @@ if __name__ == "__main__":
     parser.add_argument("--model", type=str, choices=list(DiT_models.keys()), default="DiT-XL/2")
     parser.add_argument("--image-size", type=int, choices=[256, 512], default=256)
     parser.add_argument("--num-classes", type=int, default=1000)
-    parser.add_argument("--epochs", type=int, default=1400)
+    # parser.add_argument("--epochs", type=int, default=1400) # Instead train based on training iterations (Epochs different for each dataset)
+    parser.add_argument("--total-steps", type=int, default=24000)
     parser.add_argument("--global-batch-size", type=int, default=256)
     parser.add_argument("--global-seed", type=int, default=0)
     parser.add_argument("--vae", type=str, choices=["ema", "mse"], default="ema")  # Choice doesn't affect training

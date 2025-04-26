@@ -60,17 +60,15 @@ cd "$OLDPWD"
 # ______________________ TRAINING ______________________
 # This script trains the DiT model on the Caltech-101 dataset.
 
-# Epochs: 24000 steps and 300 steps for caltech-101 => 80 epochs
-
 CUDA_VISIBLE_DEVICES=2,3 torchrun --nproc_per_node=2 train.py \
   --data-path $TARGET_DIR/caltech-101/ \
   --results-dir /export/livia/home/vision/Ymohammadi/DoG/results_finetune/ \
   --model DiT-XL/2 \
   --image-size 256 \
   --num-classes 101 \
-  --epochs 5 \
+  --total-steps 24000 \
   --log-every 100 \
-  --ckpt-every 1000 \
+  --ckpt-every 4000 \
   --global-batch-size 32 \
   --vae ema \
   --num-workers 4

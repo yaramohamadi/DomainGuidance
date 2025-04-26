@@ -33,13 +33,13 @@ echo "Environment ready!"
 CUDA_VISIBLE_DEVICES=2,3 torchrun --nproc_per_node=2 sample_ddp.py \
   --model DiT-XL/2 \
   --vae ema \
-  --sample-dir /export/livia/home/vision/Ymohammadi/DoG/results_pretrained/samples \
+  --sample-dir /export/livia/home/vision/Ymohammadi/DoG/results_pretrained/samples_CFG2 \
   --ckpt /projets/Ymohammadi/DomainGuidance/tmp/local_pretrained_ckpt.pt \
   --per-proc-batch-size 32 \
   --num-fid-samples 10 \
   --image-size 256 \
-  --num-classes 1000 \
-  --cfg-scale 1 \
+  --num-classes 101 \
+  --cfg-scale 2 \
   --num-sampling-steps 50
 
 # Finetuning with Guidance 1.5
