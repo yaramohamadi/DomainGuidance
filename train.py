@@ -38,6 +38,54 @@ from diffusers.models import AutoencoderKL
 #                             Training Helper Functions                         #
 #################################################################################
 
+
+def load_pretrained_model(model, pretrained_ckpt_path, image_size, tmp_dir="tmp"):
+    """
+    Load a pre-trained DiT model for fine-tuning.
+    
+    Args:
+        model: The DiT model instance to load into.
+        pretrained_ckpt_path: Optional path to a pre-trained checkpoint. If None, auto-downloads DiT-XL/2.
+        image_size: Image size (e.g., 256) to infer checkpoint name if not provided.
+        tmp_dir: Temporary directory to save local checkpoint copy.
+    
+    Returns:
+        The model with loaded weights (except y_embedder).
+    """
+    # Create tmp directory if not exist
+    if dist.get_rank() == 0:
+        os.makedirs(tmp_dir, exist_ok=True)
+
+    dist.barrier()  # All processes wait here before proceeding
+
+    # Only rank 0 downloads
+    if dist.get_rank() == 0:
+        ckpt_path = pretrained_ckpt_path or f"DiT-XL-2-{image_size}x{image_size}.pt"
+        state_dict = find_model(ckpt_path)
+        torch.save(state_dict, os.path.join(tmp_dir, "local_pretrained_ckpt.pt"))
+    
+    dist.barrier()  # Ensure file is fully saved before loading
+
+    # All ranks load from local file
+    local_ckpt_path = os.path.join(tmp_dir, "local_pretrained_ckpt.pt")
+    state_dict = torch.load(local_ckpt_path, map_location="cpu")
+
+    # Remove incompatible keys (e.g., different number of classes)
+    if 'y_embedder.embedding_table.weight' in state_dict:
+        del state_dict['y_embedder.embedding_table.weight']
+        if dist.get_rank() == 0:
+            print("[INFO] Deleted y_embedder.embedding_table.weight to avoid mismatch.")
+
+    # Load the cleaned state_dict
+    missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=False)
+    if dist.get_rank() == 0:
+        print(f"[INFO] Missing keys during loading: {missing_keys}")
+        print(f"[INFO] Unexpected keys during loading: {unexpected_keys}")
+        print(f"[INFO] Loaded pre-trained weights from {local_ckpt_path}")
+
+    return model
+
+
 @torch.no_grad()
 def update_ema(ema_model, model, decay=0.9999):
     """
@@ -146,11 +194,8 @@ def main(args):
         num_classes=args.num_classes
     )
 
-    # Find checkpoint for fine-tuning:
-    ckpt_path = args.pretrained_ckpt or f"DiT-XL-2-{args.image_size}x{args.image_size}.pt"
-    state_dict = find_model(ckpt_path)
-    model.load_state_dict(state_dict)
-    logger.info(f"Loaded pre-trained weights from {ckpt_path}")
+    # Load pre-trained weights if provided:
+    model = load_pretrained_model(model, args.pretrained_ckpt, args.image_size)
 
     # Note that parameter initialization is done within the DiT constructor
     ema = deepcopy(model).to(device)  # Create an EMA of the model for use after training
@@ -208,7 +253,6 @@ def main(args):
             x = x.to(device)
             y = y.to(device)
 
-
             # DEBUGGGING
             if train_steps == 0 and rank == 0:
                 print("=" * 20)
@@ -217,11 +261,7 @@ def main(args):
                 print("=" * 20)
                 # Optionally visualize a few images
                 from torchvision.utils import save_image
-                save_image(x[:8] * 0.5 + 0.5, f"{experiment_dir}/sample_batch.png", nrow=4)
-
-                exit()
-
-
+                save_image(x[:8] * 0.5 + 0.5, f"tmp/sample_batch.png", nrow=4)
 
             with torch.no_grad():
                 # Map input images to latent space + normalize latents:

@@ -64,17 +64,16 @@ cd "$OLDPWD"
 
 CUDA_VISIBLE_DEVICES=2,3 torchrun --nproc_per_node=2 train.py \
   --data-path $TARGET_DIR/caltech-101/ \
-  --results-dir /projets/Ymohammadi/DomainGuidance/results/ \
+  --results-dir /export/livia/home/vision/Ymohammadi/DoG/results_finetune/ \
   --model DiT-XL/2 \
   --image-size 256 \
   --num-classes 101 \
-  --epochs 80 \
+  --epochs 5 \
   --log-every 100 \
-  --ckpt-every 6000 \
+  --ckpt-every 1000 \
   --global-batch-size 32 \
   --vae ema \
   --num-workers 4
-
 
 # ______________________ Removing Dataset ______________________
 # This script removes the dataset files after training.

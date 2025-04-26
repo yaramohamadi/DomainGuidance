@@ -15,11 +15,11 @@ if [ -d "$ENV_PATH" ]; then
     conda activate "$ENV_PATH"
 else
     echo "Environment not found at '$ENV_PATH'. Creating it..."
-    conda create --prefix "$ENV_PATH" python=3.11 -y
+    conda create --prefix "$ENV_PATH" python=3.13.2 -y
     # Step 2: Activate environment
     source "$(conda info --base)/etc/profile.d/conda.sh"
     conda activate "$ENV_PATH"
-    conda install pytorch torchvision pytorch-cuda=11.7 -c pytorch -c nvidia
+    conda install pytorch torchvision pytorch-cuda=12.6 -c pytorch -c nvidia
     pip install timm diffusers accelerate
 fi
 
@@ -33,12 +33,12 @@ echo "Environment ready!"
 CUDA_VISIBLE_DEVICES=2,3 torchrun --nproc_per_node=2 sample_ddp.py \
   --model DiT-XL/2 \
   --vae ema \
-  --sample-dir /export/livia/home/vision/Ymohammadi/DoG/results/000-DiT-XL-2/0006000samples \
-  --ckpt /export/livia/home/vision/Ymohammadi/DoG/results/000-DiT-XL-2/checkpoints/0006000.pt \
+  --sample-dir /export/livia/home/vision/Ymohammadi/DoG/results_pretrained/samples \
+  --ckpt /projets/Ymohammadi/DomainGuidance/tmp/local_pretrained_ckpt.pt \
   --per-proc-batch-size 32 \
   --num-fid-samples 10 \
   --image-size 256 \
-  --num-classes 101 \
+  --num-classes 1000 \
   --cfg-scale 1 \
   --num-sampling-steps 50
 
