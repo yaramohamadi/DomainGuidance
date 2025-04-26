@@ -22,3 +22,8 @@ dependencies:
     - timm
     - diffusers
     - accelerate
+
+# pytorch-fid
+# pytorch-cuda=12.6
+# pytorch >= 2.5?
+# python 3.13.2 je pense

@@ -20,7 +20,7 @@ else
     source "$(conda info --base)/etc/profile.d/conda.sh"
     conda activate "$ENV_PATH"
     conda install pytorch torchvision pytorch-cuda=12.6 -c pytorch -c nvidia
-    pip install timm diffusers accelerate
+    pip install timm diffusers accelerate pytorch-fid
 fi
 
 echo "Environment ready!"

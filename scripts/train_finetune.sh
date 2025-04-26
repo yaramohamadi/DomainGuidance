@@ -10,14 +10,18 @@ ENV_PATH="/projets/Ymohammadi/envs/DiT"  # or wherever your Conda installs
 # Step 1: Check if environment path exists
 if [ -d "$ENV_PATH" ]; then
     echo "Conda environment at '$ENV_PATH' already exists."
+    # Step 2: Activate environment
+    source "$(conda info --base)/etc/profile.d/conda.sh"
+    conda activate "$ENV_PATH"
 else
     echo "Environment not found at '$ENV_PATH'. Creating it..."
-    conda env create --prefix "$ENV_PATH" -f environment_updated.yml
+    conda create --prefix "$ENV_PATH" python=3.13.2 -y
+    # Step 2: Activate environment
+    source "$(conda info --base)/etc/profile.d/conda.sh"
+    conda activate "$ENV_PATH"
+    conda install pytorch torchvision pytorch-cuda=12.6 -c pytorch -c nvidia
+    pip install timm diffusers accelerate pytorch-fid
 fi
-
-# Step 2: Activate environment
-source "$(conda info --base)/etc/profile.d/conda.sh"
-conda activate "$ENV_PATH"
 
 echo "Environment ready!"
 
