@@ -27,6 +27,8 @@ import argparse
 import logging
 import os
 
+from download import find_model
+
 from models import DiT_models
 from diffusion import create_diffusion
 from diffusers.models import AutoencoderKL
@@ -143,6 +145,13 @@ def main(args):
         input_size=latent_size,
         num_classes=args.num_classes
     )
+
+    # Find checkpoint for fine-tuning:
+    ckpt_path = args.pretrained_ckpt or f"DiT-XL-2-{args.image_size}x{args.image_size}.pt"
+    state_dict = find_model(ckpt_path)
+    model.load_state_dict(state_dict)
+    logger.info(f"Loaded pre-trained weights from {ckpt_path}")
+
     # Note that parameter initialization is done within the DiT constructor
     ema = deepcopy(model).to(device)  # Create an EMA of the model for use after training
     requires_grad(ema, False)
@@ -198,6 +207,22 @@ def main(args):
         for x, y in loader:
             x = x.to(device)
             y = y.to(device)
+
+
+            # DEBUGGGING
+            if train_steps == 0 and rank == 0:
+                print("=" * 20)
+                print(f"Batch x shape: {x.shape}, dtype: {x.dtype}, min: {x.min().item()}, max: {x.max().item()}")
+                print(f"Batch y shape: {y.shape}, dtype: {y.dtype}, unique labels: {torch.unique(y)}")
+                print("=" * 20)
+                # Optionally visualize a few images
+                from torchvision.utils import save_image
+                save_image(x[:8] * 0.5 + 0.5, f"{experiment_dir}/sample_batch.png", nrow=4)
+
+                exit()
+
+
+
             with torch.no_grad():
                 # Map input images to latent space + normalize latents:
                 x = vae.encode(x).latent_dist.sample().mul_(0.18215)
@@ -265,5 +290,7 @@ if __name__ == "__main__":
     parser.add_argument("--num-workers", type=int, default=4) 
     parser.add_argument("--log-every", type=int, default=100)
     parser.add_argument("--ckpt-every", type=int, default=50_000)
+    parser.add_argument("--pretrained-ckpt", type=str, default=None,
+                        help="Optional path to a DiT checkpoint (default: auto-download a pre-trained DiT-XL/2 model).")
     args = parser.parse_args()
     main(args)
