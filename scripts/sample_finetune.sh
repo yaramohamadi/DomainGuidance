@@ -10,14 +10,18 @@ ENV_PATH="/projets/Ymohammadi/envs/DiT"  # or wherever your Conda installs
 # Step 1: Check if environment path exists
 if [ -d "$ENV_PATH" ]; then
     echo "Conda environment at '$ENV_PATH' already exists."
+    # Step 2: Activate environment
+    source "$(conda info --base)/etc/profile.d/conda.sh"
+    conda activate "$ENV_PATH"
 else
     echo "Environment not found at '$ENV_PATH'. Creating it..."
-    conda env create --prefix "$ENV_PATH" -f environment_updated.yml
+    conda create --prefix "$ENV_PATH" python=3.11 -y
+    # Step 2: Activate environment
+    source "$(conda info --base)/etc/profile.d/conda.sh"
+    conda activate "$ENV_PATH"
+    conda install pytorch torchvision pytorch-cuda=11.7 -c pytorch -c nvidia
+    pip install timm diffusers accelerate
 fi
-
-# Step 2: Activate environment
-source "$(conda info --base)/etc/profile.d/conda.sh"
-conda activate "$ENV_PATH"
 
 echo "Environment ready!"
 
@@ -29,10 +33,10 @@ echo "Environment ready!"
 CUDA_VISIBLE_DEVICES=2,3 torchrun --nproc_per_node=2 sample_ddp.py \
   --model DiT-XL/2 \
   --vae ema \
-  --sample-dir /projets/Ymohammadi/DomainGuidance/samples/cfg_1 \
-  --ckpt /projets/Ymohammadi/DomainGuidance/results/000-DiT-XL-2/checkpoints/0024000.pt \
+  --sample-dir /export/livia/home/vision/Ymohammadi/DoG/results/000-DiT-XL-2/0006000samples \
+  --ckpt /export/livia/home/vision/Ymohammadi/DoG/results/000-DiT-XL-2/checkpoints/0006000.pt \
   --per-proc-batch-size 32 \
-  --num-fid-samples 10000 \
+  --num-fid-samples 10 \
   --image-size 256 \
   --num-classes 101 \
   --cfg-scale 1 \
