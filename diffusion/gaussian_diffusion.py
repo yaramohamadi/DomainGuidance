@@ -801,7 +801,7 @@ class GaussianDiffusion:
                 target = target + (w_dog - 1) * (target - pretrained_output)
 
 
-            if self.counter % 100 == 0:
+            if self.counter % 1000 == 0:
                 # Debugging functions
                 def norm_to_01(x):
                     """Normalize to [0,1] for visualization."""
