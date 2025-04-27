@@ -4,7 +4,7 @@
 ENV_PATH="/projets/Ymohammadi/envs/DiT"
 DATA_DIR_ZIP="/export/datasets/public/Caltech-101/caltech-101.zip"
 TARGET_DIR="/projets/Ymohammadi/DomainGuidance/datasets"
-GENERATED_DIR="/export/livia/home/vision/Ymohammadi/DoG/results_finetune/004-DiT-XL-2/samples/0024000/samples_CFG1"
+GENERATED_DIR="/export/livia/home/vision/Ymohammadi/DoG/results_finetune/004-DiT-XL-2/samples/0024000/samples_CFG1_5"
 REAL_DATA_DIR="$TARGET_DIR/caltech-101"
 FLAT_REAL_DIR="$TARGET_DIR/caltech-101-flat"
 REAL_STATS_PATH="/export/livia/home/vision/Ymohammadi/DoG/dataset_stats/real_stats_caltech101.npz"
@@ -128,7 +128,7 @@ run_sampling() {
       --num-fid-samples 10000 \
       --image-size 256 \
       --num-classes 101 \
-      --cfg-scale 1 \
+      --cfg-scale 1.5 \
       --num-sampling-steps 50
 
 # Finetuning with Guidance 1.5
