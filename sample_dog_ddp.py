@@ -27,15 +27,22 @@ import argparse
 
 def create_npz_from_sample_folder(sample_dir, num=50_000):
     """
-    Builds a single .npz file from a folder of .png samples.
+    Builds a single .npz file from a folder of .png samples,
+    resizing them to 299x299 before saving.
     """
     samples = []
-    for i in tqdm(range(num), desc="Building .npz file from samples"):
-        sample_pil = Image.open(f"{sample_dir}/{i:06d}.png")
+    for i in tqdm(range(num), desc="Building .npz file from resized samples"):
+        sample_pil = Image.open(f"{sample_dir}/{i:06d}.png").convert('RGB')
+
+        # ------------------- RESIZE TO 299x299 (Center crop + Bilinear) -------------------
+        sample_pil = sample_pil.resize((299, 299), Image.BILINEAR)
+        # -----------------------------------------------------------------------------------
+
         sample_np = np.asarray(sample_pil).astype(np.uint8)
         samples.append(sample_np)
+
     samples = np.stack(samples)
-    assert samples.shape == (num, samples.shape[1], samples.shape[2], 3)
+    assert samples.shape == (num, samples.shape[1], samples.shape[2], 3), f"Shape mismatch: {samples.shape}"
     npz_path = f"{sample_dir}.npz"
     np.savez(npz_path, arr_0=samples)
     print(f"Saved .npz file to {npz_path} [shape={samples.shape}].")
@@ -49,7 +56,8 @@ def build_cfg_fowrard_fn(cond_model, uncond_model):
 
         uncond_half_x = half
         uncond_half_t = t[len(t) // 2 :]
-        uncond_half_y = y[len(y) // 2 :]
+        # uncond_half_y = y[len(y) // 2 :]
+        uncond_half_y = torch.full_like(y[len(y) // 2 :], 1000)
 
         cond_model_out = cond_model(half, half_t, half_y)
         uncond_model_out = uncond_model(uncond_half_x, uncond_half_t, uncond_half_y)
@@ -102,20 +110,32 @@ def main(args):
 
     uncond_model = DiT_models[args.uncond_model](
         input_size=latent_size,
-        num_classes=args.num_classes
+        num_classes=1000
     ).to(device)
 
     # Auto-download a pre-trained model or load a custom DiT checkpoint from train.py:
     ckpt_path = args.ckpt or f"DiT-XL-2-{args.image_size}x{args.image_size}.pt"
     uncond_ckpt_path = args.uncond_ckpt or f"DiT-XL-2-{args.image_size}x{args.image_size}.pt"
     
-    state_dict = find_model(ckpt_path)
-    model.load_state_dict(state_dict)
+    print(f"Loading model from {ckpt_path}")
+    cond_state_dict = find_model(ckpt_path)
+    model.load_state_dict(cond_state_dict)
     model.eval()  # important!
 
-    uncond_state_dict = find_model(uncond_ckpt_path)
+    # Only rank 0 downloads
+    print(f"Loading model from {uncond_ckpt_path}")
+    if dist.get_rank() == 0:
+        uncond_state_dict = find_model(uncond_ckpt_path)
+        torch.save(uncond_state_dict, "local_pretrained_ckpt.pt")
+    
+    dist.barrier()  # Ensure file is fully saved before loading
+
+    # All ranks load from local file
+    local_ckpt_path = "local_pretrained_ckpt.pt"
+    uncond_state_dict = torch.load(local_ckpt_path, map_location="cpu")
     uncond_model.load_state_dict(uncond_state_dict)
     uncond_model.eval()  # important!
+    dist.barrier() 
 
     diffusion = create_diffusion(str(args.num_sampling_steps))
     vae = AutoencoderKL.from_pretrained(f"stabilityai/sd-vae-ft-{args.vae}").to(device)
@@ -125,9 +145,7 @@ def main(args):
     # Create folder to save samples:
     model_string_name = args.model.replace("/", "-")
     ckpt_string_name = os.path.basename(args.ckpt).replace(".pt", "") if args.ckpt else "pretrained"
-    folder_name = f"{model_string_name}-{ckpt_string_name}-size-{args.image_size}-vae-{args.vae}-" \
-                  f"cfg-{args.cfg_scale}-seed-{args.global_seed}"
-    sample_folder_dir = f"{args.sample_dir}/{folder_name}"
+    sample_folder_dir = f"{args.sample_dir}"
     if rank == 0:
         os.makedirs(sample_folder_dir, exist_ok=True)
         print(f"Saving .png samples at {sample_folder_dir}")
