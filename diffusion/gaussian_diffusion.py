@@ -802,7 +802,6 @@ class GaussianDiffusion:
 
 
             if self.counter % 100 == 0:
-                self.counter += 1
                 # Debugging functions
                 def norm_to_01(x):
                     """Normalize to [0,1] for visualization."""
@@ -843,7 +842,8 @@ class GaussianDiffusion:
 
                 print(f"[DEBUG] Saved DoG debugging images to {save_dir}")
             
-
+            self.counter += 1
+            
             assert model_output.shape == target.shape == x_start.shape
             terms["mse"] = mean_flat((target - model_output) ** 2)
             if "vb" in terms:
