@@ -712,17 +712,20 @@ class GaussianDiffusion:
         output = th.where((t == 0), decoder_nll, kl)
         return {"output": output, "pred_xstart": out["pred_xstart"]}
 
-    def training_losses(self, model, x_start, t, model_kwargs=None, noise=None):
+    # DoG
+    def training_losses(self, model, x_start, t, model_kwargs=None, noise=None, pretrained_model=None, w_dog=1.0):
         """
         Compute training losses for a single timestep.
         :param model: the model to evaluate loss on.
         :param x_start: the [N x C x ...] tensor of inputs.
         :param t: a batch of timestep indices.
-        :param model_kwargs: if not None, a dict of extra keyword arguments to
-            pass to the model. This can be used for conditioning.
-        :param noise: if specified, the specific Gaussian noise to try to remove.
-        :return: a dict with the key "loss" containing a tensor of shape [N].
-                 Some mean or variance settings may also have other keys.
+        :param model_kwargs: extra keyword arguments to pass to the model.
+        :param noise: specific Gaussian noise to try to remove (optional).
+        :param pretrained_model: if provided, apply Domain Guidance correction.
+        :param w_dog: Domain Guidance strength.
+        :param save_dir: if provided, save intermediate image grids for inspection.
+        :param counter: global training step counter (used for saving frequency).
+        :return: dictionary of loss terms.
         """
         if model_kwargs is None:
             model_kwargs = {}
@@ -746,6 +749,13 @@ class GaussianDiffusion:
         elif self.loss_type == LossType.MSE or self.loss_type == LossType.RESCALED_MSE:
             model_output = model(x_t, t, **model_kwargs)
 
+            if pretrained_model is not None:
+                with th.no_grad():
+                    y = model_kwargs["y"]
+                    pretrained_kwargs = {"y": th.full_like(y, 1000)}
+                    pretrained_output = pretrained_model(x_t, t, **pretrained_kwargs)
+
+
             if self.model_var_type in [
                 ModelVarType.LEARNED,
                 ModelVarType.LEARNED_RANGE,
@@ -753,6 +763,9 @@ class GaussianDiffusion:
                 B, C = x_t.shape[:2]
                 assert model_output.shape == (B, C * 2, *x_t.shape[2:])
                 model_output, model_var_values = th.split(model_output, C, dim=1)
+                if pretrained_model is not None:
+                    pretrained_output, _ = th.split(pretrained_output, C, dim=1)
+
                 # Learn the variance using the variational bound, but don't let
                 # it affect our mean prediction.
                 frozen_out = th.cat([model_output.detach(), model_var_values], dim=1)
@@ -775,6 +788,11 @@ class GaussianDiffusion:
                 ModelMeanType.START_X: x_start,
                 ModelMeanType.EPSILON: noise,
             }[self.model_mean_type]
+
+            if pretrained_model is not None:
+                # Where the DoG Happens 
+                target = target + (w_dog - 1) * (target - pretrained_output)
+
             assert model_output.shape == target.shape == x_start.shape
             terms["mse"] = mean_flat((target - model_output) ** 2)
             if "vb" in terms:
