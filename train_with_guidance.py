@@ -376,6 +376,7 @@ def main(args):
         transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True)
     ])
     dataset = ImageFolder(args.data_path, transform=transform)
+
     sampler = DistributedSampler(
         dataset,
         num_replicas=dist.get_world_size(),
@@ -433,7 +434,7 @@ def main(args):
 
             # DoG
             # Patch the diffusion training loss to use Domain Guidance
-            loss_dict = diffusion.training_losses(model, x, t, model_kwargs, w_dog=args.w_dog, pretrained_model=diffusion._wrap_model(pretrained_model))
+            loss_dict = diffusion.training_losses(model, x, t, model_kwargs, w_dog=args.w_dog, pretrained_model=diffusion._wrap_model(pretrained_model), vae=vae) # For debugging 
             loss = loss_dict["loss"].mean()
             opt.zero_grad()
             loss.backward()

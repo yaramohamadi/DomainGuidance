@@ -159,6 +159,9 @@ class GaussianDiffusion:
         loss_type
     ):
 
+        # DoG Debug
+        self.counter = 0  # Add this
+
         self.model_mean_type = model_mean_type
         self.model_var_type = model_var_type
         self.loss_type = loss_type
@@ -713,7 +716,11 @@ class GaussianDiffusion:
         return {"output": output, "pred_xstart": out["pred_xstart"]}
 
     # DoG
-    def training_losses(self, model, x_start, t, model_kwargs=None, noise=None, pretrained_model=None, w_dog=1.0):
+    def training_losses(self, model, x_start, t, model_kwargs=None, noise=None, pretrained_model=None, w_dog=1.0, vae=None):
+
+        import os
+        from torchvision.utils import save_image
+
         """
         Compute training losses for a single timestep.
         :param model: the model to evaluate loss on.
@@ -792,6 +799,50 @@ class GaussianDiffusion:
             if pretrained_model is not None:
                 # Where the DoG Happens 
                 target = target + (w_dog - 1) * (target - pretrained_output)
+
+
+            if self.counter % 100 == 0:
+                self.counter += 1
+                # Debugging functions
+                def norm_to_01(x):
+                    """Normalize to [0,1] for visualization."""
+                    return (x.clamp(-1,1) + 1) / 2
+
+                # -----------------------------------------
+                # Predict x0 from model and pretrained_model
+                # -----------------------------------------
+                alpha_bar = th.from_numpy(self.alphas_cumprod).to(device=x_start.device, dtype=x_start.dtype)
+                sqrt_alpha_bar_t = th.sqrt(alpha_bar[t]).view(-1, 1, 1, 1)
+                sqrt_one_minus_alpha_bar_t = th.sqrt(1 - alpha_bar[t]).view(-1, 1, 1, 1)
+
+                # Reconstruct x0
+                x0_model = (x_t - sqrt_one_minus_alpha_bar_t * model_output) / sqrt_alpha_bar_t
+                x0_pretrained = (x_t - sqrt_one_minus_alpha_bar_t * pretrained_output) / sqrt_alpha_bar_t
+
+                # Calculate difference for visualization
+                x0_diff = (x0_model - x0_pretrained).abs()
+
+                # -----------------------------------------
+                # Save all images
+                # -----------------------------------------
+                save_dir = f"DoG_debug/{self.counter:06d}"
+                os.makedirs(save_dir, exist_ok=True)
+
+                with th.no_grad():
+                    # decode from latents to images
+                    x_start_decoded = vae.decode(x_start / 0.18215).sample
+                    x0_model_decoded = vae.decode(x0_model / 0.18215).sample
+                    x0_pretrained_decoded = vae.decode(x0_pretrained / 0.18215).sample
+                    x0_diff_decoded = (x0_model_decoded - x0_pretrained_decoded).abs()
+
+                # Save normalized images
+                save_image(norm_to_01(x_start_decoded),        f"{save_dir}/x_start.png",        nrow=8)
+                save_image(norm_to_01(x0_model_decoded),        f"{save_dir}/x0_model.png",       nrow=8)
+                save_image(norm_to_01(x0_pretrained_decoded),   f"{save_dir}/x0_pretrained.png",  nrow=8)
+                save_image(norm_to_01(x0_diff_decoded),         f"{save_dir}/x0_diff.png",        nrow=8)
+
+                print(f"[DEBUG] Saved DoG debugging images to {save_dir}")
+            
 
             assert model_output.shape == target.shape == x_start.shape
             terms["mse"] = mean_flat((target - model_output) ** 2)
