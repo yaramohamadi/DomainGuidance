@@ -22,3 +22,5 @@ tmp/**
 DoG_debug/
 DoG_debug/*
 DoG_debug/**
+
+local_pretrained_ckpt.pt
