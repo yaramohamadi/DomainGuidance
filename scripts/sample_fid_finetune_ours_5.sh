@@ -4,14 +4,14 @@
 ENV_PATH="/projets/Ymohammadi/envs/DiT"
 DATA_DIR_ZIP="/export/datasets/public/Caltech-101/caltech-101.zip"
 TARGET_DIR="/projets/Ymohammadi/DomainGuidance/datasets"
-GENERATED_DIR="/export/livia/home/vision/Ymohammadi/DoG/results_finetune/004-DiT-XL-2/samples/0020000/samples_dog1_5"
+GENERATED_DIR="/export/livia/home/vision/Ymohammadi/DoG/results_dogfinetune5/003-DiT-XL-2/samples/0024000/samples_CFG1"
 REAL_DATA_DIR="$TARGET_DIR/caltech-101"
 FLAT_REAL_DIR="$TARGET_DIR/caltech-101-flat"
 REAL_STATS_PATH="/export/livia/home/vision/Ymohammadi/DoG/dataset_stats/real_stats_caltech101.npz"
-CHECKPOINT_DIR="/export/livia/home/vision/Ymohammadi/DoG/results_finetune/004-DiT-XL-2/checkpoints/0020000.pt"
+CHECKPOINT_DIR="/export/livia/home/vision/Ymohammadi/DoG/results_dogfinetune5/003-DiT-XL-2/checkpoints/0024000.pt"
 
 # Define CUDA devices here (will apply everywhere)
-CUDA_DEVICES="0,1"
+CUDA_DEVICES="2,3"
 FID_DEVICE="cuda:0"  # Device to compute FID (usually just one GPU)
 
 # ====================== FUNCTIONS ======================
@@ -119,17 +119,17 @@ save_real_stats() {
 run_sampling() {
     echo ">>> Starting image sampling..."
 
-#     CUDA_VISIBLE_DEVICES=$CUDA_DEVICES torchrun --nproc_per_node=2 sample_ddp.py \
-#       --model DiT-XL/2 \
-#       --vae ema \
-#       --sample-dir "$GENERATED_DIR" \
-#       --ckpt "$CHECKPOINT_DIR" \
-#       --per-proc-batch-size 32 \
-#       --num-fid-samples 10 \
-#       --image-size 256 \
-#       --num-classes 101 \
-#       --cfg-scale 1.5 \
-#       --num-sampling-steps 50
+    CUDA_VISIBLE_DEVICES=$CUDA_DEVICES torchrun --nproc_per_node=2 sample_ddp.py \
+      --model DiT-XL/2 \
+      --vae ema \
+      --sample-dir "$GENERATED_DIR" \
+      --ckpt "$CHECKPOINT_DIR" \
+      --per-proc-batch-size 32 \
+      --num-fid-samples 10000 \
+      --image-size 256 \
+      --num-classes 101 \
+      --cfg-scale 1 \
+      --num-sampling-steps 50
 
 # Finetuning with Guidance 1.5
 # CUDA_VISIBLE_DEVICES=$CUDA_DEVICES torchrun --nproc_per_node=2 sample_ddp.py \
@@ -144,17 +144,17 @@ run_sampling() {
 #   --cfg-scale 1.5 \
 #   --num-sampling-steps 50
 # 
-    CUDA_VISIBLE_DEVICES=$CUDA_DEVICES torchrun --nproc_per_node=2 sample_dog_ddp.py \
-      --model DiT-XL/2 \
-      --vae ema \
-      --sample-dir "$GENERATED_DIR" \
-      --ckpt "$CHECKPOINT_DIR" \
-      --per-proc-batch-size 32 \
-      --num-fid-samples 10000 \
-      --image-size 256 \
-      --num-classes 101 \
-      --cfg-scale 1.5 \
-      --num-sampling-steps 50
+#    CUDA_VISIBLE_DEVICES=$CUDA_DEVICES torchrun --nproc_per_node=2 sample_dog_ddp.py \
+#      --model DiT-XL/2 \
+#      --vae ema \
+#      --sample-dir "$GENERATED_DIR" \
+#      --ckpt "$CHECKPOINT_DIR" \
+#      --per-proc-batch-size 32 \
+#      --num-fid-samples 10000 \
+#      --image-size 256 \
+#      --num-classes 101 \
+#      --cfg-scale 1.5 \
+#      --num-sampling-steps 50
 
     echo ">>> Sampling completed!"
 }
