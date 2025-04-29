@@ -716,7 +716,7 @@ class GaussianDiffusion:
         return {"output": output, "pred_xstart": out["pred_xstart"]}
 
     # DoG
-    def training_losses(self, model, x_start, t, model_kwargs=None, noise=None, pretrained_model=None, w_dog=1.0, vae=None):
+    def training_losses(self, model, x_start, t, model_kwargs=None, noise=None, pretrained_model=None, w_dog=1.0, ema=None, vae=None):
 
         import os
         from torchvision.utils import save_image
@@ -756,11 +756,12 @@ class GaussianDiffusion:
         elif self.loss_type == LossType.MSE or self.loss_type == LossType.RESCALED_MSE:
             model_output = model(x_t, t, **model_kwargs)
 
-            if pretrained_model is not None:
+            if pretrained_model is not None and ema is not None:
                 with th.no_grad():
                     y = model_kwargs["y"]
                     pretrained_kwargs = {"y": th.full_like(y, 1000)}
                     pretrained_output = pretrained_model(x_t, t, **pretrained_kwargs)
+                    ema_output = ema(x_t, t, **model_kwargs)
 
 
             if self.model_var_type in [
@@ -772,6 +773,7 @@ class GaussianDiffusion:
                 model_output, model_var_values = th.split(model_output, C, dim=1)
                 if pretrained_model is not None:
                     pretrained_output, _ = th.split(pretrained_output, C, dim=1)
+                    ema_output, _ = th.split(ema_output, C, dim=1)
 
                 # Learn the variance using the variational bound, but don't let
                 # it affect our mean prediction.
@@ -796,10 +798,11 @@ class GaussianDiffusion:
                 ModelMeanType.EPSILON: noise,
             }[self.model_mean_type]
 
-            if pretrained_model is not None:
+            if pretrained_model is not None and ema is not None:
                 # Where the DoG Happens 
-                target = target + (w_dog - 1) * (target - pretrained_output)
-
+                # target = target + (w_dog - 1) * (target - pretrained_output)
+                # TODO Need to check if w_dog should be 1.5 or 0.5
+                target = target + (w_dog - 1) * (ema_output.detach() - pretrained_output.detach())
 
             if self.counter % 1000 == 0:
                 # Debugging functions

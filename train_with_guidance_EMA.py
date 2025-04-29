@@ -39,125 +39,6 @@ from diffusers.models import AutoencoderKL
 
 
 #################################################################################
-#                       Where Domain Guidance Loss is Created                   #
-#################################################################################
-
-
-
-# # DoG
-# # Domain Guidance loss is a modified MSE loss that uses the pretrained model to guide the training of the new model. 
-# def patch_training_losses_with_DoG(diffusion, pretrained_model, args, counter = 0):
-#     """
-#     Monkey-patches diffusion.training_losses to use Domain Guidance loss during training.
-#     """
-#     original_training_losses = diffusion.training_losses  # Save original function
-# 
-#     def training_losses_with_DoG(model, x_start, t, model_kwargs=None, noise=None):
-#         
-#         nonlocal counter # Since we are assigning a new value to the variable, we need to declare it as nonlocal
-#         nonlocal pretrained_model # We need to access the pretrained_model variable from the outer scope
-#         
-#         if model_kwargs is None:
-#             model_kwargs = {}
-#         if noise is None:
-#             noise = torch.randn_like(x_start)
-#         x_t = diffusion.q_sample(x_start, t, noise=noise)
-# 
-#         # Manually wrap the models for time-step spacings
-#         model = diffusion._wrap_model(model)
-#         pretrained_model = diffusion._wrap_model(pretrained_model)
-# 
-#         print("[DEBUG] x_t shape:", x_t.shape)
-#         print("[DEBUG] t shape:", t.shape)
-#         print("[DEBUG] y labels:", model_kwargs["y"])
-#         print("[DEBUG] w_DoG value:", args.w_dog)
-# 
-#         terms = {}
-# 
-#         if diffusion.loss_type in [LossType.KL, LossType.RESCALED_KL]:
-#             return original_training_losses(model, x_start, t, model_kwargs, noise)
-# 
-#         elif diffusion.loss_type in [LossType.MSE, LossType.RESCALED_MSE]:
-#             model_output = model(x_t, t, **model_kwargs)
-#             y_pretrained = torch.full_like(model_kwargs["y"], 1000)
-#             pretrained_model_kwargs = {"y": y_pretrained}
-#             # with torch.no_grad():
-#                 # eps_uncond = pretrained_model(x_t, t, **pretrained_model_kwargs)
-# 
-#             if diffusion.model_var_type in [ModelVarType.LEARNED, ModelVarType.LEARNED_RANGE]:
-#                 B, C = x_t.shape[:2]
-#                 assert model_output.shape == (B, C * 2, *x_t.shape[2:])
-#                 model_output, model_var_values = torch.split(model_output, C, dim=1)
-#                 # eps_uncond, _ = torch.split(eps_uncond, C, dim=1)
-#                 frozen_out = torch.cat([model_output.detach(), model_var_values], dim=1)
-#                 vb_terms = diffusion._vb_terms_bpd(
-#                     model=lambda *args, r=frozen_out: r,
-#                     x_start=x_start,
-#                     x_t=x_t,
-#                     t=t,
-#                     clip_denoised=False,
-#                 )["output"]
-#                 if diffusion.loss_type == LossType.RESCALED_MSE:
-#                     vb_terms *= diffusion.num_timesteps / 1000.0
-#                 terms["vb"] = vb_terms
-# 
-#             print("[DEBUG] noise (before DoG) mean/std:", noise.mean().item(), noise.std().item())
-#             # print("[DEBUG] eps_uncond mean/std:", eps_uncond.mean().item(), eps_uncond.std().item())
-# 
-# 
-#             noise_hat = noise # + (args.w_dog - 1) * (noise - eps_uncond)
-# 
-#             print("[DEBUG] noise_hat (after DoG) mean/std:", noise_hat.mean().item(), noise_hat.std().item())
-#             
-#             counter += 1
-#             if counter % 10 == 0:
-#                 with torch.no_grad():
-#                     model_pred_eps = model_output  # (B,C,H,W)
-#                     # pretrained_pred_eps = eps_uncond  # (B,C,H,W)
-# 
-#                     # alpha_bar_t = cumulative product of (1 - beta_t) up to timestep t
-#                     alpha_bar = diffusion.alphas_cumprod.to(x_start.device)  # (T,)
-#                     sqrt_alpha_bar_t = torch.sqrt(alpha_bar[t]).view(-1, 1, 1, 1)
-#                     sqrt_one_minus_alpha_bar_t = torch.sqrt(1 - alpha_bar[t]).view(-1, 1, 1, 1)
-# 
-#                     # Predict x0 from the noise prediction
-#                     x0_model = (x_t - sqrt_one_minus_alpha_bar_t * model_pred_eps) / sqrt_alpha_bar_t
-#                     # x0_pretrained = (x_t - sqrt_one_minus_alpha_bar_t * pretrained_pred_eps) / sqrt_alpha_bar_t
-#                     x0_target = (x_t - sqrt_one_minus_alpha_bar_t * noise_hat) / sqrt_alpha_bar_t
-# 
-#                     from torchvision.utils import save_image
-#                     # Make sure images are between 0 and 1
-#                     def norm_to_01(x):
-#                         return (x.clamp(-1,1) + 1) / 2
-# 
-#                     # comparison_grid = torch.cat([norm_to_01(x0_pretrained), norm_to_01(x0_target), norm_to_01(x0_model)], dim=0)
-#                     # save_image(comparison_grid, "tmp/comparison_grid.png", nrow=8)
-#                     # print("Saved comparison grid to tmp/comparison_grid.png")
-# 
-#             target = {
-#                 ModelMeanType.PREVIOUS_X: diffusion.q_posterior_mean_variance(
-#                     x_start=x_start, x_t=x_t, t=t
-#                 )[0],
-#                 ModelMeanType.START_X: x_start,
-#                 ModelMeanType.EPSILON: noise_hat,
-#             }[diffusion.model_mean_type]
-# 
-#             assert model_output.shape == target.shape == x_start.shape
-#             terms["mse"] = mean_flat((target - model_output) ** 2)
-#             if "vb" in terms:
-#                 terms["loss"] = terms["mse"] + terms["vb"]
-#             else:
-#                 terms["loss"] = terms["mse"]
-#             return terms
-# 
-#         else:
-#             raise NotImplementedError(diffusion.loss_type)
-# 
-#     diffusion.training_losses = training_losses_with_DoG
-
-
-
-#################################################################################
 #                             Training Helper Functions                         #
 #################################################################################
 
@@ -434,7 +315,7 @@ def main(args):
 
             # DoG
             # Patch the diffusion training loss to use Domain Guidance
-            loss_dict = diffusion.training_losses(model, x, t, model_kwargs, w_dog=args.w_dog, pretrained_model=diffusion._wrap_model(pretrained_model), vae=vae) # For debugging 
+            loss_dict = diffusion.training_losses(model, x, t, model_kwargs, w_dog=args.w_dog, pretrained_model=diffusion._wrap_model(pretrained_model), ema=diffusion._wrap_model(ema), vae=vae) # VAE For debugging 
             loss = loss_dict["loss"].mean()
             opt.zero_grad()
             loss.backward()

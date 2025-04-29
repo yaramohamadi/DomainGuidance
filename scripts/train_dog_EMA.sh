@@ -37,36 +37,36 @@ echo "Environment ready!"
 DATA_DIR_ZIP=/export/datasets/public/Caltech-101/caltech-101.zip
 TARGET_DIR=/projets/Ymohammadi/DomainGuidance/datasets
 # 
-# # Create target directory
-# mkdir -p "$TARGET_DIR"
-# 
-# # Move zip file to target directory
-# echo "Moving caltech-101.zip to $TARGET_DIR..."
-# cp "$DATA_DIR_ZIP" "$TARGET_DIR/"
-# 
-# # Change to target directory
-# cd "$TARGET_DIR"
-# 
-# # Unzip the dataset
-# echo "Unzipping caltech-101.zip..."
-# unzip caltech-101.zip
-# 
-# # Final structure check
-# echo "Done!"
-# echo "Dataset extracted to: $TARGET_DIR/caltech-101/"
-# 
-# # Example path for training
-# echo "When training, set --data-path to: $TARGET_DIR/caltech-101/"
-# 
-# cd "$OLDPWD"
+# Create target directory
+mkdir -p "$TARGET_DIR"
+
+# Move zip file to target directory
+echo "Moving caltech-101.zip to $TARGET_DIR..."
+cp "$DATA_DIR_ZIP" "$TARGET_DIR/"
+
+# Change to target directory
+cd "$TARGET_DIR"
+
+# Unzip the dataset
+echo "Unzipping caltech-101.zip..."
+unzip caltech-101.zip
+
+# Final structure check
+echo "Done!"
+echo "Dataset extracted to: $TARGET_DIR/caltech-101/"
+
+# Example path for training
+echo "When training, set --data-path to: $TARGET_DIR/caltech-101/"
+
+cd "$OLDPWD"
 
 
 # ______________________ TRAINING ______________________
 # This script trains the DiT model on the Caltech-101 dataset.
 
-  CUDA_VISIBLE_DEVICES=2,3 torchrun --nproc_per_node=2 train_with_guidance.py \
+  CUDA_VISIBLE_DEVICES=2,3 torchrun --nproc_per_node=2 train_with_guidance_EMA.py \
   --data-path "$TARGET_DIR/caltech-101/" \
-  --results-dir /export/livia/home/vision/Ymohammadi/DoG/results_dogfinetune1_5/ \
+  --results-dir /export/livia/home/vision/Ymohammadi/DoG/results_dogfinetune1_5_EMA/ \
   --model DiT-XL/2 \
   --image-size 256 \
   --num-classes 102 \
@@ -81,6 +81,6 @@ TARGET_DIR=/projets/Ymohammadi/DomainGuidance/datasets
 # ______________________ Removing Dataset ______________________
 # This script removes the dataset files after training.
   
-# echo "Removing Dataset files..."
-# rm -rf "$TARGET_DIR"
-# echo "Done!"
+echo "Removing Dataset files..."
+rm -rf "$TARGET_DIR"
+echo "Done!"
