@@ -152,9 +152,10 @@ def main(args):
 
     if rank == 0 and args.calc_fid and args.real_stats:
         print("Calculating FID...")
+        print("WE ARE INSIDE DDP SAMPLE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         FID = calculate_fid_given_paths([args.real_stats, sample_folder_dir], device='cuda:0')
         print(f">>> Final FID score: {FID:.4f}")
-        
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
