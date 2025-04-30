@@ -4,11 +4,11 @@
 ENV_PATH="/projets/Ymohammadi/envs/DiT"
 DATA_DIR_ZIP="/export/datasets/public/Caltech-101/caltech-101.zip"
 TARGET_DIR="/projets/Ymohammadi/DomainGuidance/datasets"
-GENERATED_DIR="/export/livia/home/vision/Ymohammadi/DoG/results_dogfinetune1_5_EMA/001-DiT-XL-2/samples/0024000/samples_CFG1"
+GENERATED_DIR="/export/livia/home/vision/Ymohammadi/DoG/results_dogfinetune2_EMA_CADS/018-DiT-XL-2/samples/0020000/samples_CFG1"
 REAL_DATA_DIR="$TARGET_DIR/caltech-101"
 FLAT_REAL_DIR="$TARGET_DIR/caltech-101-flat"
 REAL_STATS_PATH="/export/livia/home/vision/Ymohammadi/DoG/dataset_stats/real_stats_caltech101.npz"
-CHECKPOINT_DIR="/export/livia/home/vision/Ymohammadi/DoG/results_dogfinetune1_5_EMA/001-DiT-XL-2/checkpoints/0024000.pt"
+CHECKPOINT_DIR="/export/livia/home/vision/Ymohammadi/DoG/results_dogfinetune2_EMA_CADS/018-DiT-XL-2/checkpoints/0020000.pt"
 
 # Define CUDA devices here (will apply everywhere)
 CUDA_DEVICES="0,1"
@@ -125,7 +125,7 @@ CUDA_VISIBLE_DEVICES=$CUDA_DEVICES torchrun --nproc_per_node=2 sample_ddp.py \
   --sample-dir "$GENERATED_DIR" \
   --ckpt "$CHECKPOINT_DIR" \
   --per-proc-batch-size 32 \
-  --num-fid-samples 10000 \
+  --num-fid-samples 10 \
   --image-size 256 \
   --num-classes 101 \
   --cfg-scale 1 \
