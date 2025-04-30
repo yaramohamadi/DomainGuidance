@@ -716,7 +716,7 @@ class GaussianDiffusion:
         return {"output": output, "pred_xstart": out["pred_xstart"]}
 
     # DoG
-    def training_losses(self, model, x_start, t, model_kwargs=None, noise=None, pretrained_model=None, w_dog=1.0, ema=None, vae=None):
+    def training_losses(self, model, x_start, t, model_kwargs=None, noise=None, pretrained_model=None, w_dog=1.0, ema=None, vae=None, guidance_cutoff=False):
 
         import os
         from torchvision.utils import save_image
@@ -801,8 +801,15 @@ class GaussianDiffusion:
             if pretrained_model is not None and ema is not None:
                 # Where the DoG Happens 
                 # target = target + (w_dog - 1) * (target - pretrained_output)
-                # TODO Need to check if w_dog should be 1.5 or 0.5
-                target = target + (w_dog - 1) * (ema_output.detach() - pretrained_output.detach())
+
+                # Guidance Cut Off
+                if guidance_cutoff:
+                    t_norm = t.float() / (self.num_timesteps - 1)
+                    mg_high = 0.75
+                    w = torch.where(t_norm < mg_high, w_dog-1, 0.0)  # shape [B]
+                    target = target + w.view(-1, 1, 1, 1) * (ema_output.detach() - pretrained_output.detach())
+                else:
+                    target = target + (w_dog - 1) * (ema_output.detach() - pretrained_output.detach())
 
             if self.counter % 1000 == 0:
                 # Debugging functions

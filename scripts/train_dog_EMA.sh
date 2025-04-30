@@ -76,7 +76,8 @@ cd "$OLDPWD"
   --global-batch-size 32 \
   --vae ema \
   --num-workers 4 \
-  --w-dog 1.5
+  --w-dog 1.5 \
+  --guidance-cutoff 1 \
 
 # ______________________ Removing Dataset ______________________
 # This script removes the dataset files after training.

@@ -315,7 +315,7 @@ def main(args):
 
             # DoG
             # Patch the diffusion training loss to use Domain Guidance
-            loss_dict = diffusion.training_losses(model, x, t, model_kwargs, w_dog=args.w_dog, pretrained_model=diffusion._wrap_model(pretrained_model), ema=diffusion._wrap_model(ema), vae=vae) # VAE For debugging 
+            loss_dict = diffusion.training_losses(model, x, t, model_kwargs, w_dog=args.w_dog, pretrained_model=diffusion._wrap_model(pretrained_model), ema=diffusion._wrap_model(ema), vae=vae, guidance_cutoff=args.guidance_cutoff) # VAE For debugging 
             loss = loss_dict["loss"].mean()
             opt.zero_grad()
             loss.backward()
@@ -385,5 +385,6 @@ if __name__ == "__main__":
     parser.add_argument("--pretrained-ckpt", type=str, default=None,
                         help="Optional path to a DiT checkpoint (default: auto-download a pre-trained DiT-XL/2 model).")
     parser.add_argument("--w-dog",type=float,default=1.0,help="Domain Guidance strength (w_DoG). Only used if --domain-guidance is set.") # DOG
+    parser.add_argument("--guidance-cutoff", type=float, default=0, help="Cutoff for domain guidance. Only used if --domain-guidance is set.") # DOG
     args = parser.parse_args()
     main(args)
