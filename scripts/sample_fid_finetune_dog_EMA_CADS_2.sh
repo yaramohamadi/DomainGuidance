@@ -4,19 +4,13 @@
 ENV_PATH="/projets/Ymohammadi/envs/DiT"
 DATA_DIR_ZIP="/export/datasets/public/Caltech-101/caltech-101.zip"
 TARGET_DIR="/projets/Ymohammadi/DomainGuidance/datasets"
-<<<<<<< HEAD
-GENERATED_DIR="/export/livia/home/vision/Ymohammadi/DoG/results_dogfinetune2_EMA_CADS/018-DiT-XL-2/checkpoints/0024000/samples_CFG1"
-REAL_DATA_DIR="$TARGET_DIR/caltech-101"
-FLAT_REAL_DIR="$TARGET_DIR/caltech-101-flat"
-REAL_STATS_PATH="/export/livia/home/vision/Ymohammadi/DoG/dataset_stats/real_stats_caltech101.npz"
-CHECKPOINT_DIR="/export/livia/home/vision/Ymohammadi/DoG/results_dogfinetune2_EMA_CADS/018-DiT-XL-2/checkpoints/0024000.pt"
-=======
-GENERATED_DIR="/export/livia/home/vision/Ymohammadi/DoG/results_dogfinetune2_EMA_CADS/018-DiT-XL-2/samples/0020000/samples_CFG1"
+
+GENERATED_DIR="/export/livia/home/vision/Ymohammadi/DoG/results_dogfinetune2_EMA_CADS/018-DiT-XL-2/checkpoints/0020000/samples_CFG1"
 REAL_DATA_DIR="$TARGET_DIR/caltech-101"
 FLAT_REAL_DIR="$TARGET_DIR/caltech-101-flat"
 REAL_STATS_PATH="/export/livia/home/vision/Ymohammadi/DoG/dataset_stats/real_stats_caltech101.npz"
 CHECKPOINT_DIR="/export/livia/home/vision/Ymohammadi/DoG/results_dogfinetune2_EMA_CADS/018-DiT-XL-2/checkpoints/0020000.pt"
->>>>>>> 4494e978e8b89ca3f5211de5f247ffa2aed6a06a
+
 
 # Define CUDA devices here (will apply everywhere)
 CUDA_DEVICES="1,3"

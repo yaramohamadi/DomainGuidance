@@ -88,6 +88,25 @@ def load_pretrained_model(model, pretrained_ckpt_path, image_size, tmp_dir="tmp"
 
     return model
 
+# DoG
+def load_checkpoint(checkpoint_path, model, ema, opt, device='cuda'):
+    checkpoint = torch.load(checkpoint_path, map_location=device)
+
+    # Load model weights
+    missing_keys, unexpected_keys = model.module.load_state_dict(checkpoint['model'], strict=False)
+    if missing_keys or unexpected_keys:
+        print(f"Model load warning:\nMissing: {missing_keys}\nUnexpected: {unexpected_keys}")
+
+    # Load EMA weights
+    if ema is not None and 'ema' in checkpoint:
+        ema.load_state_dict(checkpoint['ema'])
+
+    # Load optimizer state
+    if opt is not None and 'opt' in checkpoint:
+        opt.load_state_dict(checkpoint['opt'])
+
+    print(f"Checkpoint loaded from {checkpoint_path}")
+
 
 # DoG
 # Loads a pre-trained DiT model exactly, including y_embedder.
@@ -384,6 +403,7 @@ if __name__ == "__main__":
     parser.add_argument("--ckpt-every", type=int, default=50_000)
     parser.add_argument("--pretrained-ckpt", type=str, default=None,
                         help="Optional path to a DiT checkpoint (default: auto-download a pre-trained DiT-XL/2 model).")
+    parser.add_argument("--resume-ckpt", type=str, default=None)
     parser.add_argument("--w-dog",type=float,default=1.0,help="Domain Guidance strength (w_DoG). Only used if --domain-guidance is set.") # DOG
     args = parser.parse_args()
     main(args)
