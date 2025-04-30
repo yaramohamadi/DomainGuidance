@@ -821,30 +821,40 @@ class GaussianDiffusion:
 
                     # Pretrained model
                     pretrained_y_embedding = pretrained_model.model.y_embedder(th.full_like(model_kwargs["y"], 1000), train=False)
-                    pretrained_y_embedding = add_cads_noise(pretrained_y_embedding, gamma, noise_scale=0.25, rescale=True)
-                    pretrained_kwargs = {
-                        "y": th.full_like(model_kwargs["y"], 1000),
-                        "y_emb": pretrained_y_embedding,
-                    }
-
+                    noise1 = th.randn_like(pretrained_y_embedding) # To apply the same noise to model and EMA # CADS DoG
                     # EMA model
                     ema_y_embedding = ema.model.y_embedder(model_kwargs["y"], train=False)
-                    noise1 = th.randn_like(ema_y_embedding) # To apply the same noise to model and EMA # CADS DoG
-                    ema_y_embedding = add_cads_noise(ema_y_embedding, gamma, noise_scale=0.25, rescale=True, noise=noise1) # To apply the same noise to model and EMA # CADS DoG
+                    noise2 = th.randn_like(ema_y_embedding) # To apply the same noise to model and EMA # CADS DoG
+
+                    pretrained_kwargs = {
+                        "y": th.full_like(model_kwargs["y"], 1000),
+                        "CADS":{
+                            "add_cads_noise": add_cads_noise,
+                            "noise": noise2,
+                            "gamma": gamma,
+                        }
+                    }
+
                     ema_kwargs = {
                         "y": model_kwargs["y"],
-                        "y_emb": ema_y_embedding,
+                        "CADS":{
+                            "add_cads_noise": add_cads_noise,
+                            "noise": noise2,
+                            "gamma": gamma,
+                        }
                     }
 
                     pretrained_output = pretrained_model(x_t, t, **pretrained_kwargs)
                     ema_output = ema(x_t, t, **ema_kwargs)
 
-                    y_embedding = model.module.y_embedder(model_kwargs["y"], train=True)
-                    y_embedding = add_cads_noise(y_embedding, gamma, noise_scale=0.25, rescale=True, noise=noise1) # To apply the same noise to model and EMA # CADS DoG
-
+                    # To apply the same noise to model and EMA # CADS DoG
                     model_kwargs =  {
                         "y": model_kwargs["y"],
-                        "y_emb": y_embedding,
+                        "CADS":{
+                            "add_cads_noise": add_cads_noise,
+                            "noise": noise1,
+                            "gamma": gamma,
+                        }
                     }# CADS DoG (This is the new way, where we use the same noise for both EMA and Model)
                     
             model_output = model(x_t, t, **model_kwargs)

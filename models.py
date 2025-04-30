@@ -230,7 +230,7 @@ class DiT(nn.Module):
         imgs = x.reshape(shape=(x.shape[0], c, h * p, h * p))
         return imgs
 
-    def forward(self, x, t, y, y_emb=None): # DoG CADs (Add optional y_embedding)
+    def forward(self, x, t, y, CADS=None): # DoG CADs (Add optional y_embedding)
         """
         Forward pass of DiT.
         x: (N, C, H, W) tensor of spatial inputs (images or latent representations of images)
@@ -239,9 +239,12 @@ class DiT(nn.Module):
         """
         x = self.x_embedder(x) + self.pos_embed  # (N, T, D), where T = H * W / patch_size ** 2
         t = self.t_embedder(t)                   # (N, D)
-        if y_emb is None: # DoG CADs
-            y_emb = self.y_embedder(y, self.training)    # (N, D)
-        c = t + y_emb                            # (N, D)
+
+        y = self.y_embedder(y, self.training)    # (N, D)
+        if CADS is not None: # Add optional y_embedding
+            y = CADS['add_cads_noise'](y, CADS['gamma'], noise_scale=0.25, rescale=True, noise=CADS['noise'])
+                        
+        c = t + y                            # (N, D)
         for block in self.blocks:
             x = block(x, c)                      # (N, T, D)
         x = self.final_layer(x, c)                # (N, T, patch_size ** 2 * out_channels)
