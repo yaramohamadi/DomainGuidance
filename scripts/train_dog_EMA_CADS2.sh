@@ -65,9 +65,9 @@ cd "$OLDPWD"
 # ______________________ TRAINING ______________________
 # This script trains the DiT model on the Caltech-101 dataset.
 
-  CUDA_VISIBLE_DEVICES=2,3 torchrun --nproc_per_node=2 train_with_guidance_EMA.py \
+  CUDA_VISIBLE_DEVICES=0,3 torchrun --nproc_per_node=2 train_with_guidance_EMA.py \
   --data-path "$TARGET_DIR/caltech-101/" \
-  --results-dir /export/livia/home/vision/Ymohammadi/DoG/results_dogfinetune2_EMA_CADS/ \
+  --results-dir /export/livia/home/vision/Ymohammadi/DoG/results_dogfinetune2_EMA_CADS_samenoise/ \
   --model DiT-XL/2 \
   --image-size 256 \
   --num-classes 102 \

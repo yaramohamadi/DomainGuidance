@@ -813,7 +813,6 @@ class GaussianDiffusion:
             if self.loss_type == LossType.RESCALED_KL:
                 terms["loss"] *= self.num_timesteps
         elif self.loss_type == LossType.MSE or self.loss_type == LossType.RESCALED_MSE:
-            model_output = model(x_t, t, **model_kwargs)
 
             if pretrained_model is not None and ema is not None:
                 with th.no_grad():
@@ -836,6 +835,9 @@ class GaussianDiffusion:
 
                     pretrained_output = pretrained_model(x_t, t, **pretrained_kwargs)
                     ema_output = ema(x_t, t, **ema_kwargs)
+            
+            model_kwargs = ema_kwargs # CADS DoG (This is the new way, where we use the same noise for both EMA and Model)
+            model_output = model(x_t, t, **model_kwargs)
 
 
             if self.model_var_type in [
