@@ -721,6 +721,59 @@ class GaussianDiffusion:
         import os
         from torchvision.utils import save_image
 
+
+        # _________________________ CADS HELPER FUNCTIONS _________________________
+        # DoG CADS
+        def cads_linear_schedule(t, tau1=0.6, tau2=0.9):
+            """
+            CADS linear schedule function supporting tensor inputs.
+
+            Args:
+                t: torch.Tensor of shape [batch_size] or [batch_size, 1, 1, 1]  (values between 0 and 1)
+                tau1: float
+                tau2: float
+
+            Returns:
+                gamma: torch.Tensor of same shape as t
+            """
+            ones = th.ones_like(t)
+            zeros = th.zeros_like(t)
+
+            gamma = th.where(
+                t <= tau1,
+                ones,
+                th.where(
+                    t >= tau2,
+                    zeros,
+                    (tau2 - t) / (tau2 - tau1)
+                )
+            )
+            return gamma.view(-1, 1)
+
+        def add_cads_noise(y, gamma, noise_scale=0.25, psi=1, rescale=False):
+                        """ CADS adding noise to the condition
+
+                        Arguments:
+                        y: Input conditioning
+                        gamma: Noise level w.r.t t
+                        noise_scale (float): Noise scale
+                        psi (float): Rescaling factor
+                        rescale (bool): Rescale the condition
+                        """
+                        y_mean, y_std = th.mean(y), th.std(y)
+                        y = th.sqrt(gamma) * y + noise_scale * th.sqrt(1 - gamma) * th.randn_like(y)
+                        if rescale:
+                            y_scaled = (y - th.mean(y)) / th.std(y) * y_std + y_mean
+                            if not th.isnan(y_scaled).any():
+                                y = psi * y_scaled + (1 - psi) * y
+                            else:
+                                print("Warning: NaN encountered in rescaling")
+                        return y
+
+        # __________________________________________________________________________
+
+
+
         """
         Compute training losses for a single timestep.
         :param model: the model to evaluate loss on.
@@ -740,6 +793,12 @@ class GaussianDiffusion:
             noise = th.randn_like(x_start)
         x_t = self.q_sample(x_start, t, noise=noise)
 
+        # CADS DoG
+        # Normalize t to [0,1]
+        t_normalized = t.float() / self.num_timesteps  # assuming num_timesteps = 1000 for DDPMs
+        # Step 1: Get gamma(t)
+        gamma = cads_linear_schedule(t_normalized, tau1=0.6, tau2=0.9)
+
         terms = {}
 
         if self.loss_type == LossType.KL or self.loss_type == LossType.RESCALED_KL:
@@ -758,10 +817,25 @@ class GaussianDiffusion:
 
             if pretrained_model is not None and ema is not None:
                 with th.no_grad():
-                    y = model_kwargs["y"]
-                    pretrained_kwargs = {"y": th.full_like(y, 1000)}
+
+                    # Pretrained model
+                    pretrained_y_embedding = pretrained_model.model.y_embedder(th.full_like(model_kwargs["y"], 1000), train=False)
+                    pretrained_y_embedding = add_cads_noise(pretrained_y_embedding, gamma, noise_scale=0.25, rescale=True)
+                    pretrained_kwargs = {
+                        "y": th.full_like(model_kwargs["y"], 1000),
+                        "y_emb": pretrained_y_embedding,
+                    }
+
+                    # EMA model
+                    ema_y_embedding = ema.model.y_embedder(model_kwargs["y"], train=False)
+                    ema_y_embedding = add_cads_noise(ema_y_embedding, gamma, noise_scale=0.25, rescale=True)
+                    ema_kwargs = {
+                        "y": model_kwargs["y"],
+                        "y_emb": ema_y_embedding,
+                    }
+
                     pretrained_output = pretrained_model(x_t, t, **pretrained_kwargs)
-                    ema_output = ema(x_t, t, **model_kwargs)
+                    ema_output = ema(x_t, t, **ema_kwargs)
 
 
             if self.model_var_type in [
