@@ -66,13 +66,13 @@ cd "$OLDPWD"
 
   CUDA_VISIBLE_DEVICES=2,3 torchrun --nproc_per_node=2 train_with_guidance_EMA.py \
   --data-path "$TARGET_DIR/caltech-101/" \
-  --results-dir /export/livia/home/vision/Ymohammadi/DoG/results_dogfinetune1_5_EMA/ \
+  --results-dir /export/livia/home/vision/Ymohammadi/DoG/results_dogfinetune1_5_EMA_CUTOFF/ \
   --model DiT-XL/2 \
   --image-size 256 \
   --num-classes 102 \
   --total-steps 24000 \
   --log-every 100 \
-  --ckpt-every 4000 \
+  --ckpt-every 24000 \
   --global-batch-size 32 \
   --vae ema \
   --num-workers 4 \
