@@ -839,7 +839,7 @@ class GaussianDiffusion:
                         "y": model_kwargs["y"],
                         "CADS":{
                             "add_cads_noise": add_cads_noise,
-                            "noise": noise2,
+                            "noise": noise1,
                             "gamma": gamma,
                         }
                     }
