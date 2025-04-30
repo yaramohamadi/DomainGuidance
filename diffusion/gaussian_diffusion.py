@@ -806,7 +806,7 @@ class GaussianDiffusion:
                 if guidance_cutoff:
                     t_norm = t.float() / (self.num_timesteps - 1)
                     mg_high = 0.75
-                    w = torch.where(t_norm < mg_high, w_dog-1, 0.0)  # shape [B]
+                    w = th.where(t_norm < mg_high, w_dog-1, 0.0)  # shape [B]
                     target = target + w.view(-1, 1, 1, 1) * (ema_output.detach() - pretrained_output.detach())
                 else:
                     target = target + (w_dog - 1) * (ema_output.detach() - pretrained_output.detach())
