@@ -159,8 +159,6 @@ run_sampling() {
     echo ">>> Sampling completed!"
 }
 
-
-
 calculate_fid() {
     echo ">>> Calculating FID score..."
     python -m pytorch_fid "$REAL_STATS_PATH" "$GENERATED_DIR" --device "$FID_DEVICE"

@@ -23,7 +23,7 @@ from PIL import Image
 import numpy as np
 import math
 import argparse
-
+from pytorch_fid import calculate_fid_given_paths
 
 def create_npz_from_sample_folder(sample_dir, num=50_000):
     """
@@ -150,6 +150,11 @@ def main(args):
     dist.barrier()
     dist.destroy_process_group()
 
+    if rank == 0 and args.calc_fid and args.real_stats:
+        print("Calculating FID...")
+        FID = calculate_fid_given_paths([args.real_stats, sample_folder_dir], device='cuda:0')
+        print(f">>> Final FID score: {FID:.4f}")
+        
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -167,5 +172,12 @@ if __name__ == "__main__":
                         help="By default, use TF32 matmuls. This massively accelerates sampling on Ampere GPUs.")
     parser.add_argument("--ckpt", type=str, default=None,
                         help="Optional path to a DiT checkpoint (default: auto-download a pre-trained DiT-XL/2 model).")
+    parser.add_argument("--calc-fid", action=argparse.BooleanOptionalAction, default=False)
+    parser.add_argument("--real-stats", type=str, default=None,
+                    help="Path to .npz file containing real FID stats (for evaluating generated samples).")
+                
     args = parser.parse_args()
     main(args)
+
+
+
