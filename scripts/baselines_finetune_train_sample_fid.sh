@@ -8,33 +8,33 @@ CUDA_DEVICES="0,1"
 FID_DEVICE="cuda:0"
 NPROC_PER_NODE=2
 
-EXPERIMENT_NAME="results_finetune/004-DiT-XL-2"
-DATASET="caltech-101"  # Options: caltech, birds, etc.
+EXPERIMENT_NAME="baselines_finetune"
+DATASET="cub-200-2011_processed"  # Options: caltech, birds, etc.
 
 CODE_PRE_DIR="/projets/Ymohammadi/DomainGuidance"
 RESULTS_PRE_DIR="/export/livia/home/vision/Ymohammadi/DoG"
 DATA_TARGET_DIR="/projets/Ymohammadi/DomainGuidance/datasets"
 ENV_PATH="/projets/Ymohammadi/envs/DiT"
 
-GENERATED_DIR_CG1="$RESULTS_PRE_DIR/$EXPERIMENT_NAME/samples/0024000/samples_CFG1/"
-GENERATED_DIR_CG1_5="$RESULTS_PRE_DIR/$EXPERIMENT_NAME/samples/0024000/samples_CFG1_5"
-GENERATED_DIR_DoG1_5="$RESULTS_PRE_DIR/$EXPERIMENT_NAME/samples/0024000/samples_DOG1_5"
-RESULTS_FILE_CG1="$RESULTS_PRE_DIR/$EXPERIMENT_NAME/results/CFG1_results"
-RESULTS_FILE_CG1_5="$RESULTS_PRE_DIR/$EXPERIMENT_NAME/results/CFG1_5_results"
-RESULTS_FILE_DoG1_5="$RESULTS_PRE_DIR/$EXPERIMENT_NAME/results/DoG1_5/results"
+GENERATED_DIR_CG1="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/samples/0024000/samples_CFG1/"
+GENERATED_DIR_CG1_5="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/samples/0024000/samples_CFG1_5"
+GENERATED_DIR_DoG1_5="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/samples/0024000/samples_DOG1_5"
+RESULTS_FILE_CG1="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/results/CFG1_results"
+RESULTS_FILE_CG1_5="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/results/CFG1_5_results"
+RESULTS_FILE_DoG1_5="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/results/DoG1_5/results"
 
-RESULTS_DIR="$RESULTS_PRE_DIR/$EXPERIMENT_NAME/"
-CHECKPOINT_DIR="$RESULTS_PRE_DIR/$EXPERIMENT_NAME/checkpoints/0024000.pt"
-LOG_FILE="$RESULTS_PRE_DIR/$EXPERIMENT_NAME/training_log.txt"
+RESULTS_DIR="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/"
+CHECKPOINT_DIR="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/checkpoints/0024000.pt"
+LOG_FILE="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/training_log.txt"
 
 case "$DATASET" in
   caltech-101)
-    DATA_DIR_ZIP="/export/datasets/public/Caltech-101/$DATASET.zip"
+    DATA_DIR_ZIP="/export/datasets/public/diffusion_datasets/caltech-101_processed/$DATASET.zip"
     REAL_DATA_DIR="$DATA_TARGET_DIR/$DATASET"
     NUM_CLASSES=101
     ;;
-  birds)
-    DATA_DIR_ZIP="/export/datasets/public/CUB-200/$DATASET.zip"
+  cub-200-2011_processed)
+    DATA_DIR_ZIP="/export/datasets/public/diffusion_datasets/cub-200-2011_processed/$DATASET.zip"
     REAL_DATA_DIR="$DATA_TARGET_DIR/$DATASET"
     NUM_CLASSES=200
     ;;
@@ -48,7 +48,7 @@ esac
 IMAGE_SIZE=256
 TOTAL_STEPS=24000
 MODEL=DiT-XL/2
-LOG_EVERY=100
+LOG_EVERY=1000
 CKPT_EVERY=24000
 BATCH_SIZE=32
 VAE=ema
@@ -87,6 +87,27 @@ create_environment() {
     pushd dgm-eval
     pip install -e .
     popd
+}
+prepare_dataset() {
+    mkdir -p "$DATA_TARGET_DIR"
+    cp "$DATA_DIR_ZIP" "$DATA_TARGET_DIR/"
+    unzip -o "$DATA_DIR_ZIP" -d "$DATA_TARGET_DIR"
+    echo ">>> Dataset prepared at: $REAL_DATA_DIR"
+}
+train_model() {
+    log_and_run "Training model..." \
+    env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES torchrun --nproc_per_node=$NPROC_PER_NODE train.py \
+        --data-path "$REAL_DATA_DIR" \
+        --results-dir $RESULTS_DIR \
+        --model $MODEL \
+        --image-size $IMAGE_SIZE \
+        --num-classes $NUM_CLASSES \
+        --total-steps $TOTAL_STEPS \
+        --log-every $LOG_EVERY \
+        --ckpt-every $CKPT_EVERY \
+        --global-batch-size $BATCH_SIZE \
+        --vae $VAE \
+        --num-workers $NUM_WORKERS 
 }
 sample_CG1() {
     log_and_run "Sampling images for CG1..." \
@@ -168,18 +189,18 @@ echo ">>> Logging to: $LOG_FILE"
 rm -f "$LOG_FILE"
 
 create_environment
-# prepare_dataset
-# train_model
+prepare_dataset
+train_model
 
-# sample_CG1
-#fid_CG1
+sample_CG1
+fid_CG1
 
-# sample_CG1_5
-# fid_CG1_5
+sample_CG1_5
+fid_CG1_5
 
-# sample_DoG1_5
+sample_DoG1_5
 fid_DoG1_5
 
-# cleanup_dataset
+cleanup_dataset
 
 echo ">>> All tasks completed successfully!"
