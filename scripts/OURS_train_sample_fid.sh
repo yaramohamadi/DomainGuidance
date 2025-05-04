@@ -8,8 +8,8 @@ CUDA_DEVICES="0,2"
 FID_DEVICE="cuda:0"
 NPROC_PER_NODE=2
 
-EXPERIMENT_NAME="dogfinetune1_5_EMA_CUTOFF_tmp"
-DATASET="caltech-101"  # Options: caltech, birds, etc.
+EXPERIMENT_NAME="dogfinetune1_5_EMA_CUTOFF"
+DATASET="cub-200-2011_processed"  # Options: caltech, birds, etc.
 
 NSAMPLE=10
 W_TRAIN_DOG=1.5
@@ -21,19 +21,19 @@ DATA_TARGET_DIR="/projets/Ymohammadi/DomainGuidance/datasets"
 ENV_PATH="/projets/Ymohammadi/envs/DiT"
 
 RESULTS_DIR="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/" # FOR TRAINING
-GENERATED_DIR="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/samples/0000001" # FOR SAMPLING
-CHECKPOINT_DIR="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/checkpoints/0000001.pt" # FOR TESTING
+GENERATED_DIR="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/samples/0024000" # FOR SAMPLING
+CHECKPOINT_DIR="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/checkpoints/0024000.pt" # FOR TESTING
 LOG_FILE="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/training_log.txt"
 RESULTS_FILE="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/results"
 
 case "$DATASET" in
   caltech-101)
-    DATA_DIR_ZIP="/export/datasets/public/Caltech-101/$DATASET.zip"
+    DATA_DIR_ZIP="/export/datasets/public/diffusion_datasets/caltech-101_processed/$DATASET.zip"
     REAL_DATA_DIR="$DATA_TARGET_DIR/$DATASET"
     NUM_CLASSES=101
     ;;
-  birds)
-    DATA_DIR_ZIP="/export/datasets/public/CUB-200/$DATASET.zip"
+  cub-200-2011_processed)
+    DATA_DIR_ZIP="/export/datasets/public/diffusion_datasets/cub-200-2011_processed/$DATASET.zip"
     REAL_DATA_DIR="$DATA_TARGET_DIR/$DATASET"
     NUM_CLASSES=200
     ;;
@@ -45,10 +45,10 @@ esac
 
 # CONSTANTS
 IMAGE_SIZE=256
-TOTAL_STEPS=1
+TOTAL_STEPS=24000
 MODEL=DiT-XL/2
-LOG_EVERY=100
-CKPT_EVERY=1
+LOG_EVERY=1000
+CKPT_EVERY=24000
 BATCH_SIZE=32
 VAE=ema
 NUM_WORKERS=4
@@ -161,9 +161,9 @@ rm -f "$LOG_FILE"
 
 create_environment
 prepare_dataset
-# train_model
+train_model
 run_sampling
 calculate_fid
-# cleanup_dataset
+cleanup_dataset
 
 echo ">>> All tasks completed successfully!"
