@@ -31,13 +31,167 @@ from download import find_model
 
 from models import DiT_models
 from diffusion import create_diffusion
+from diffusion import create_diffusion
+from diffusion.gaussian_diffusion import LossType, ModelMeanType, ModelVarType, mean_flat
+from torchvision.utils import save_image
 
 from diffusers.models import AutoencoderKL
+
+from types import MethodType
+from torchvision.utils import save_image
+
+##################################################################################
+#                              Training loss                                     #
+##################################################################################
+
+# MG
+def mg_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, w_cg=1.0, ema=None, vae=None, guidance_cutoff=False, counter=0):
+
+        """
+        Compute training losses for a single timestep.
+        :param model: the model to evaluate loss on.
+        :param x_start: the [N x C x ...] tensor of inputs.
+        :param t: a batch of timestep indices.
+        :param model_kwargs: extra keyword arguments to pass to the model.
+        :param noise: specific Gaussian noise to try to remove (optional).
+        :param pretrained_model: if provided, apply Domain Guidance correction.
+        :param w_CG: Domain Guidance strength.
+        :param save_dir: if provided, save intermediate image grids for inspection.
+        :param counter: global training step counter (used for saving frequency).
+        :return: dictionary of loss terms.
+        """
+        if model_kwargs is None:
+            model_kwargs = {}
+        if noise is None:
+            noise = torch.randn_like(x_start)
+        x_t = self.q_sample(x_start, t, noise=noise)
+
+        terms = {}
+
+        if self.loss_type == LossType.KL or self.loss_type == LossType.RESCALED_KL:
+            terms["loss"] = self._vb_terms_bpd(
+                model=model,
+                x_start=x_start,
+                x_t=x_t,
+                t=t,
+                clip_denoised=False,
+                model_kwargs=model_kwargs,
+            )["output"]
+            if self.loss_type == LossType.RESCALED_KL:
+                terms["loss"] *= self.num_timesteps
+        elif self.loss_type == LossType.MSE or self.loss_type == LossType.RESCALED_MSE:
+            model_output = model(x_t, t, **model_kwargs)
+
+            if ema is not None:
+                with torch.no_grad():
+                    y = model_kwargs["y"]
+                    uncond_kwargs = {"y": torch.full_like(y, args.num_classes)}
+                    ema_uncond_output = ema(x_t, t, **uncond_kwargs)
+                    ema_cond_output = ema(x_t, t, **model_kwargs)
+
+
+            if self.model_var_type in [
+                ModelVarType.LEARNED,
+                ModelVarType.LEARNED_RANGE,
+            ]:
+                B, C = x_t.shape[:2]
+                assert model_output.shape == (B, C * 2, *x_t.shape[2:])
+                model_output, model_var_values = torch.split(model_output, C, dim=1)
+                if ema is not None:
+                    ema_uncond_output, _ = torch.split(ema_uncond_output, C, dim=1)
+                    ema_cond_output, _ = torch.split(ema_cond_output, C, dim=1)
+
+                # Learn the variance using the variational bound, but don't let
+                # it affect our mean prediction.
+                frozen_out = torch.cat([model_output.detach(), model_var_values], dim=1)
+                terms["vb"] = self._vb_terms_bpd(
+                    model=lambda *args, r=frozen_out: r,
+                    x_start=x_start,
+                    x_t=x_t,
+                    t=t,
+                    clip_denoised=False,
+                )["output"]
+                if self.loss_type == LossType.RESCALED_MSE:
+                    # Divide by 1000 for equivalence with initial implementation.
+                    # Without a factor of 1/1000, the VB term hurts the MSE term.
+                    terms["vb"] *= self.num_timesteps / 1000.0
+
+            target = {
+                ModelMeanType.PREVIOUS_X: self.q_posterior_mean_variance(
+                    x_start=x_start, x_t=x_t, t=t
+                )[0],
+                ModelMeanType.START_X: x_start,
+                ModelMeanType.EPSILON: noise,
+            }[self.model_mean_type]
+
+            if ema is not None:
+
+                # Guidance Cut Off
+                if guidance_cutoff:
+                    t_norm = t.float() / (self.num_timesteps - 1)
+                    mg_high = 0.75
+                    w = torch.where(t_norm < mg_high, w_cg-1, 0.0)  # shape [B]
+                    target = target + w.view(-1, 1, 1, 1) * (ema_cond_output.detach() - ema_uncond_output.detach())
+                else:
+                    target = target + (w_cg - 1) * (ema_cond_output.detach() - ema_uncond_output.detach())
+
+            if counter % 1000 == 0:
+                # Debugging functions
+                def norm_to_01(x):
+                    """Normalize to [0,1] for visualization."""
+                    return (x.clamp(-1,1) + 1) / 2
+
+                # -----------------------------------------
+                # Predict x0 from model and pretrained_model
+                # -----------------------------------------
+                alpha_bar = torch.from_numpy(self.alphas_cumprod).to(device=x_start.device, dtype=x_start.dtype)
+                sqrt_alpha_bar_t = torch.sqrt(alpha_bar[t]).view(-1, 1, 1, 1)
+                sqrt_one_minus_alpha_bar_t = torch.sqrt(1 - alpha_bar[t]).view(-1, 1, 1, 1)
+
+                # Reconstruct x0
+                x0_model = (x_t - sqrt_one_minus_alpha_bar_t * model_output) / sqrt_alpha_bar_t
+                x0_uncond = (x_t - sqrt_one_minus_alpha_bar_t * ema_uncond_output) / sqrt_alpha_bar_t
+
+                # Calculate difference for visualization
+                x0_diff = (x0_model - x0_uncond).abs()
+
+                # -----------------------------------------
+                # Save all images
+                # -----------------------------------------
+                save_dir = f"CG_debug/{counter:06d}"
+                os.makedirs(save_dir, exist_ok=True)
+
+                with torch.no_grad():
+                    # decode from latents to images
+                    x_start_decoded = vae.decode(x_start / 0.18215).sample
+                    x0_model_decoded = vae.decode(x0_model / 0.18215).sample
+                    x0_uncond_decoded = vae.decode(x0_uncond / 0.18215).sample
+                    x0_diff_decoded = (x0_model_decoded - x0_uncond_decoded).abs()
+
+                # Save normalized images
+                save_image(norm_to_01(x_start_decoded),        f"{save_dir}/x_start.png",        nrow=8)
+                save_image(norm_to_01(x0_model_decoded),        f"{save_dir}/x0_model.png",       nrow=8)
+                save_image(norm_to_01(x0_uncond_decoded),   f"{save_dir}/x0_uncond.png",  nrow=8)
+                save_image(norm_to_01(x0_diff_decoded),         f"{save_dir}/x0_diff.png",        nrow=8)
+
+                print(f"[DEBUG] Saved CG debugging images to {save_dir}")
+            
+            counter += 1
+            
+            assert model_output.shape == target.shape == x_start.shape
+            terms["mse"] = mean_flat((target - model_output) ** 2)
+            if "vb" in terms:
+                terms["loss"] = terms["mse"] + terms["vb"]
+            else:
+                terms["loss"] = terms["mse"]
+        else:
+            raise NotImplementedError(self.loss_type)
+
+        return terms
 
 #################################################################################
 #                             Training Helper Functions                         #
 #################################################################################
-
 
 def load_pretrained_model(model, pretrained_ckpt_path, image_size, tmp_dir="tmp"):
     """
@@ -84,7 +238,6 @@ def load_pretrained_model(model, pretrained_ckpt_path, image_size, tmp_dir="tmp"
         print(f"[INFO] Loaded pre-trained weights from {local_ckpt_path}")
 
     return model
-
 
 @torch.no_grad()
 def update_ema(ema_model, model, decay=0.9999):
@@ -188,9 +341,9 @@ def main(args):
     latent_size = args.image_size // 8
     model = DiT_models[args.model](
         input_size=latent_size,
-        num_classes=args.num_classes
+        num_classes=args.num_classes,
+        class_dropout_prob=0.1, # MG
     )
-
     # Load pre-trained weights if provided:
     model = load_pretrained_model(model, args.pretrained_ckpt, args.image_size)
 
@@ -199,8 +352,12 @@ def main(args):
     requires_grad(ema, False)
     model = DDP(model.to(device), device_ids=[rank])
     diffusion = create_diffusion(timestep_respacing="")  # default: 1000 steps, linear noise schedule
+    # Monkey-patch the loss function
+    diffusion.training_losses = MethodType(mg_training_losses, diffusion) # CG
     vae = AutoencoderKL.from_pretrained(f"stabilityai/sd-vae-ft-{args.vae}").to(device)
     logger.info(f"DiT Parameters: {sum(p.numel() for p in model.parameters()):,}")
+
+    logger.info("[MG CG] Patched diffusion training loss with Classifier Guidance (w_CG={})".format(args.w_cg))
 
     # Setup optimizer (we used default Adam betas=(0.9, 0.999) and a constant learning rate of 1e-4 in our paper):
     opt = torch.optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0)
@@ -213,6 +370,7 @@ def main(args):
         transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True)
     ])
     dataset = ImageFolder(args.data_path, transform=transform)
+
     sampler = DistributedSampler(
         dataset,
         num_replicas=dist.get_world_size(),
@@ -267,7 +425,21 @@ def main(args):
                 x = vae.encode(x).latent_dist.sample().mul_(0.18215)
             t = torch.randint(0, diffusion.num_timesteps, (x.shape[0],), device=device)
             model_kwargs = dict(y=y)
-            loss_dict = diffusion.training_losses(model, x, t, model_kwargs)
+
+            # MG
+            # Patch the diffusion training loss to use Domain Guidance
+            loss_dict = diffusion.training_losses(
+                model,
+                x,
+                t,
+                model_kwargs,
+                ema=diffusion._wrap_model(ema),
+                vae=vae, # For debugging 
+                w_cg=args.w_cg,
+                guidance_cutoff=args.guidance_cutoff,
+                counter=train_steps,
+            )
+
             loss = loss_dict["loss"].mean()
             opt.zero_grad()
             loss.backward()
@@ -312,6 +484,7 @@ def main(args):
                 break
         if train_steps > args.total_steps:
                 break
+
     model.eval()  # important! This disables randomized embedding dropout
     # do any sampling/FID calculation/etc. with ema (or model) in eval mode ...
 
@@ -337,5 +510,7 @@ if __name__ == "__main__":
     parser.add_argument("--ckpt-every", type=int, default=50_000)
     parser.add_argument("--pretrained-ckpt", type=str, default=None,
                         help="Optional path to a DiT checkpoint (default: auto-download a pre-trained DiT-XL/2 model).")
+    parser.add_argument("--w-cg",type=float,default=1.0,help="Classifier Guidance strength (w_cg).") # MG
+    parser.add_argument("--guidance-cutoff", type=float, default=0, help="Cutoff for classifier-free guidance. ") # MG
     args = parser.parse_args()
     main(args)

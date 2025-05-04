@@ -23,4 +23,12 @@ DoG_debug/
 DoG_debug/*
 DoG_debug/**
 
+CG_debug
+CG_debug/*
+CG_debug/**
+
 local_pretrained_ckpt.pt
+
+dgm-eval/
+dgm-eval/*
+dgm-eval/**
