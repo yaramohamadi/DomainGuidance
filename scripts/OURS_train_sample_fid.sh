@@ -11,7 +11,7 @@ NPROC_PER_NODE=2
 EXPERIMENT_NAME="dogfinetune1_5_EMA_CUTOFF"
 DATASET="cub-200-2011_processed"  # Options: caltech, birds, etc.
 
-NSAMPLE=10
+NSAMPLE=10000
 W_TRAIN_DOG=1.5
 USE_GUIDANCE_CUTOFF=1
 
@@ -160,8 +160,8 @@ echo ">>> Logging to: $LOG_FILE"
 rm -f "$LOG_FILE"
 
 create_environment
-prepare_dataset
-train_model
+#prepare_dataset
+#train_model
 run_sampling
 calculate_fid
 cleanup_dataset

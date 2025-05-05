@@ -28,12 +28,12 @@ RESULTS_FILE="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/results"
 
 case "$DATASET" in
   caltech-101)
-    DATA_DIR_ZIP="/export/datasets/public/Caltech-101/$DATASET.zip"
+    DATA_DIR_ZIP="/export/datasets/public/diffusion_datasets/caltech-101_processed/$DATASET.zip"
     REAL_DATA_DIR="$DATA_TARGET_DIR/$DATASET"
     NUM_CLASSES=101
     ;;
-  birds)
-    DATA_DIR_ZIP="/export/datasets/public/CUB-200/$DATASET.zip"
+  cub-200-2011_processed)
+    DATA_DIR_ZIP="/export/datasets/public/diffusion_datasets/cub-200-2011_processed/$DATASET.zip"
     REAL_DATA_DIR="$DATA_TARGET_DIR/$DATASET"
     NUM_CLASSES=200
     ;;
