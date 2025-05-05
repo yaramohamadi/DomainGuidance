@@ -4,7 +4,7 @@
 # ====================== CONFIGURATION ======================
 
 # Define CUDA devices here
-CUDA_DEVICES="0,1"
+CUDA_DEVICES="0,3"
 FID_DEVICE="cuda:0"
 NPROC_PER_NODE=2
 
