@@ -4,7 +4,7 @@
 # ====================== CONFIGURATION ======================
 
 # Define CUDA devices here
-CUDA_DEVICES="0,1"
+CUDA_DEVICES="0,3"
 FID_DEVICE="cuda:0"
 NPROC_PER_NODE=2
 
@@ -37,7 +37,7 @@ case "$DATASET" in
     REAL_DATA_DIR="$DATA_TARGET_DIR/$DATASET"
     NUM_CLASSES=200
     ;;
-  stanford-cars)
+  stanford-cars_processed)
     DATA_DIR_ZIP="/export/datasets/public/diffusion_datasets/stanford-cars_processed/$DATASET.zip"
     REAL_DATA_DIR="$DATA_TARGET_DIR/$DATASET"
     NUM_CLASSES=196
@@ -165,8 +165,8 @@ echo ">>> Logging to: $LOG_FILE"
 rm -f "$LOG_FILE"
 
 create_environment
-#prepare_dataset
-#train_model
+prepare_dataset
+train_model
 run_sampling
 calculate_fid
 cleanup_dataset
