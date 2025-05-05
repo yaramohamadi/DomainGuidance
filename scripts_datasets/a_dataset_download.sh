@@ -61,4 +61,7 @@
 
 # Run the cars_preprocess.py script to get the train split annotation folders
 # zip 
-zip -r /export/datasets/public/diffusion_datasets/stanford-cars/stanford-cars_processed.zip /export/datasets/public/diffusion_datasets/stanford-cars/stanford-cars_processed
+
+pushd /export/datasets/public/diffusion_datasets/stanford-cars/ > /dev/null
+zip -r stanford-cars_processed.zip stanford-cars_processed/*
+popd > /dev/null
