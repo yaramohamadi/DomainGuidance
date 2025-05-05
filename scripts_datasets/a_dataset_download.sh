@@ -43,9 +43,22 @@
 
 
 ############################### CUB-200-2011 DATASET #############################
-TARGET_DIR="/export/datasets/public/diffusion_datasets/cub-200-2011"
-mkdir -p "$TARGET_DIR"
+# TARGET_DIR="/export/datasets/public/diffusion_datasets/cub-200-2011"
+# mkdir -p "$TARGET_DIR"
+# 
+# curl -L -o "$TARGET_DIR/cub-200-2011.zip" \
+#   https://www.kaggle.com/api/v1/datasets/download/wenewone/cub2002011
+# unzip -o "$TARGET_DIR/cub-200-2011.zip" -d "$TARGET_DIR"
 
-curl -L -o "$TARGET_DIR/cub-200-2011.zip" \
-  https://www.kaggle.com/api/v1/datasets/download/wenewone/cub2002011
-unzip -o "$TARGET_DIR/cub-200-2011.zip" -d "$TARGET_DIR"
+############################### Stanford Cars DATASET #############################
+
+# TARGET_DIR="/export/datasets/public/diffusion_datasets/stanford-cars"
+# mkdir -p "$TARGET_DIR"
+# 
+# curl -L -o "$TARGET_DIR/stanford-cars.zip" \
+#   https://www.kaggle.com/api/v1/datasets/download/eduardo4jesus/stanford-cars-dataset
+# unzip -o "$TARGET_DIR/stanford-cars.zip" -d "$TARGET_DIR"
+
+# Run the cars_preprocess.py script to get the train split annotation folders
+# zip 
+zip -r /export/datasets/public/diffusion_datasets/stanford-cars/stanford-cars_processed.zip /export/datasets/public/diffusion_datasets/stanford-cars/stanford-cars_processed
