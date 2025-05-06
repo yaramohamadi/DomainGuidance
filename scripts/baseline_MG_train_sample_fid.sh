@@ -16,7 +16,7 @@ W_TRAIN_CG=1.5
 USE_GUIDANCE_CUTOFF=1
 
 CODE_PRE_DIR="/projets/Ymohammadi/DomainGuidance"
-RESULTS_PRE_DIR="/export/livia/home/vision/Ymohammadi/DoG"
+RESULTS_PRE_DIR="/projets/Ymohammadi/DomainGuidance/datasets/tmp_weights"
 DATA_TARGET_DIR="/projets/Ymohammadi/DomainGuidance/datasets"
 ENV_PATH="/projets/Ymohammadi/envs/DiT"
 
