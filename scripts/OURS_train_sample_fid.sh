@@ -42,6 +42,10 @@ case "$DATASET" in
     REAL_DATA_DIR="$DATA_TARGET_DIR/$DATASET"
     NUM_CLASSES=196
     ;;
+  food-101_processed)
+    DATA_DIR_ZIP="/export/datasets/public/diffusion_datasets/food-101_processed/$DATASET.zip"
+    REAL_DATA_DIR="$DATA_TARGET_DIR/$DATASET"
+    NUM_CLASSES=101
   *)
     echo "Unknown dataset: $DATASET"
     exit 1

@@ -3,7 +3,7 @@
 
 ############################# FOOD-101 DATASET #############################
 # Define target directory
-# TARGET_DIR="/export/datasets/public/diffusion_datasets/food_101"
+TARGET_DIR="/export/datasets/public/diffusion_datasets/food_101"
 # 
 # # Create the directory if it does not exist
 # mkdir -p "$TARGET_DIR"
@@ -14,6 +14,7 @@
 # 
 # # Unzip the dataset in the same directory
 # unzip -o "$TARGET_DIR/food-101.zip" -d "$TARGET_DIR"
+zip -r "$TARGET_DIR/food-101_processed.zip" "$TARGET_DIR/food-101_processed"
 
 
 ############################### DANISH FUNGI DATASET #############################
@@ -53,12 +54,17 @@
 ############################### Stanford Cars DATASET #############################
 
 # TARGET_DIR="/export/datasets/public/diffusion_datasets/stanford-cars"
-# mkdir -p "$TARGET_DIR"
+#mkdir -p "$TARGET_DIR"
 # 
-# curl -L -o "$TARGET_DIR/stanford-cars.zip" \
-#   https://www.kaggle.com/api/v1/datasets/download/eduardo4jesus/stanford-cars-dataset
-# unzip -o "$TARGET_DIR/stanford-cars.zip" -d "$TARGET_DIR"
+#curl -L -o "$TARGET_DIR/stanford-cars.zip" \
+#  https://www.kaggle.com/api/v1/datasets/download/eduardo4jesus/stanford-cars-dataset
+#unzip -o "$TARGET_DIR/stanford-cars.zip" -d "$TARGET_DIR"
 
+# Get test annotation files
+# curl -L -o $TARGET_DIR/stanford-cars_test_anno.zip\
+#  https://www.kaggle.com/api/v1/datasets/download/abdelrahmant11/standford-cars-dataset-meta
+# unzip -o "$TARGET_DIR/stanford-cars_test_anno.zip" -d "$TARGET_DIR"
 # Run the cars_preprocess.py script to get the train split annotation folders
 # zip 
-zip -r /export/datasets/public/diffusion_datasets/stanford-cars/stanford-cars_processed.zip /export/datasets/public/diffusion_datasets/stanford-cars/stanford-cars_processed
+
+# zip -r /export/datasets/public/diffusion_datasets/stanford-cars/stanford-cars_processed.zip /export/datasets/public/diffusion_datasets/stanford-cars/stanford-cars_processed
