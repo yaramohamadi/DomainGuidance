@@ -68,3 +68,6 @@ zip -r "$TARGET_DIR/food-101_processed.zip" "$TARGET_DIR/food-101_processed"
 # zip 
 
 # zip -r /export/datasets/public/diffusion_datasets/stanford-cars/stanford-cars_processed.zip /export/datasets/public/diffusion_datasets/stanford-cars/stanford-cars_processed
+# pushd /export/datasets/public/diffusion_datasets/stanford-cars/ > /dev/null
+# zip -r stanford-cars_processed.zip stanford-cars_processed/*
+# popd > /dev/null
