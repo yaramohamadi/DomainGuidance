@@ -62,6 +62,11 @@
 # Run the cars_preprocess.py script to get the train split annotation folders
 # zip 
 
+# Get metadata for test dataaset too! 
+curl -L -o ~/Downloads/standford-cars-dataset-meta.zip\
+  https://www.kaggle.com/api/v1/datasets/download/abdelrahmant11/standford-cars-dataset-meta
+
+
 pushd /export/datasets/public/diffusion_datasets/stanford-cars/ > /dev/null
 zip -r stanford-cars_processed.zip stanford-cars_processed/*
 popd > /dev/null
