@@ -9,38 +9,44 @@ FID_DEVICE="cuda:0"
 NPROC_PER_NODE=2
 
 EXPERIMENT_NAME="dogfinetune1_5_EMA_CUTOFF"
-DATASET="stanford-cars_processed"  # Options: caltech, birds, etc.
+DATASET="food-101_processed"  # Options: caltech, birds, etc.
 
 NSAMPLE=10000
 W_TRAIN_DOG=1.5
 USE_GUIDANCE_CUTOFF=1
 
 CODE_PRE_DIR="/projets/Ymohammadi/DomainGuidance"
-RESULTS_PRE_DIR="/export/livia/home/vision/Ymohammadi/DoG"
 DATA_TARGET_DIR="/projets/Ymohammadi/DomainGuidance/datasets"
+DATASETS_DIR="/export/datasets/public/diffusion_datasets"
+RESULTS_PRE_DIR="/export/datasets/public/diffusion_datasets/tmp_weights"
 ENV_PATH="/projets/Ymohammadi/envs/DiT"
 
-RESULTS_DIR="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/" # FOR TRAINING
-GENERATED_DIR="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/samples/0024000" # FOR SAMPLING
-CHECKPOINT_DIR="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/checkpoints/0024000.pt" # FOR TESTING
+RESULTS_DIR="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/"
+GENERATED_DIR="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/samples/0024000"
+CHECKPOINT_DIR="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/checkpoints/0024000.pt"
 LOG_FILE="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/training_log.txt"
 RESULTS_FILE="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/results"
 
 case "$DATASET" in
   caltech-101)
-    DATA_DIR_ZIP="/export/datasets/public/diffusion_datasets/caltech-101_processed/$DATASET.zip"
+    DATA_DIR_ZIP="$DATASETS_DIR/caltech-101_processed/$DATASET.zip"
     REAL_DATA_DIR="$DATA_TARGET_DIR/$DATASET"
     NUM_CLASSES=101
     ;;
   cub-200-2011_processed)
-    DATA_DIR_ZIP="/export/datasets/public/diffusion_datasets/cub-200-2011_processed/$DATASET.zip"
+    DATA_DIR_ZIP="$DATASETS_DIR/cub-200-2011_processed/$DATASET.zip"
     REAL_DATA_DIR="$DATA_TARGET_DIR/$DATASET"
     NUM_CLASSES=200
     ;;
   stanford-cars_processed)
-    DATA_DIR_ZIP="/export/datasets/public/diffusion_datasets/stanford-cars_processed/$DATASET.zip"
+    DATA_DIR_ZIP="$DATASETS_DIR/stanford-cars_processed/$DATASET.zip"
     REAL_DATA_DIR="$DATA_TARGET_DIR/$DATASET"
     NUM_CLASSES=196
+    ;;
+  food-101_processed)
+    DATA_DIR_ZIP="$DATASETS_DIR/food-101_processed/$DATASET.zip"
+    REAL_DATA_DIR="$DATA_TARGET_DIR/$DATASET"
+    NUM_CLASSES=101
     ;;
   *)
     echo "Unknown dataset: $DATASET"
