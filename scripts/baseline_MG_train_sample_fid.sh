@@ -9,7 +9,7 @@ FID_DEVICE="cuda:0"
 NPROC_PER_NODE=2
 
 EXPERIMENT_NAME="baseline_mgfinetune1_5_CUTOFF"
-DATASET="food-101_processed"  # Options: caltech, birds, etc.
+DATASET="cub-200-2011_processed"  # Options: caltech, birds, etc.
 
 NSAMPLE=10000
 W_TRAIN_CG=1.5
