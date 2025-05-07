@@ -131,7 +131,7 @@ def our_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, 
                 # Guidance Cut Off
                 if guidance_cutoff:
                     t_norm = t.float() / (self.num_timesteps - 1)
-                    mg_high = 0.75
+                    mg_high = mg_high
                     w = torch.where(t_norm < mg_high, w_dog-1, 0.0)  # shape [B]
                     target = target + w.view(-1, 1, 1, 1) * (ema_output.detach() - pretrained_output.detach())
                 else:

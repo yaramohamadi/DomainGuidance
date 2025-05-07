@@ -4,7 +4,7 @@
 # ====================== CONFIGURATION ======================
 
 # Define CUDA devices here
-CUDA_DEVICES="0,3"
+CUDA_DEVICES="2,3"
 FID_DEVICE="cuda:0"
 NPROC_PER_NODE=2
 
@@ -115,7 +115,7 @@ train_model() {
         --num-workers "$NUM_WORKERS" \
         --w-dog "$W_TRAIN_DOG" \
         --guidance-cutoff "$USE_GUIDANCE_CUTOFF" \
-        --mg_high "$MG_HIGH"
+        --mg-high "$MG_HIGH"
 }
 
 run_sampling() {
@@ -169,7 +169,7 @@ prepare_dataset
 MG_HIGH_VALUES=(0.6 0.7 0.8 0.9 1.0)
 
 for MG_HIGH in "${MG_HIGH_VALUES[@]}"; do
-    EXPERIMENT_NAME="dogfinetune1_5_EMA_CUTOFF_MG${MG_HIGH}"
+    EXPERIMENT_NAME="ablation_mghigh/dogfinetune1_5_EMA_CUTOFF_MG${MG_HIGH}"
 
     RESULTS_DIR="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/"
     GENERATED_DIR="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/samples/0024000"
