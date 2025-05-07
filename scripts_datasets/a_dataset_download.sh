@@ -15,10 +15,9 @@
 # # Unzip the dataset in the same directory
 # unzip -o "$TARGET_DIR/food-101.zip" -d "$TARGET_DIR"
 
-pushd /export/datasets/public/diffusion_datasets/food_101-raw/food-101/food-101 > /dev/null
-zip -r /export/datasets/public/diffusion_datasets/food_101-raw/food-101_processed.zip food-101_processed
-popd > /dev/null
-
+# pushd /export/datasets/public/diffusion_datasets/food_101-raw/food-101/food-101 > /dev/null
+# zip -r /export/datasets/public/diffusion_datasets/food_101-raw/food-101_processed.zip food-101_processed
+# popd > /dev/null
 
 
 ############################### DANISH FUNGI DATASET #############################
@@ -32,6 +31,10 @@ popd > /dev/null
 #curl -L -o "$TARGET_DIR/DF20-metadata.zip" \
 #  http://ptak.felk.cvut.cz/plants/DanishFungiDataset/DF20-metadata.zip
 #unzip -o "$TARGET_DIR/DF20-metadata.zip" -d "$TARGET_DIR"
+
+pushd /export/datasets/public/diffusion_datasets/df-20m_processed > /dev/null
+zip -r /export/datasets/public/diffusion_datasets/df-20m_processed/df-20m_processed.zip df-20m_processed
+popd > /dev/null
 
 
 ################################# CALTECH-101 DATASET #############################
