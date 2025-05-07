@@ -10,22 +10,51 @@ NPROC_PER_NODE=2
 
 EXPERIMENT_NAME="dogfinetune1_5_EMA_CUTOFF"
 DATASET="food-101_processed"  # Options: caltech, birds, etc.
+SERVER="taylor"  # Options: taylor, bool, computecanada
 
 NSAMPLE=10000
 W_TRAIN_DOG=1.5
 USE_GUIDANCE_CUTOFF=1
 
-CODE_PRE_DIR="/projets/Ymohammadi/DomainGuidance"
-DATA_TARGET_DIR="/projets/Ymohammadi/DomainGuidance/datasets"
-DATASETS_DIR="/export/datasets/public/diffusion_datasets"
-RESULTS_PRE_DIR="/export/datasets/public/diffusion_datasets/tmp_weights"
-ENV_PATH="/projets/Ymohammadi/envs/DiT"
+# CONSTANTS
+IMAGE_SIZE=256
+TOTAL_STEPS=24000
+MODEL=DiT-XL/2
+LOG_EVERY=1000
+CKPT_EVERY=24000
+BATCH_SIZE=32
+VAE=ema
+NUM_WORKERS=4
 
-RESULTS_DIR="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/"
-GENERATED_DIR="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/samples/0024000"
-CHECKPOINT_DIR="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/checkpoints/0024000.pt"
-LOG_FILE="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/training_log.txt"
-RESULTS_FILE="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/results"
+# Sampling parameters
+CFG_SCALE=1.0
+NUM_SAMPLE_STEPS=50
+
+case "$SERVER" in
+    taylor)
+        CODE_PRE_DIR="/projets/Ymohammadi/DomainGuidance"
+        DATA_TARGET_DIR="/home/ens/AT74470/datasets"
+        DATASETS_DIR="/home/ens/AT74470/datasets"
+        RESULTS_PRE_DIR="/home/ens/AT74470/results/DoG"
+        ENV_PATH="/home/ens/AT74470/envs/DiT"
+        ;;
+    bool)
+        CODE_PRE_DIR="/home/ens/AT74470/DomainGuidance"
+        DATA_TARGET_DIR="/home/ens/AT74470/DomainGuidance/datasets"
+        DATASETS_DIR="/export/datasets/public/diffusion_datasets"
+        RESULTS_PRE_DIR="/export/datasets/public/diffusion_datasets/tmp_weights"
+        ENV_PATH="/projets/Ymohammadi/envs/DiT"
+        ;;
+    computecanada)
+        NPROC_PER_NODE=4
+        CUDA_DEVICES="0,1,2,3"
+        FID_DEVICE="cuda:0"
+        ;;
+    *)
+        echo "Unknown server: $SERVER"
+        exit 1
+        ;;
+    esac
 
 case "$DATASET" in
   caltech-101)
@@ -54,19 +83,12 @@ case "$DATASET" in
     ;;
 esac
 
-# CONSTANTS
-IMAGE_SIZE=256
-TOTAL_STEPS=24000
-MODEL=DiT-XL/2
-LOG_EVERY=1000
-CKPT_EVERY=24000
-BATCH_SIZE=32
-VAE=ema
-NUM_WORKERS=4
-
-# Sampling parameters
-CFG_SCALE=1.0
-NUM_SAMPLE_STEPS=50
+# ====================== PATHS ======================
+RESULTS_DIR="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/"
+GENERATED_DIR="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/samples/0024000"
+CHECKPOINT_DIR="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/checkpoints/0024000.pt"
+LOG_FILE="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/training_log.txt"
+RESULTS_FILE="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/results"
 
 # ====================== HELPER ======================
 log_and_run() {
