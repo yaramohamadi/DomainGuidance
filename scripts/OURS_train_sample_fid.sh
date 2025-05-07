@@ -8,12 +8,13 @@ CUDA_DEVICES="0,3"
 FID_DEVICE="cuda:0"
 NPROC_PER_NODE=2
 
-EXPERIMENT_NAME="dogfinetune1_5_EMA_CUTOFF"
+EXPERIMENT_NAME="dogfinetune1_5_EMA_CUTOFF_nodropout"
 DATASET="food-101_processed"  # Options: caltech, birds, etc.
 
 NSAMPLE=10000
 W_TRAIN_DOG=1.5
 USE_GUIDANCE_CUTOFF=1
+DROPOUT_RATIO=0.0
 
 CODE_PRE_DIR="/projets/Ymohammadi/DomainGuidance"
 DATA_TARGET_DIR="/projets/Ymohammadi/DomainGuidance/datasets"
@@ -120,7 +121,8 @@ train_model() {
         --vae "$VAE" \
         --num-workers "$NUM_WORKERS" \
         --w-dog "$W_TRAIN_DOG" \
-        --guidance-cutoff "$USE_GUIDANCE_CUTOFF"
+        --guidance-cutoff "$USE_GUIDANCE_CUTOFF" \
+        --dropout-ratio "$DROPOUT_RATIO" 
 }
 
 run_sampling() {
@@ -135,7 +137,8 @@ run_sampling() {
         --image-size "$IMAGE_SIZE" \
         --num-classes "$NUM_CLASSES" \
         --cfg-scale "$CFG_SCALE" \
-        --num-sampling-steps "$NUM_SAMPLE_STEPS"
+        --num-sampling-steps "$NUM_SAMPLE_STEPS" \
+        --dropout-ratio "$DROPOUT_RATIO" \
 }
 
 calculate_fid() {
