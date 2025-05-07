@@ -4,12 +4,12 @@
 # ====================== CONFIGURATION ======================
 
 # Define CUDA devices here
-CUDA_DEVICES="0,3"
+CUDA_DEVICES="0,1"
 FID_DEVICE="cuda:0"
 NPROC_PER_NODE=2
 
 EXPERIMENT_NAME="dogfinetune1_5_EMA_CUTOFF_nodropout"
-DATASET="food-101_processed"  # Options: caltech, birds, etc.
+DATASET="cub-200-2011_processed"  # Options: caltech, birds, etc.
 SERVER="taylor"  # Options: taylor, bool, computecanada
 
 NSAMPLE=10000
@@ -33,6 +33,7 @@ NUM_SAMPLE_STEPS=50
 
 case "$SERVER" in
     taylor)
+        export PATH="$HOME/.local/bin:$PATH"
         CODE_PRE_DIR="/projets/Ymohammadi/DomainGuidance"
         DATA_TARGET_DIR="/home/ens/AT74470/datasets"
         DATASETS_DIR="/home/ens/AT74470/datasets"
@@ -160,7 +161,7 @@ run_sampling() {
         --num-classes "$NUM_CLASSES" \
         --cfg-scale "$CFG_SCALE" \
         --num-sampling-steps "$NUM_SAMPLE_STEPS" \
-        --dropout-ratio "$DROPOUT_RATIO" \
+        --dropout-ratio "$DROPOUT_RATIO" 
 }
 
 calculate_fid() {
@@ -196,10 +197,10 @@ echo ">>> Logging to: $LOG_FILE"
 rm -f "$LOG_FILE"
 
 create_environment
-prepare_dataset
+#prepare_dataset
 train_model
 run_sampling
 calculate_fid
-cleanup_dataset
+#cleanup_dataset
 
 echo ">>> All tasks completed successfully!"
