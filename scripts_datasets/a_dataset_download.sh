@@ -3,7 +3,7 @@
 
 ############################# FOOD-101 DATASET #############################
 # Define target directory
-TARGET_DIR="/export/datasets/public/diffusion_datasets/food_101"
+# TARGET_DIR="/export/datasets/public/diffusion_datasets/food_101-processed"
 # 
 # # Create the directory if it does not exist
 # mkdir -p "$TARGET_DIR"
@@ -14,7 +14,11 @@ TARGET_DIR="/export/datasets/public/diffusion_datasets/food_101"
 # 
 # # Unzip the dataset in the same directory
 # unzip -o "$TARGET_DIR/food-101.zip" -d "$TARGET_DIR"
-zip -r "$TARGET_DIR/food-101_processed.zip" "$TARGET_DIR/food-101_processed"
+
+# pushd /export/datasets/public/diffusion_datasets/food_101-processed/food-101/food-101/ > /dev/null
+# zip -r food-101_processed.zip food-101_processed/*
+# popd > /dev/null
+
 
 
 ############################### DANISH FUNGI DATASET #############################
@@ -68,10 +72,17 @@ zip -r "$TARGET_DIR/food-101_processed.zip" "$TARGET_DIR/food-101_processed"
 # zip 
 
 # Get metadata for test dataaset too! 
-curl -L -o ~/Downloads/standford-cars-dataset-meta.zip\
-  https://www.kaggle.com/api/v1/datasets/download/abdelrahmant11/standford-cars-dataset-meta
+# curl -L -o ~/Downloads/standford-cars-dataset-meta.zip\
+#   https://www.kaggle.com/api/v1/datasets/download/abdelrahmant11/standford-cars-dataset-meta
+# 
+# 
+# pushd /export/datasets/public/diffusion_datasets/stanford-cars_processed/ > /dev/null
+# zip -r stanford-cars_processed.zip stanford-cars_processed/*
+# popd > /dev/null
 
 
-pushd /export/datasets/public/diffusion_datasets/stanford-cars/ > /dev/null
-zip -r stanford-cars_processed.zip stanford-cars_processed/*
-popd > /dev/null
+
+############################### ART-BENCH-10 DATASET #############################
+TARGET_DIR="/export/datasets/public/diffusion_datasets/artbench10"
+mkdir -p "$TARGET_DIR"
+curl -L https://artbench.eecs.berkeley.edu/files/artbench-10-imagefolder.tar | tar -xvf - -C "$TARGET_DIR"
