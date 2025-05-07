@@ -45,7 +45,7 @@ from torchvision.utils import save_image
 ##################################################################################
 
 # DoG
-def our_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, pretrained_model=None, w_dog=1.0, ema=None, vae=None, guidance_cutoff=False, counter=0):
+def our_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, pretrained_model=None, w_dog=1.0, ema=None, vae=None, guidance_cutoff=False, mg_high=0.75, counter=0):
 
         """
         Compute training losses for a single timestep.
@@ -477,6 +477,7 @@ def main(args):
                 vae=vae, # For debugging 
                 w_dog=args.w_dog,
                 guidance_cutoff=args.guidance_cutoff,
+                mg_high=args.mg_high, 
                 counter=train_steps,
             )
 
@@ -550,7 +551,8 @@ if __name__ == "__main__":
     parser.add_argument("--ckpt-every", type=int, default=50_000)
     parser.add_argument("--pretrained-ckpt", type=str, default=None,
                         help="Optional path to a DiT checkpoint (default: auto-download a pre-trained DiT-XL/2 model).")
-    parser.add_argument("--w-dog",type=float,default=1.0,help="Domain Guidance strength (w_DoG). Only used if --domain-guidance is set.") # DOG
-    parser.add_argument("--guidance-cutoff", type=float, default=0, help="Cutoff for domain guidance. Only used if --domain-guidance is set.") # DOG
+    parser.add_argument("--w-dog",type=float,default=1.0,help="Domain Guidance strength (w_DoG)") # DOG
+    parser.add_argument("--guidance-cutoff", type=float, default=0, help="Cutoff for domain guidance") # DOG
+    parser.add_argument("--mg-high", type=float, default=0.75, help="Cutoff for domain guidance") # DOG
     args = parser.parse_args()
     main(args)
