@@ -15,9 +15,9 @@
 # # Unzip the dataset in the same directory
 # unzip -o "$TARGET_DIR/food-101.zip" -d "$TARGET_DIR"
 
-# pushd /export/datasets/public/diffusion_datasets/food_101-processed/food-101/food-101/ > /dev/null
-# zip -r food-101_processed.zip food-101_processed/*
-# popd > /dev/null
+pushd /export/datasets/public/diffusion_datasets/food_101-raw/food-101/food-101 > /dev/null
+zip -r /export/datasets/public/diffusion_datasets/food_101-raw/food-101_processed.zip food-101_processed
+popd > /dev/null
 
 
 
@@ -83,6 +83,10 @@
 
 
 ############################### ART-BENCH-10 DATASET #############################
-TARGET_DIR="/export/datasets/public/diffusion_datasets/artbench10"
-mkdir -p "$TARGET_DIR"
-curl -L https://artbench.eecs.berkeley.edu/files/artbench-10-imagefolder.tar | tar -xvf - -C "$TARGET_DIR"
+# TARGET_DIR="/export/datasets/public/diffusion_datasets/artbench10"
+# mkdir -p "$TARGET_DIR"
+# curl -L https://artbench.eecs.berkeley.edu/files/artbench-10-imagefolder.tar | tar -xvf - -C "$TARGET_DIR"
+
+#pushd /export/datasets/public/diffusion_datasets/artbench-10_processed/ > /dev/null
+#zip -r artbench-10_processed.zip artbench-10_processed/*
+#popd > /dev/null

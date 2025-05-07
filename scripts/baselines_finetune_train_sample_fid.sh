@@ -44,6 +44,16 @@ case "$DATASET" in
     REAL_DATA_DIR="$DATA_TARGET_DIR/$DATASET"
     NUM_CLASSES=101
     ;;
+  df-20m_processed)
+    DATA_DIR_ZIP="$DATASETS_DIR/df-20m_processed/$DATASET.zip"
+    REAL_DATA_DIR="$DATA_TARGET_DIR/$DATASET"
+    NUM_CLASSES=1577
+    ;;
+  artbench-10_processed)
+    DATA_DIR_ZIP="$DATASETS_DIR/artbench10_processed/$DATASET.zip"
+    REAL_DATA_DIR="$DATA_TARGET_DIR/$DATASET"
+    NUM_CLASSES=10
+    ;;
   *)
     echo "Unknown dataset: $DATASET"
     exit 1
@@ -96,7 +106,6 @@ create_environment() {
 }
 prepare_dataset() {
     mkdir -p "$DATA_TARGET_DIR"
-    cp "$DATA_DIR_ZIP" "$DATA_TARGET_DIR/"
     unzip -o "$DATA_DIR_ZIP" -d "$DATA_TARGET_DIR"
     echo ">>> Dataset prepared at: $REAL_DATA_DIR"
 }
