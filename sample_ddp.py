@@ -53,6 +53,9 @@ def main(args):
     """
     Run sampling.
     """
+    if args.cfg_scale > 1.0:
+        assert args.dropout_ratio != 0.0, "cfg_scale > 1.0 requires dropout_ratio != 0.0"
+        
     torch.backends.cuda.matmul.allow_tf32 = args.tf32  # True: fast but may lead to some small numerical differences
     assert torch.cuda.is_available(), "Sampling with DDP requires at least one GPU. sample.py supports CPU-only usage"
     torch.set_grad_enabled(False)
@@ -76,6 +79,7 @@ def main(args):
     model = DiT_models[args.model](
         input_size=latent_size,
         num_classes=args.num_classes,
+        class_dropout_prob=args.dropout_ratio,
     ).to(device)
     # Auto-download a pre-trained model or load a custom DiT checkpoint from train.py:
     ckpt_path = args.ckpt or f"DiT-XL-2-{args.image_size}x{args.image_size}.pt"
@@ -167,5 +171,6 @@ if __name__ == "__main__":
                         help="By default, use TF32 matmuls. This massively accelerates sampling on Ampere GPUs.")
     parser.add_argument("--ckpt", type=str, default=None,
                         help="Optional path to a DiT checkpoint (default: auto-download a pre-trained DiT-XL/2 model).")
+    parser.add_argument("--dropout-ratio", type=float, default=0.1)
     args = parser.parse_args()
     main(args)

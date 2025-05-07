@@ -11,7 +11,7 @@ NPROC_PER_NODE=2
 EXPERIMENT_NAME="dogfinetune1_5_EMA_CUTOFF"
 DATASET="cub-200-2011_processed"  # Options: caltech, birds, etc.
 
-NSAMPLE=1000
+NSAMPLE=10000
 W_TRAIN_DOG=1.5
 USE_GUIDANCE_CUTOFF=1
 
@@ -115,7 +115,7 @@ train_model() {
         --num-workers "$NUM_WORKERS" \
         --w-dog "$W_TRAIN_DOG" \
         --guidance-cutoff "$USE_GUIDANCE_CUTOFF" \
-        --mg_high "$MG_HIGH"
+        --late-start-iter "$LATE_START_ITER"
 }
 
 run_sampling() {
@@ -166,10 +166,10 @@ cleanup_dataset() {
 create_environment
 prepare_dataset
 
-late_start_epoch=(500 1000 2000 3000 5000 7000)
+LATE_START_ITERS=(500 1000 2000 3000 5000 7000)
 
-for MG_HIGH in "${MG_HIGH_VALUES[@]}"; do
-    EXPERIMENT_NAME="dogfinetune1_5_EMA_CUTOFF_MG${MG_HIGH}"
+for LATE_START_ITER in "${LATE_START_ITERS[@]}"; do
+    EXPERIMENT_NAME="dogfinetune1_5_EMA_CUTOFF_LATE_START_ITER${LATE_START_ITER}"
 
     RESULTS_DIR="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/"
     GENERATED_DIR="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/samples/0024000"
