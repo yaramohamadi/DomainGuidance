@@ -4,48 +4,46 @@
 # ====================== CONFIGURATION ======================
 
 # Define CUDA devices here
-CUDA_DEVICES="0,1"
+CUDA_DEVICES="0,3"
 FID_DEVICE="cuda:0"
 NPROC_PER_NODE=2
 
-EXPERIMENT_NAME="baseline_mgfinetune1_5_CUTOFF"
-DATASET="stanford-cars_processed"  # Options: caltech, birds, etc.
+EXPERIMENT_NAME="dogfinetune1_5_EMA_CUTOFF"
+DATASET="food-101_processed"  # Options: caltech, birds, etc.
 
 NSAMPLE=10000
-W_TRAIN_CG=1.5
+W_TRAIN_DOG=1.5
 USE_GUIDANCE_CUTOFF=1
 
-CODE_PRE_DIR="/projets/Ymohammadi/DomainGuidance"
-DATA_TARGET_DIR="/projets/Ymohammadi/DomainGuidance/datasets"
-DATASETS_DIR="/export/datasets/public/diffusion_datasets"
-RESULTS_PRE_DIR="/export/datasets/public/diffusion_datasets/tmp_weights"
-ENV_PATH="/projets/Ymohammadi/envs/DiT"
+RESULTS_PRE_DIR="/home/ens/AT74470/results/DoG"
+DATA_TARGET_DIR="/home/ens/AT74470/datasets"
+ENV_PATH="/home/ens/AT74470/envs/DiT"
 
-RESULTS_DIR="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/"
-GENERATED_DIR="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/samples/0024000"
-CHECKPOINT_DIR="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/checkpoints/0024000.pt"
+RESULTS_DIR="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME" # FOR TRAINING
+GENERATED_DIR="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/samples/0024000" # FOR SAMPLING
+CHECKPOINT_DIR="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/checkpoints/0024000.pt" # FOR TESTING
 LOG_FILE="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/training_log.txt"
 RESULTS_FILE="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/results"
 
 case "$DATASET" in
   caltech-101)
-    DATA_DIR_ZIP="$DATASETS_DIR/caltech-101_processed/$DATASET.zip"
-    REAL_DATA_DIR="$DATA_TARGET_DIR/$DATASET"
+    DATA_DIR_ZIP="$DATA_TARGET_DIR/$DATASET.zip"
+    REAL_DATA_DIR="$DATA_TARGET_DIR"
     NUM_CLASSES=101
     ;;
   cub-200-2011_processed)
-    DATA_DIR_ZIP="$DATASETS_DIR/cub-200-2011_processed/$DATASET.zip"
-    REAL_DATA_DIR="$DATA_TARGET_DIR/$DATASET"
+    DATA_DIR_ZIP="$DATA_TARGET_DIR/$DATASET.zip"
+    REAL_DATA_DIR="$DATA_TARGET_DIR"
     NUM_CLASSES=200
     ;;
   stanford-cars_processed)
-    DATA_DIR_ZIP="$DATASETS_DIR/stanford-cars_processed/$DATASET.zip"
-    REAL_DATA_DIR="$DATA_TARGET_DIR/$DATASET"
+    DATA_DIR_ZIP="$DATA_TARGET_DIR/$DATASET.zip"
+    REAL_DATA_DIR="$DATA_TARGET_DIR"
     NUM_CLASSES=196
     ;;
   food-101_processed)
-    DATA_DIR_ZIP="$DATASETS_DIR/food-101_processed/$DATASET.zip"
-    REAL_DATA_DIR="$DATA_TARGET_DIR/$DATASET"
+    DATA_DIR_ZIP="$DATA_TARGET_DIR/food-101_processed/$DATASET.zip"
+    REAL_DATA_DIR="$DATA_TARGET_DIR"
     NUM_CLASSES=101
     ;;
   *)
@@ -78,6 +76,8 @@ log_and_run() {
 mkdir -p "$(dirname "$LOG_FILE")"
 
 # ====================== STEPS ======================
+
+# ====================== STEPS ======================
 create_environment() {
     echo ">>> Setting up environment..."
     if [ -d "$ENV_PATH" ]; then
@@ -98,44 +98,44 @@ create_environment() {
     popd
 }
 
+
 prepare_dataset() {
     mkdir -p "$DATA_TARGET_DIR"
-    cp "$DATA_DIR_ZIP" "$DATA_TARGET_DIR/"
-    unzip -o "$DATA_DIR_ZIP" -d "$DATA_TARGET_DIR"
+    unzip -o "$DATA_DIR_ZIP" -d "$REAL_DATA_DIR"
     echo ">>> Dataset prepared at: $REAL_DATA_DIR"
 }
 
 train_model() {
     log_and_run "Training model..." \
-    env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES torchrun --nproc_per_node=$NPROC_PER_NODE train_MG.py \
+    env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES torchrun --nproc_per_node=$NPROC_PER_NODE train_OURS.py \
         --data-path "$REAL_DATA_DIR" \
-        --results-dir $RESULTS_DIR \
-        --model $MODEL \
-        --image-size $IMAGE_SIZE \
-        --num-classes $NUM_CLASSES \
-        --total-steps $TOTAL_STEPS \
-        --log-every $LOG_EVERY \
-        --ckpt-every $CKPT_EVERY \
-        --global-batch-size $BATCH_SIZE \
-        --vae $VAE \
-        --num-workers $NUM_WORKERS \
-        --w-cg $W_TRAIN_CG \
-        --guidance-cutoff $USE_GUIDANCE_CUTOFF
+        --results-dir "$RESULTS_DIR" \
+        --model "$MODEL" \
+        --image-size "$IMAGE_SIZE" \
+        --num-classes "$NUM_CLASSES" \
+        --total-steps "$TOTAL_STEPS" \
+        --log-every "$LOG_EVERY" \
+        --ckpt-every "$CKPT_EVERY" \
+        --global-batch-size "$BATCH_SIZE" \
+        --vae "$VAE" \
+        --num-workers "$NUM_WORKERS" \
+        --w-dog "$W_TRAIN_DOG" \
+        --guidance-cutoff "$USE_GUIDANCE_CUTOFF"
 }
 
 run_sampling() {
     log_and_run "Sampling images..." \
     env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES torchrun --nproc_per_node=$NPROC_PER_NODE sample_ddp.py \
-        --model $MODEL \
-        --vae $VAE \
+        --model "$MODEL" \
+        --vae "$VAE" \
         --sample-dir "$GENERATED_DIR" \
         --ckpt "$CHECKPOINT_DIR" \
-        --per-proc-batch-size $BATCH_SIZE \
-        --num-fid-samples $NSAMPLE \
-        --image-size $IMAGE_SIZE \
-        --num-classes $NUM_CLASSES \
-        --cfg-scale $CFG_SCALE \
-        --num-sampling-steps $NUM_SAMPLE_STEPS
+        --per-proc-batch-size "$BATCH_SIZE" \
+        --num-fid-samples "$NSAMPLE" \
+        --image-size "$IMAGE_SIZE" \
+        --num-classes "$NUM_CLASSES" \
+        --cfg-scale "$CFG_SCALE" \
+        --num-sampling-steps "$NUM_SAMPLE_STEPS"
 }
 
 calculate_fid() {
@@ -143,21 +143,21 @@ calculate_fid() {
     env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES python -m dgm_eval "$REAL_DATA_DIR" "$GENERATED_DIR" \
         --model inception \
         --device "$FID_DEVICE" \
-        --nsample $NSAMPLE \
+        --nsample "$NSAMPLE" \
         --clean_resize \
         --metrics fd prdc \
         --save \
-        --output_dir $RESULTS_FILE
+        --output_dir "$RESULTS_FILE"
 
     log_and_run "Calculating FID DINO..." \
     env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES python -m dgm_eval "$REAL_DATA_DIR" "$GENERATED_DIR" \
         --model dinov2 \
         --device "$FID_DEVICE" \
-        --nsample $NSAMPLE \
+        --nsample "$NSAMPLE" \
         --clean_resize \
         --metrics fd prdc \
         --save \
-        --output_dir $RESULTS_FILE
+        --output_dir "$RESULTS_FILE"
 }
 
 cleanup_dataset() {
@@ -171,10 +171,10 @@ echo ">>> Logging to: $LOG_FILE"
 rm -f "$LOG_FILE"
 
 create_environment
-prepare_dataset
-train_model
-run_sampling
+# prepare_dataset
+# train_model
+# run_sampling
 calculate_fid
-cleanup_dataset
+# cleanup_dataset
 
 echo ">>> All tasks completed successfully!"

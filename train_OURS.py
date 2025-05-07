@@ -45,7 +45,7 @@ from torchvision.utils import save_image
 ##################################################################################
 
 # DoG
-def our_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, pretrained_model=None, w_dog=1.0, ema=None, vae=None, guidance_cutoff=False, counter=0):
+def our_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, pretrained_model=None, w_dog=1.0, ema=None, vae=None, guidance_cutoff=False, mg_high=0.75, late_start_iter=0, counter=0):
 
         """
         Compute training losses for a single timestep.
@@ -82,7 +82,7 @@ def our_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, 
         elif self.loss_type == LossType.MSE or self.loss_type == LossType.RESCALED_MSE:
             model_output = model(x_t, t, **model_kwargs)
 
-            if pretrained_model is not None and ema is not None:
+            if pretrained_model is not None and ema is not None and counter > late_start_iter:
                 with torch.no_grad():
                     y = model_kwargs["y"]
                     pretrained_kwargs = {"y": torch.full_like(y, 1000)}
@@ -97,7 +97,7 @@ def our_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, 
                 B, C = x_t.shape[:2]
                 assert model_output.shape == (B, C * 2, *x_t.shape[2:])
                 model_output, model_var_values = torch.split(model_output, C, dim=1)
-                if pretrained_model is not None:
+                if pretrained_model is not None and ema is not None and counter > late_start_iter:
                     pretrained_output, _ = torch.split(pretrained_output, C, dim=1)
                     ema_output, _ = torch.split(ema_output, C, dim=1)
 
@@ -124,20 +124,20 @@ def our_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, 
                 ModelMeanType.EPSILON: noise,
             }[self.model_mean_type]
 
-            if pretrained_model is not None and ema is not None:
+            if pretrained_model is not None and ema is not None and counter > late_start_iter:
                 # Where the DoG Happens 
                 # target = target + (w_dog - 1) * (target - pretrained_output)
 
                 # Guidance Cut Off
                 if guidance_cutoff:
                     t_norm = t.float() / (self.num_timesteps - 1)
-                    mg_high = 0.75
+                    mg_high = mg_high
                     w = torch.where(t_norm < mg_high, w_dog-1, 0.0)  # shape [B]
                     target = target + w.view(-1, 1, 1, 1) * (ema_output.detach() - pretrained_output.detach())
                 else:
                     target = target + (w_dog - 1) * (ema_output.detach() - pretrained_output.detach())
 
-            if counter % 1000 == 0:
+            if counter % 1000 == 0 and pretrained_model is not None and ema is not None and counter > late_start_iter and dist.get_rank() == 0:
                 # Debugging functions
                 def norm_to_01(x):
                     """Normalize to [0,1] for visualization."""
@@ -145,6 +145,7 @@ def our_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, 
 
                 # -----------------------------------------
                 # Predict x0 from model and pretrained_model
+
                 # -----------------------------------------
                 alpha_bar = torch.from_numpy(self.alphas_cumprod).to(device=x_start.device, dtype=x_start.dtype)
                 sqrt_alpha_bar_t = torch.sqrt(alpha_bar[t]).view(-1, 1, 1, 1)
@@ -373,6 +374,7 @@ def main(args):
     model = DiT_models[args.model](
         input_size=latent_size,
         num_classes=args.num_classes,
+        class_dropout_prob=args.dropout_ratio,
     )
     # Load pre-trained weights if provided:
     model = load_pretrained_model(model, args.pretrained_ckpt, args.image_size)
@@ -477,6 +479,8 @@ def main(args):
                 vae=vae, # For debugging 
                 w_dog=args.w_dog,
                 guidance_cutoff=args.guidance_cutoff,
+                mg_high=args.mg_high, 
+                late_start_iter=args.late_start_iter,
                 counter=train_steps,
             )
 
@@ -550,7 +554,10 @@ if __name__ == "__main__":
     parser.add_argument("--ckpt-every", type=int, default=50_000)
     parser.add_argument("--pretrained-ckpt", type=str, default=None,
                         help="Optional path to a DiT checkpoint (default: auto-download a pre-trained DiT-XL/2 model).")
-    parser.add_argument("--w-dog",type=float,default=1.0,help="Domain Guidance strength (w_DoG). Only used if --domain-guidance is set.") # DOG
-    parser.add_argument("--guidance-cutoff", type=float, default=0, help="Cutoff for domain guidance. Only used if --domain-guidance is set.") # DOG
+    parser.add_argument("--w-dog",type=float,default=1.0,help="Domain Guidance strength (w_DoG)") # DOG
+    parser.add_argument("--guidance-cutoff", type=float, default=0, help="Cutoff for domain guidance") # DOG
+    parser.add_argument("--mg-high", type=float, default=0.75, help="Cutoff for domain guidance") # DOG
+    parser.add_argument("--late-start-iter", type=int, default=0, help="Late start iteration for domain guidance") # DOG
+    parser.add_argument("--dropout-ratio", type=float, default=0.1, help="Have null labels or no") # DOG
     args = parser.parse_args()
     main(args)
