@@ -60,22 +60,22 @@ case "$SERVER" in
 
 case "$DATASET" in
   caltech-101)
-    DATA_DIR_ZIP="$DATASETS_DIR/caltech-101_processed/$DATASET.zip"
+    DATA_DIR_ZIP="$DATASETS_DIR/$DATASET.zip"
     REAL_DATA_DIR="$DATA_TARGET_DIR/$DATASET"
     NUM_CLASSES=101
     ;;
   cub-200-2011_processed)
-    DATA_DIR_ZIP="$DATASETS_DIR/cub-200-2011_processed/$DATASET.zip"
+    DATA_DIR_ZIP="$DATASETS_DIR/$DATASET.zip"
     REAL_DATA_DIR="$DATA_TARGET_DIR/$DATASET"
     NUM_CLASSES=200
     ;;
   stanford-cars_processed)
-    DATA_DIR_ZIP="$DATASETS_DIR/stanford-cars_processed/$DATASET.zip"
+    DATA_DIR_ZIP="$DATASETS_DIR/$DATASET.zip"
     REAL_DATA_DIR="$DATA_TARGET_DIR/$DATASET"
     NUM_CLASSES=196
     ;;
   food-101_processed)
-    DATA_DIR_ZIP="$DATASETS_DIR/food-101_processed/$DATASET.zip"
+    DATA_DIR_ZIP="$DATASETS_DIR/$DATASET.zip"
     REAL_DATA_DIR="$DATA_TARGET_DIR/$DATASET"
     NUM_CLASSES=101
     ;;
@@ -124,7 +124,6 @@ create_environment() {
 
 prepare_dataset() {
     mkdir -p "$DATA_TARGET_DIR"
-    cp "$DATA_DIR_ZIP" "$DATA_TARGET_DIR/"
     unzip -o "$DATA_DIR_ZIP" -d "$DATA_TARGET_DIR"
     echo ">>> Dataset prepared at: $REAL_DATA_DIR"
 }
@@ -197,8 +196,8 @@ echo ">>> Logging to: $LOG_FILE"
 rm -f "$LOG_FILE"
 
 create_environment
-#prepare_dataset
-train_model
+prepare_dataset
+# train_model
 run_sampling
 calculate_fid
 #cleanup_dataset
