@@ -24,30 +24,6 @@ import numpy as np
 import math
 import argparse
 
-
-def create_npz_from_sample_folder(sample_dir, num=50_000):
-    """
-    Builds a single .npz file from a folder of .png samples,
-    resizing them to 299x299 before saving.
-    """
-    samples = []
-    for i in tqdm(range(num), desc="Building .npz file from resized samples"):
-        sample_pil = Image.open(f"{sample_dir}/{i:06d}.png").convert('RGB')
-
-        # ------------------- RESIZE TO 299x299 (Center crop + Bilinear) -------------------
-        sample_pil = sample_pil.resize((299, 299), Image.BILINEAR)
-        # -----------------------------------------------------------------------------------
-
-        sample_np = np.asarray(sample_pil).astype(np.uint8)
-        samples.append(sample_np)
-
-    samples = np.stack(samples)
-    assert samples.shape == (num, samples.shape[1], samples.shape[2], 3), f"Shape mismatch: {samples.shape}"
-    npz_path = f"{sample_dir}.npz"
-    np.savez(npz_path, arr_0=samples)
-    print(f"Saved .npz file to {npz_path} [shape={samples.shape}].")
-    return npz_path
-
 def build_cfg_fowrard_fn(cond_model, uncond_model):
     def cfg_forward_fn(x, t, y, cfg_scale):
         half = x[: len(x) // 2]
@@ -197,12 +173,6 @@ def main(args):
             Image.fromarray(sample).save(f"{sample_folder_dir}/{index:06d}.png")
         total += global_batch_size
 
-    # Make sure all processes have finished saving their samples before attempting to convert to .npz
-    dist.barrier()
-    if rank == 0:
-        create_npz_from_sample_folder(sample_folder_dir, args.num_fid_samples)
-        print("Done.")
-    dist.barrier()
     dist.destroy_process_group()
 
 
