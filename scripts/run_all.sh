@@ -1,8 +1,9 @@
 #!/bin/bash
 
 # ========== GLOBAL CONFIGURATION ==========
-SERVER="taylor"
-CUDA_DEVICES="0,1"
+SERVER="bool"
+CUDA_DEVICES="2,3"
+EXPERIMENT_PRENAME="All_0"
 
 # ========== DATASET TO SCRIPT MAPPING ==========
 # Format: dataset_name script_name
@@ -31,6 +32,8 @@ CUDA_DEVICES="0,1"
 
 declare -a TASKS=(
   "caltech-101 run_ours.sh"
+  "caltech-101 run_baseline_mg.sh"
+  "caltech-101 run_baselines_finetune.sh"
 )
 
 # ========== EXECUTION LOOP ==========
@@ -45,7 +48,8 @@ for TASK in "${TASKS[@]}"; do
   bash "scripts/$SCRIPT" \
     --dataset "$DATASET" \
     --server "$SERVER" \
-    --cuda_devices "$CUDA_DEVICES"
+    --cuda_devices "$CUDA_DEVICES" \
+    --experiment_prename "$EXPERIMENT_PRENAME"
 
   echo "✅ Finished $SCRIPT on $DATASET"
   echo "=============================================="
