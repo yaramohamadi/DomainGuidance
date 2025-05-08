@@ -31,9 +31,9 @@ EXPERIMENT_PRENAME="All_0"
 #  "cub-200-2011_processed run_baselines_finetune.sh"
 
 declare -a TASKS=(
-  "caltech-101 run_ours.sh"
-  "caltech-101 run_baseline_mg.sh"
-  "caltech-101 run_baselines_finetune.sh"
+  "caltech-101_processed run_ours.sh"
+  "caltech-101_processed run_baseline_mg.sh"
+  "caltech-101_processed run_baselines_finetune.sh"
 )
 
 # ========== EXECUTION LOOP ==========
