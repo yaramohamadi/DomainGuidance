@@ -98,7 +98,7 @@ mkdir -p "$(dirname "$LOG_FILE")"
 
 create_environment
 prepare_dataset
-train_model
+# train_model
 run_sampling
 calculate_fid
 cleanup_dataset

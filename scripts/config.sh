@@ -30,8 +30,8 @@ resolve_dataset_config() {
   DATA_DIR_ZIP="$DATASETS_DIR/$DATASET.zip"
   REAL_DATA_DIR="$DATA_TARGET_DIR/$DATASET"
   # Normal Generated Directory for Ours and MG
-  GENERATED_DIR="$RESULTS_DIR/samples/0000010"
   RESULTS_DIR="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/"
+  GENERATED_DIR="$RESULTS_DIR/samples/0000010"
   # Generated Directory for baselines
   GENERATED_DIR_CG1="$RESULTS_DIR/samples/0000010_cg1"
   RESULTS_FILE_CG1="$RESULTS_DIR/results_cg1"
@@ -94,14 +94,13 @@ create_environment() {
     conda activate "$ENV_PATH"
     conda install pytorch torchvision pytorch-cuda=12.6 -c pytorch -c nvidia
     pip install timm diffusers accelerate pytorch-fid
-
-    if [ ! -d "dgm-eval" ]; then
-        git clone https://github.com/layer6ai-labs/dgm-eval.git
-    fi
-    pushd dgm-eval
-    pip install -e .
-    popd
   fi
+  if [ ! -d "dgm-eval" ]; then
+      git clone https://github.com/layer6ai-labs/dgm-eval.git
+  fi
+  pushd dgm-eval
+  pip install -e .
+  popd
 }
 
 prepare_dataset() {
