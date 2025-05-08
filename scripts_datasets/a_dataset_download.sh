@@ -32,9 +32,9 @@
 #  http://ptak.felk.cvut.cz/plants/DanishFungiDataset/DF20-metadata.zip
 #unzip -o "$TARGET_DIR/DF20-metadata.zip" -d "$TARGET_DIR"
 
-pushd /export/datasets/public/diffusion_datasets/df-20m_processed > /dev/null
-zip -r /export/datasets/public/diffusion_datasets/df-20m_processed/df-20m_processed.zip df-20m_processed
-popd > /dev/null
+#pushd /export/datasets/public/diffusion_datasets/df-20m_processed > /dev/null
+#zip -r /export/datasets/public/diffusion_datasets/df-20m_processed/df-20m_processed.zip df-20m_processed
+#popd > /dev/null
 
 
 ################################# CALTECH-101 DATASET #############################
@@ -48,6 +48,9 @@ popd > /dev/null
 # Remove the GOOGLE_BACKGROUND class
 # ZIP again
 # zip -r /export/datasets/public/diffusion_datasets/caltech-101/caltech-101.zip /export/datasets/public/diffusion_datasets/caltech-101/caltech-101
+pushd /export/datasets/public/diffusion_datasets/caltech-101_processed > /dev/null
+zip -r /export/datasets/public/diffusion_datasets/caltech-101_processed.zip caltech-101_processed
+popd > /dev/null
 
 
 ############################### CUB-200-2011 DATASET #############################

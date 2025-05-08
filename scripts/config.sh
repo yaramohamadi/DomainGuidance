@@ -19,7 +19,7 @@ NPROC_PER_NODE=2
 # Set paths and dataset details
 resolve_dataset_config() {
   case "$DATASET" in
-    caltech-101) NUM_CLASSES=101 ;;
+    caltech-101_processed) NUM_CLASSES=101 ;;
     cub-200-2011_processed) NUM_CLASSES=200 ;;
     stanford-cars_processed) NUM_CLASSES=196 ;;
     food-101_processed) NUM_CLASSES=101 ;;
