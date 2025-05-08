@@ -2,7 +2,7 @@
 
 # Global Constants
 IMAGE_SIZE=256
-TOTAL_STEPS=10
+TOTAL_STEPS=24000
 MODEL="DiT-XL/2"
 LOG_EVERY=1000
 CKPT_EVERY=10
@@ -11,7 +11,7 @@ VAE="ema"
 NUM_WORKERS=4
 CFG_SCALE=1.0
 NUM_SAMPLE_STEPS=50
-NSAMPLE=10
+NSAMPLE=10000
 
 FID_DEVICE="cuda:0"
 NPROC_PER_NODE=2
@@ -31,16 +31,16 @@ resolve_dataset_config() {
   REAL_DATA_DIR="$DATA_TARGET_DIR/$DATASET"
   # Normal Generated Directory for Ours and MG
   RESULTS_DIR="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/"
-  GENERATED_DIR="$RESULTS_DIR/samples/0000010"
+  GENERATED_DIR="$RESULTS_DIR/samples/0024000"
   # Generated Directory for baselines
-  GENERATED_DIR_CG1="$RESULTS_DIR/samples/0000010_cg1"
+  GENERATED_DIR_CG1="$RESULTS_DIR/samples/0024000_cg1"
   RESULTS_FILE_CG1="$RESULTS_DIR/results_cg1"
-  GENERATED_DIR_CG1_5="$RESULTS_DIR/samples/0000010_cg1_5"
+  GENERATED_DIR_CG1_5="$RESULTS_DIR/samples/0024000_cg1_5"
   RESULTS_FILE_CG1_5="$RESULTS_DIR/results_cg1_5"
-  GENERATED_DIR_DoG1_5="$RESULTS_DIR/samples/0000010_dog1_5"
+  GENERATED_DIR_DoG1_5="$RESULTS_DIR/samples/0024000_dog1_5"
   RESULTS_FILE_DoG1_5="$RESULTS_DIR/results_dog1_5"
   # Till here...
-  CHECKPOINT_DIR="$RESULTS_DIR/checkpoints/0000010.pt"
+  CHECKPOINT_DIR="$RESULTS_DIR/checkpoints/0024000.pt"
   LOG_FILE="$RESULTS_DIR/training_log.txt"
   RESULTS_FILE="$RESULTS_DIR/results"
 }
@@ -104,6 +104,7 @@ create_environment() {
 }
 
 prepare_dataset() {
+  find $REAL_DATA_DIR -name '._*' -delete # Delete metadata if exists in dataset (Exists for Artbench)
   if [ -d "$REAL_DATA_DIR" ] && [ "$(ls -A "$REAL_DATA_DIR")" ]; then
     echo ">>> Dataset already exists at: $REAL_DATA_DIR. Skipping extraction."
     return
