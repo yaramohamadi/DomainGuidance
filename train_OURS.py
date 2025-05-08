@@ -514,9 +514,9 @@ def main(args):
             if train_steps % args.ckpt_every == 0 and train_steps > 0:
                 if rank == 0:
                     checkpoint = {
-                        "model": model.module.state_dict(),
+                        #"model": model.module.state_dict(),
                         "ema": ema.state_dict(),
-                        "opt": opt.state_dict(),
+                        #"opt": opt.state_dict(),
                         "args": args
                     }
                     checkpoint_path = f"{checkpoint_dir}/{train_steps:07d}.pt"
