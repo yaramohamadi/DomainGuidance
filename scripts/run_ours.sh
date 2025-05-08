@@ -1,13 +1,24 @@
 #!/bin/bash
 # set -e  # Exit on any error
 
-# ====================== CONFIGURATION ======================
+# ====================== DEFAULT CONFIGURATION ======================
 
-# Define CUDA devices here
 CUDA_DEVICES="0,1"
-EXPERIMENT_NAME="dogfinetune1_5_EMA_CUTOFF_nodropout"
-DATASET="cub-200-2011_processed"  # Options: caltech, birds, etc.
-SERVER="taylor"  # Options: taylor, bool, computecanada
+DATASET="cub-200-2011_processed"
+SERVER="taylor"
+EXPERIMENT_NAME="dogfinetune_nodropout"
+
+# ====================== ARGUMENT PARSING ======================
+
+while [[ "$#" -gt 0 ]]; do
+  case $1 in
+    --cuda_devices) CUDA_DEVICES="$2"; shift ;;
+    --dataset) DATASET="$2"; shift ;;
+    --server) SERVER="$2"; shift ;;
+    *) echo "Unknown parameter passed: $1"; exit 1 ;;
+  esac
+  shift
+done
 
 # Load all logic
 source scripts/config.sh
@@ -15,7 +26,7 @@ resolve_server_paths
 resolve_dataset_config
 
 W_TRAIN_DOG=1.5
-USE_GUIDANCE_CUTOFF=1
+USE_GUIDANCE_CUTOFF=0
 DROPOUT_RATIO=0.0
 
 # Define any additional specific parameters here

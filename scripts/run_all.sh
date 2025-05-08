@@ -6,10 +6,7 @@ CUDA_DEVICES="0,1"
 
 # ========== DATASET TO SCRIPT MAPPING ==========
 # Format: dataset_name script_name
-declare -a TASKS=(
-  "cub-200-2011_processed run_ours.sh"
-  "cub-200-2011_processed run_baseline_mg.sh"
-  "cub-200-2011_processed run_baselines_finetune.sh"
+
 #  "stanford-cars_processed run_ours.sh"
 #  "stanford-cars_processed run_baseline_mg.sh"
 #  "stanford-cars_processed run_baselines_finetune.sh"
@@ -25,6 +22,15 @@ declare -a TASKS=(
 #  "caltech-101 run_ours.sh"
 #  "caltech-101 run_baseline_mg.sh"
 #  "caltech-101 run_baselines_finetune.sh"
+#  "cub-200-2011_processed run_ours.sh"
+#  "cub-200-2011_processed run_baseline_mg.sh"
+#  "cub-200-2011_processed run_baselines_finetune.sh"
+#  "cub-200-2011_processed run_ours.sh"
+#  "cub-200-2011_processed run_baseline_mg.sh"
+#  "cub-200-2011_processed run_baselines_finetune.sh"
+
+declare -a TASKS=(
+  "caltech-101 run_ours.sh"
 )
 
 # ========== EXECUTION LOOP ==========
@@ -39,7 +45,7 @@ for TASK in "${TASKS[@]}"; do
   bash "scripts/$SCRIPT" \
     --dataset "$DATASET" \
     --server "$SERVER" \
-    --cuda "$CUDA_DEVICES"
+    --cuda_devices "$CUDA_DEVICES"
 
   echo "✅ Finished $SCRIPT on $DATASET"
   echo "=============================================="
