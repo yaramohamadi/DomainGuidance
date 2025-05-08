@@ -6,7 +6,7 @@
 CUDA_DEVICES="0,1"
 DATASET="cub-200-2011_processed"
 SERVER="taylor"
-EXPERIMENT_NAME="dogfinetune_nodropout"
+EXPERIMENT_PRENAME=""
 
 # ====================== ARGUMENT PARSING ======================
 
@@ -15,10 +15,13 @@ while [[ "$#" -gt 0 ]]; do
     --cuda_devices) CUDA_DEVICES="$2"; shift ;;
     --dataset) DATASET="$2"; shift ;;
     --server) SERVER="$2"; shift ;;
+    --experiment_prename) EXPERIMENT_PRENAME="$2"; shift ;;
     *) echo "Unknown parameter passed: $1"; exit 1 ;;
   esac
   shift
 done
+
+EXPERIMENT_NAME="$EXPERIMENT_PRENAME/dogfinetune_nodropout"
 
 # Load all logic
 source scripts/config.sh

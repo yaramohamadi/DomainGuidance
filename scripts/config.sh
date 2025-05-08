@@ -50,17 +50,20 @@ resolve_server_paths() {
     case "$SERVER" in
         taylor)
             export PATH="$HOME/.local/bin:$PATH"
+            export PATH="$HOME/miniconda3/bin:$PATH"
             ~/miniconda3/bin/conda init bash
             source ~/.bashrc
-            CODE_PRE_DIR="/projets/Ymohammadi/DomainGuidance"
+            CODE_PRE_DIR="/home/ens/AT74470/DomainGuidance"
             DATA_TARGET_DIR="/home/ens/AT74470/datasets"
             DATASETS_DIR="/home/ens/AT74470/datasets"
             RESULTS_PRE_DIR="/home/ens/AT74470/results/DoG"
             ENV_PATH="/home/ens/AT74470/envs/DiT"
             ;;
         bool)
-            CODE_PRE_DIR="/home/ens/AT74470/DomainGuidance"
-            DATA_TARGET_DIR="/home/ens/AT74470/DomainGuidance/datasets"
+            conda init
+            source ~/.bashrc
+            CODE_PRE_DIR="/projets/Ymohammadi/DomainGuidance"
+            DATA_TARGET_DIR="/projets/Ymohammadi/DomainGuidance/datasets"
             DATASETS_DIR="/export/datasets/public/diffusion_datasets"
             RESULTS_PRE_DIR="/export/datasets/public/diffusion_datasets/tmp_weights"
             ENV_PATH="/projets/Ymohammadi/envs/DiT"
@@ -81,8 +84,6 @@ resolve_server_paths() {
 
 create_environment() {
   echo ">>> Setting up environment..."
-  export PATH="$HOME/.local/bin:$PATH"
-  export PATH="$HOME/miniconda3/bin:$PATH"
 
   if [ -d "$ENV_PATH" ]; then
     echo "Using existing conda env at $ENV_PATH"
