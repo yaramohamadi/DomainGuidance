@@ -86,12 +86,6 @@ calculate_fid() {
         --output_dir $RESULTS_FILE
 }
 
-cleanup_dataset() {
-    echo ">>> Cleaning up dataset..."
-    rm -rf "$DATA_TARGET_DIR"
-    echo ">>> Dataset removed."
-}
-
 # ====================== MAIN ======================
 echo ">>> Logging to: $LOG_FILE"
 rm -f "$LOG_FILE"
