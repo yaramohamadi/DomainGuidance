@@ -4,16 +4,16 @@
 # ====================== CONFIGURATION ======================
 
 # Define CUDA devices here
-CUDA_DEVICES="0,3"
+CUDA_DEVICES="2,3"
 FID_DEVICE="cuda:0"
 NPROC_PER_NODE=2
 
 EXPERIMENT_NAME="dogfinetune1_5_EMA_CUTOFF"
-DATASET="cub-200-2011_processed"  # Options: caltech, birds, etc.
+DATASET="stanford-cars_processed"  # Options: caltech, birds, etc.
 
 NSAMPLE=10000
 W_TRAIN_DOG=1.5
-USE_GUIDANCE_CUTOFF=1
+USE_GUIDANCE_CUTOFF=0
 
 CODE_PRE_DIR="/projets/Ymohammadi/DomainGuidance"
 DATA_TARGET_DIR="/projets/Ymohammadi/DomainGuidance/datasets"

@@ -4,14 +4,14 @@
 # ====================== CONFIGURATION ======================
 
 # Define CUDA devices here
-CUDA_DEVICES="0,3"
+CUDA_DEVICES="2,3"
 FID_DEVICE="cuda:0"
 NPROC_PER_NODE=2
 
 EXPERIMENT_NAME="dogfinetune1_5_EMA_CUTOFF"
-DATASET="cub-200-2011_processed"  # Options: caltech, birds, etc.
+DATASET="stanford-cars_processed"  # Options: caltech, birds, etc.
 
-NSAMPLE=1000
+NSAMPLE=10000
 W_TRAIN_DOG=1.5
 USE_GUIDANCE_CUTOFF=1
 
@@ -33,7 +33,7 @@ case "$DATASET" in
     NUM_CLASSES=200
     ;;
   stanford-cars_processed)
-    DATA_DIR_ZIP="$DATASETS_DIR/stanford-cars_processed/$DATASET.zip"
+    DATA_DIR_ZIP="$DATASETS_DIR/$DATASET.zip"
     REAL_DATA_DIR="$DATA_TARGET_DIR/$DATASET"
     NUM_CLASSES=196
     ;;
@@ -189,8 +189,8 @@ for MG_HIGH in "${MG_HIGH_VALUES[@]}"; do
     echo ">>> Running experiment: $EXPERIMENT_NAME with MG_HIGH=$MG_HIGH"
     echo ">>> Logging to: $LOG_FILE"
     rm -f "$LOG_FILE"
-    #train_model
-    #run_sampling
+    train_model
+    run_sampling
     calculate_fid
     echo ">>> All tasks completed successfully!"
 done
