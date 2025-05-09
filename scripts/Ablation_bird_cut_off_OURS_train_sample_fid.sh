@@ -9,9 +9,9 @@ FID_DEVICE="cuda:0"
 NPROC_PER_NODE=2
 
 EXPERIMENT_NAME="dogfinetune1_5_EMA_CUTOFF"
-DATASET="cub-200-2011_processed"  # Options: caltech, birds, etc.
+DATASET="stanford-cars_processed"  # Options: caltech, birds, etc.
 
-NSAMPLE=1000
+NSAMPLE=10000
 W_TRAIN_DOG=1.5
 USE_GUIDANCE_CUTOFF=1
 
@@ -28,12 +28,12 @@ case "$DATASET" in
     NUM_CLASSES=101
     ;;
   cub-200-2011_processed)
-    DATA_DIR_ZIP="$DATASETS_DIR/cub-200-2011_processed/$DATASET.zip"
+    DATA_DIR_ZIP="$DATASETS_DIR/$DATASET.zip"
     REAL_DATA_DIR="$DATA_TARGET_DIR/$DATASET"
     NUM_CLASSES=200
     ;;
   stanford-cars_processed)
-    DATA_DIR_ZIP="$DATASETS_DIR/stanford-cars_processed/$DATASET.zip"
+    DATA_DIR_ZIP="$DATASETS_DIR/$DATASET.zip"
     REAL_DATA_DIR="$DATA_TARGET_DIR/$DATASET"
     NUM_CLASSES=196
     ;;
@@ -41,6 +41,16 @@ case "$DATASET" in
     DATA_DIR_ZIP="$DATASETS_DIR/food-101_processed/$DATASET.zip"
     REAL_DATA_DIR="$DATA_TARGET_DIR/$DATASET"
     NUM_CLASSES=101
+    ;;
+  df-20m_processed)
+    DATA_DIR_ZIP="$DATASETS_DIR/df-20m_processed/$DATASET.zip"
+    REAL_DATA_DIR="$DATA_TARGET_DIR/$DATASET"
+    NUM_CLASSES=1577
+    ;;
+  artbench-10_processed)
+    DATA_DIR_ZIP="$DATASETS_DIR/artbench10_processed/$DATASET.zip"
+    REAL_DATA_DIR="$DATA_TARGET_DIR/$DATASET"
+    NUM_CLASSES=10
     ;;
   *)
     echo "Unknown dataset: $DATASET"
@@ -94,7 +104,6 @@ create_environment() {
 
 prepare_dataset() {
     mkdir -p "$DATA_TARGET_DIR"
-    cp "$DATA_DIR_ZIP" "$DATA_TARGET_DIR/"
     unzip -o "$DATA_DIR_ZIP" -d "$DATA_TARGET_DIR"
     echo ">>> Dataset prepared at: $REAL_DATA_DIR"
 }

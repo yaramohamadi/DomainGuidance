@@ -144,7 +144,7 @@ def center_crop_arr(pil_image, image_size):
 
     scale = image_size / min(*pil_image.size)
     pil_image = pil_image.resize(
-        tuple(round(x * scale) for x in pil_image.size), resample=Image.BICUBIC
+        tuple(round(x * scale) for x in pil_image.size), resample=Image.Resampling.BICUBIC
     )
 
     arr = np.array(pil_image)
@@ -298,9 +298,9 @@ def main(args):
             if train_steps % args.ckpt_every == 0 and train_steps > 0:
                 if rank == 0:
                     checkpoint = {
-                        "model": model.module.state_dict(),
+                        #"model": model.module.state_dict(),
                         "ema": ema.state_dict(),
-                        "opt": opt.state_dict(),
+                        #"opt": opt.state_dict(),
                         "args": args
                     }
                     checkpoint_path = f"{checkpoint_dir}/{train_steps:07d}.pt"

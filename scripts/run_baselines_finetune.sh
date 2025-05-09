@@ -1,108 +1,36 @@
 #!/bin/bash
 # set -e  # Exit on any error
 
-# ====================== CONFIGURATION ======================
+# ====================== DEFAULT CONFIGURATION ======================
 
-# Define CUDA devices here
 CUDA_DEVICES="0,3"
-FID_DEVICE="cuda:0"
-NPROC_PER_NODE=2
-
-EXPERIMENT_NAME="baselines_finetune"
 DATASET="food-101_processed"  # Options: caltech, birds, etc.
+SERVER="taylor"  # Options: taylor, bool, computecanada
+EXPERIMENT_PRENAME=""
 
-RESULTS_PRE_DIR="/home/ens/AT74470/results/DoG"
-DATA_TARGET_DIR="/home/ens/AT74470/datasets/"
-ENV_PATH="/home/ens/AT74470/envs/DiT"
+# ====================== ARGUMENT PARSING ======================
 
-GENERATED_DIR_CG1="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/samples/0024000/samples_CFG1/"
-GENERATED_DIR_CG1_5="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/samples/0024000/samples_CFG1_5"
-GENERATED_DIR_DoG1_5="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/samples/0024000/samples_DOG1_5"
-RESULTS_FILE_CG1="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/results/CFG1_results"
-RESULTS_FILE_CG1_5="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/results/CFG1_5_results"
-RESULTS_FILE_DoG1_5="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/results/DoG1_5/results"
+while [[ "$#" -gt 0 ]]; do
+  case $1 in
+    --cuda_devices) CUDA_DEVICES="$2"; shift ;;
+    --dataset) DATASET="$2"; shift ;;
+    --server) SERVER="$2"; shift ;;
+    --experiment_prename) EXPERIMENT_PRENAME="$2"; shift ;;
+    *) echo "Unknown parameter passed: $1"; exit 1 ;;
+  esac
+  shift
+done
 
-RESULTS_DIR="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/"
-CHECKPOINT_DIR="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/checkpoints/0024000.pt"
-LOG_FILE="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/training_log.txt"
+EXPERIMENT_NAME="$EXPERIMENT_PRENAME/baselines_finetune"
 
-case "$DATASET" in
-  caltech-101)
-    DATA_DIR_ZIP="$DATA_TARGET_DIR/$DATASET.zip"
-    REAL_DATA_DIR="$DATA_TARGET_DIR/$DATASET"
-    NUM_CLASSES=101
-    ;;
-  cub-200-2011_processed)
-    DATA_DIR_ZIP="$DATA_TARGET_DIR/$DATASET.zip"
-    REAL_DATA_DIR="$DATA_TARGET_DIR/$DATASET"
-    NUM_CLASSES=200
-    ;;
-  stanford-cars_processed)
-    DATA_DIR_ZIP="$DATA_TARGET_DIR/$DATASET.zip"
-    REAL_DATA_DIR="$DATA_TARGET_DIR/$DATASET"
-    NUM_CLASSES=196
-    ;;
-  food-101_processed)
-    DATA_DIR_ZIP="$DATA_TARGET_DIR/$DATASET.zip"
-    REAL_DATA_DIR="$DATA_TARGET_DIR/$DATASET"
-    NUM_CLASSES=101
-    ;;
-  *)
-    echo "Unknown dataset: $DATASET"
-    exit 1
-    ;;
-esac
+# Load all logic
+source scripts/config.sh
+resolve_server_paths
+resolve_dataset_config
 
-# CONSTANTS
-IMAGE_SIZE=256
-TOTAL_STEPS=24000
-MODEL=DiT-XL/2
-LOG_EVERY=1000
-CKPT_EVERY=24000
-BATCH_SIZE=32
-VAE=ema
-NUM_WORKERS=4
+# Define any additional specific parameters here
+# ...
 
-NSAMPLE=10000
-CFG_SCALE=1.0
-NUM_SAMPLE_STEPS=50
-
-
-# ====================== HELPER ======================
-log_and_run() {
-    echo ">>> $1"
-    shift
-    "$@" 2>&1 | tee -a "$LOG_FILE"
-}
-
-mkdir -p "$(dirname "$LOG_FILE")"
-
-# ====================== STEPS ======================
-create_environment() {
-    echo ">>> Setting up environment..."
-    if [ -d "$ENV_PATH" ]; then
-        echo "Using existing conda env at $ENV_PATH"
-    else
-        conda create --prefix "$ENV_PATH" python=3.11 -y
-    fi
-    source "$(conda info --base)/etc/profile.d/conda.sh"
-    conda activate "$ENV_PATH"
-    conda install pytorch torchvision pytorch-cuda=12.6 -c pytorch -c nvidia
-    pip install timm diffusers accelerate pytorch-fid
-
-    if [ ! -d "dgm-eval" ]; then
-        git clone https://github.com/layer6ai-labs/dgm-eval.git
-    fi
-    pushd dgm-eval
-    pip install -e .
-    popd
-}
-prepare_dataset() {
-    mkdir -p "$DATA_TARGET_DIR"
-    cp "$DATA_DIR_ZIP" "$DATA_TARGET_DIR/"
-    unzip -o "$DATA_DIR_ZIP" -d "$DATA_TARGET_DIR"
-    echo ">>> Dataset prepared at: $REAL_DATA_DIR"
-}
 train_model() {
     log_and_run "Training model..." \
     env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES torchrun --nproc_per_node=$NPROC_PER_NODE train.py \
@@ -187,15 +115,11 @@ fid_DoG1_5() {
         --metrics fd prdc --save --output_dir "$RESULTS_FILE_DoG1_5"
 }
 
-cleanup_dataset() {
-    echo ">>> Cleaning up dataset..."
-    rm -rf "$DATA_TARGET_DIR"
-    echo ">>> Dataset removed."
-}
-
 # ====================== MAIN ======================
+
 echo ">>> Logging to: $LOG_FILE"
 rm -f "$LOG_FILE"
+mkdir -p "$(dirname "$LOG_FILE")"
 
 create_environment
 prepare_dataset
