@@ -292,7 +292,7 @@ def center_crop_arr(pil_image, image_size):
     """
     while min(*pil_image.size) >= 2 * image_size:
         pil_image = pil_image.resize(
-            tuple(x // 2 for x in pil_image.size), resample=Image.BOX
+            tuple(x // 2 for x in pil_image.size), resample=Image.Resampling.BOX
         )
 
     scale = image_size / min(*pil_image.size)
