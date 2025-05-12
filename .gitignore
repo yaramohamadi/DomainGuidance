@@ -36,3 +36,7 @@ dgm-eval/**
 experiments/
 experiments/*
 experiments/**
+
+tables/
+tables/*
+tables/**
