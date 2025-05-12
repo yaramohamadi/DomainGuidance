@@ -4,44 +4,48 @@
 SERVER="bool"
 CUDA_DEVICES="2,3"
 SCRIPT="run_ours.sh"
+EXPERIMENT_PRENAME="ablation_mghigh"
 
-EXPERIMENT_PRENAME="ablation_mghigh" # ablation_mghigh ablation_latestart
-
+#     "stanford-cars_processed"
 declare -a TASKS=(
-  "stanford-cars_processed"
-  "caltech-101_processed"
+  "cub-200-2011_processed"
 )
 
-declare -a LATESTARTS=(0) #  2000 4000 6000 8000 10000)
-declare -a MGHIGHS=(0.5 0.6 0.7 0.8 0.9 1)  # Add as needed
+# ========== Define per-task (latestart, mghigh) pairs ==========
+declare -A PAIR_MAP
+# Format: "latestart,mghigh latestart,mghigh ..."
+# PAIR_MAP["stanford-cars_processed"]="0,0.5 0,0.4 6000,1 7000 1"
+PAIR_MAP["cub-200-2011_processed"]="5000,0.75 6000,0.75, 7000,0.75 10000,0.75"
 
 # ========== EXECUTION LOOP ==========
 for DATASET in "${TASKS[@]}"; do
-  for LATESTART in "${LATESTARTS[@]}"; do
-    for MGHIGH in "${MGHIGHS[@]}"; do
+  PAIRS=(${PAIR_MAP["$DATASET"]})
+  echo "$PAIRS"
+  for PAIR in "${PAIRS[@]}"; do
+    LATESTART="${PAIR%%,*}"  # extract before comma
+    MGHIGH="${PAIR##*,}"     # extract after comma
+    
 
-      echo "=============================================="
-      echo "Running $SCRIPT on $DATASET | latestart: $LATESTART | mghigh: $MGHIGH"
-      echo "Server: $SERVER | CUDA Devices: $CUDA_DEVICES"
-      echo "----------------------------------------------"
+    echo "=============================================="
+    echo "Running $SCRIPT on $DATASET | latestart: $LATESTART | mghigh: $MGHIGH"
+    echo "Server: $SERVER | CUDA Devices: $CUDA_DEVICES"
+    echo "----------------------------------------------"
 
-      CMD="scripts/$SCRIPT \
-        --dataset \"$DATASET\" \
-        --server \"$SERVER\" \
-        --cuda_devices \"$CUDA_DEVICES\" \
-        --experiment_prename \"$EXPERIMENT_PRENAME\" \
-        --latestart \"$LATESTART\" \
-        --mghigh \"$MGHIGH\""
+    CMD="scripts/$SCRIPT \
+      --dataset \"$DATASET\" \
+      --server \"$SERVER\" \
+      --cuda_devices \"$CUDA_DEVICES\" \
+      --experiment_prename \"$EXPERIMENT_PRENAME\" \
+      --latestart \"$LATESTART\" \
+      --mghigh \"$MGHIGH\""
 
-      #if [[ "$SERVER" == "computecanada" ]]; then
-      #  eval "JOB_NAME=$EXPERIMENT_PRENAME sbatch $CMD"
-      #else
+    if [[ "$SERVER" == "computecanada" ]]; then
+      eval "JOB_NAME=$EXPERIMENT_PRENAME sbatch $CMD"
+    else
       eval "bash $CMD"
-      #fi
+    fi
 
-      echo "✅ Finished $SCRIPT on $DATASET | latestart: $LATESTART | mghigh: $MGHIGH"
-      echo "=============================================="
-
-    done
+    echo "✅ Finished $SCRIPT on $DATASET | latestart: $LATESTART | mghigh: $MGHIGH"
+    echo "=============================================="
   done
 done
