@@ -5,7 +5,7 @@ SERVER="computecanada"
 CUDA_DEVICES="0,1"
 SCRIPT="run_ours.sh"
 
-EXPERIMENT_PRENAME="ablation"
+EXPERIMENT_PRENAME="ablation_mghigh" # ablation_mghigh ablation_latestart
 
 declare -a TASKS=(
   "stanford-cars_processed"
