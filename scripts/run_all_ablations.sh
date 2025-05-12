@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # ========== GLOBAL CONFIGURATION ==========
-SERVER="computecanada"
-CUDA_DEVICES="0,1"
+SERVER="bool"
+CUDA_DEVICES="2,3"
 SCRIPT="run_ours.sh"
 
 EXPERIMENT_PRENAME="ablation"
