@@ -40,3 +40,7 @@ experiments/**
 tables/
 tables/*
 tables/**
+
+venv/
+venv/*
+venv/**

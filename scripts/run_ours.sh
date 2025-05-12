@@ -1,5 +1,16 @@
 #!/bin/bash
-# set -e  # Exit on any error
+#SBATCH --account=def-hadi87
+#SBATCH --job-name=myjob
+#SBATCH --output=logs/%x_%j.out
+#SBATCH --error=logs/%x_%j.err          
+#SBATCH --time=07:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=16
+#SBATCH --gres=gpu:a100:2              
+#SBATCH --mem=80G                        
+#SBATCH --mail-user=yara.mohammadi-bahram.1@ens.etsmtl.ca 
+#SBATCH --mail-type=ALL           
 
 # ====================== DEFAULT CONFIGURATION ======================
 
@@ -7,6 +18,9 @@ CUDA_DEVICES="0,1"
 DATASET="cub-200-2011_processed"
 SERVER="taylor"
 EXPERIMENT_PRENAME=""
+USE_GUIDANCE_CUTOFF=1
+MG_HIGH=1
+LATE_START=0
 
 # ====================== ARGUMENT PARSING ======================
 
@@ -16,12 +30,14 @@ while [[ "$#" -gt 0 ]]; do
     --dataset) DATASET="$2"; shift ;;
     --server) SERVER="$2"; shift ;;
     --experiment_prename) EXPERIMENT_PRENAME="$2"; shift ;;
+    --latestart) LATE_START="$2"; shift ;;
+    --mghigh) MG_HIGH="$2"; shift ;;
     *) echo "Unknown parameter passed: $1"; exit 1 ;;
   esac
   shift
 done
 
-EXPERIMENT_NAME="$EXPERIMENT_PRENAME/dogfinetune_nodropout"
+EXPERIMENT_NAME="$EXPERIMENT_PRENAME/dogfinetune"
 
 # Load all logic
 source scripts/config.sh
@@ -29,7 +45,6 @@ resolve_server_paths
 resolve_dataset_config
 
 W_TRAIN_DOG=1.5
-USE_GUIDANCE_CUTOFF=0
 DROPOUT_RATIO=0.0
 
 # Define any additional specific parameters here
@@ -50,7 +65,9 @@ train_model() {
         --num-workers "$NUM_WORKERS" \
         --w-dog "$W_TRAIN_DOG" \
         --guidance-cutoff "$USE_GUIDANCE_CUTOFF" \
-        --dropout-ratio "$DROPOUT_RATIO" 
+        --mg-high "$MG_HIGH" \
+        --dropout-ratio "$DROPOUT_RATIO" \
+        --late-start-iter "$LATE_START"
 }
 
 run_sampling() {

@@ -73,10 +73,10 @@ resolve_server_paths() {
             ;;
         computecanada) 
             CODE_PRE_DIR="/home/ens/AT74470/DomainGuidance" # TODO 
-            DATA_TARGET_DIR="/home/ens/AT74470/DomainGuidance/datasets"
-            DATASETS_DIR="/export/datasets/public/diffusion_datasets"
-            RESULTS_PRE_DIR="/export/datasets/public/diffusion_datasets/tmp_weights"
-            ENV_PATH="/projets/Ymohammadi/envs/DiT"
+            DATA_TARGET_DIR="$SLURM_TMPDIR"
+            DATASETS_DIR="/home/ymbahram/scratch/diffusion_datasets"
+            RESULTS_PRE_DIR="/home/ymbahram/scratch/results/DoG"
+            ENV_PATH="/home/ymbahram/projects/def-hadi87/ymbahram/envs/DiT"
             ;;
         *)
             echo "Unknown server: $SERVER" >&2
@@ -88,23 +88,89 @@ resolve_server_paths() {
 create_environment() {
   echo ">>> Setting up environment..."
 
-  if [ -d "$ENV_PATH" ]; then
-    echo "Using existing conda env at $ENV_PATH"
-    conda activate "$ENV_PATH"
-  else
-    conda create --prefix "$ENV_PATH" python=3.11 -y
-    source "$(conda info --base)/etc/profile.d/conda.sh"
-    conda activate "$ENV_PATH"
-    conda install pytorch torchvision pytorch-cuda=12.6 -c pytorch -c nvidia
+  if [[ "$SERVER" == "computecanada" ]]; then
+    echo ">>> Detected Compute Canada: using virtualenv + module setup"
+
+    # Load Compute Canada modules
+    module load python/3.11 cuda/12.2
+
+    # Create virtualenv if needed
+    if [ -d "$ENV_PATH" ]; then
+      echo "Using existing virtualenv at $ENV_PATH"
+    else
+      python -m venv "$ENV_PATH"
+    fi
+
+    # Activate and install packages
+    source "$ENV_PATH/bin/activate"
+    nvidia-smi
+    pip install --upgrade pip
+    pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
     pip install timm diffusers accelerate pytorch-fid
-  fi
-  if [ ! -d "dgm-eval" ]; then
+    pip install numpy==1.23.2
+
+    # Install dgm-eval
+    if [ ! -d "dgm-eval" ]; then
       git clone https://github.com/layer6ai-labs/dgm-eval.git
+    fi
+    pushd dgm-eval
+    pip install --no-deps -e .
+    popd
+
+  else
+    echo ">>> Detected local server: using conda env setup"
+
+    if [ -d "$ENV_PATH" ]; then
+      echo "Using existing conda env at $ENV_PATH"
+      conda activate "$ENV_PATH"
+    else
+      conda create --prefix "$ENV_PATH" python=3.11 -y
+      source "$(conda info --base)/etc/profile.d/conda.sh"
+      conda activate "$ENV_PATH"
+      conda install pytorch torchvision pytorch-cuda=12.6 -c pytorch -c nvidia
+      pip install timm diffusers accelerate pytorch-fid
+    fi
+
+    if [ ! -d "dgm-eval" ]; then
+      git clone https://github.com/layer6ai-labs/dgm-eval.git
+    fi
+    pushd dgm-eval
+    pip install -e .
+    popd
   fi
-  pushd dgm-eval
-  pip install -e .
-  popd
 }
+
+create_environment() {
+    echo ">>> Setting up Python virtual environment..."
+
+    # Load required modules (adjust CUDA version if needed)
+    module load python/3.11 cuda/12.2  # Match CUDA to your desired version
+
+    # Create the environment directory if it doesn't exist
+    if [ -d "$ENV_PATH" ]; then
+        echo "Using existing virtualenv at $ENV_PATH"
+    else
+        python -m venv "$ENV_PATH"
+    fi
+
+    # Activate the virtual environment
+    source "$ENV_PATH/bin/activate"
+
+    # Upgrade pip and install packages
+    pip install --upgrade pip
+    pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+    pip install timm diffusers accelerate pytorch-fid
+
+    # Clone and install dgm-eval if not present
+    if [ ! -d "dgm-eval" ]; then
+        git clone https://github.com/layer6ai-labs/dgm-eval.git
+    fi
+    pushd dgm-eval
+    pip install -e .
+    popd
+}
+
+
 
 prepare_dataset() {
   find $REAL_DATA_DIR -name '._*' -delete # Delete metadata if exists in dataset (Exists for Artbench)
