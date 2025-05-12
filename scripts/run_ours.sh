@@ -37,7 +37,7 @@ while [[ "$#" -gt 0 ]]; do
   shift
 done
 
-EXPERIMENT_NAME="$EXPERIMENT_PRENAME/dogfinetune_latestart${LATE_START}_mghigh${MG_HIGH}"
+EXPERIMENT_NAME="$EXPERIMENT_PRENAME/dogfinetune_LATE_START_ITER${LATE_START}_MG${MG_HIGH}"
 
 # Load all logic
 source scripts/config.sh
