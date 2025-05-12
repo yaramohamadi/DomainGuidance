@@ -4,20 +4,19 @@
 SERVER="computecanada"
 CUDA_DEVICES="0,1"
 SCRIPT="run_ours.sh"
-EXPERIMENT_PRENAME="ablation_mghigh"
-# EXPERIMENT_PRENAME="ablation_latestart"
+EXPERIMENT_PRENAME="ablation_best"
 
-#     "stanford-cars_processed" "cub-200-2011_processed"
+#     "stanford-cars_processed"
 declare -a TASKS=(
-  "caltech-101_processed"
+  "cub-200-2011_processed"
+  "stanford-cars_processed"
 )
 
 # ========== Define per-task (latestart, mghigh) pairs ==========
 declare -A PAIR_MAP
 # Format: "latestart,mghigh latestart,mghigh ..."
 # PAIR_MAP["stanford-cars_processed"]="0,0.5 0,0.4 6000,1 7000 1"
-# PAIR_MAP["caltech-101_processed"]="0,0.4 0,0.5, 0,0.6 0,0.7, 0,0.8 0,0.9 0,1.0"
-PAIR_MAP["caltech-101_processed"]="0,0.4 0,0.5, 0,0.6 0,0.7, 0,0.8 0,0.9 0,1.0"
+PAIR_MAP["cub-200-2011_processed"]="5000,0.75"
 
 # ========== EXECUTION LOOP ==========
 for DATASET in "${TASKS[@]}"; do
