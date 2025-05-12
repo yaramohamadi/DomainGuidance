@@ -13,7 +13,7 @@ declare -a TASKS=(
 )
 
 declare -a LATESTARTS=(0) #  2000 4000 6000 8000 10000)
-declare -a MGHIGHS=(0.5) # 0.6 0.7 0.8 0.9 1)  # Add as needed
+declare -a MGHIGHS=(0.5 0.6 0.7 0.8 0.9 1)  # Add as needed
 
 # ========== EXECUTION LOOP ==========
 for DATASET in "${TASKS[@]}"; do
