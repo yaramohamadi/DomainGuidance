@@ -101,13 +101,16 @@ create_environment() {
       python -m venv "$ENV_PATH"
     fi
 
+    WHEELHOUSE=/cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo2023/x86-64-v3
+
+
     # Activate and install packages
     source "$ENV_PATH/bin/activate"
     nvidia-smi
-    pip install --upgrade pip
-    pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
-    pip install timm diffusers accelerate pytorch-fid
-    pip install numpy==1.23.2
+    pip install --upgrade pip --no-index --find-links $WHEELHOUSE
+    pip install torch torchvision --no-index --find-links $WHEELHOUSE
+    pip install timm diffusers accelerate pytorch-fid --no-index --find-links $WHEELHOUSE
+    pip install numpy==1.23.2 --no-index --find-links $WHEELHOUSE
 
     # Install dgm-eval
     if [ ! -d "dgm-eval" ]; then

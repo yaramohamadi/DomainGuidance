@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --account=def-hadi87
-#SBATCH --job-name=myjob
+#SBATCH --job-name=${JOB_NAME:-Ours}  # Use $JOB_NAME if defined, else 'myjob'
 #SBATCH --output=logs/%x_%j.out
 #SBATCH --error=logs/%x_%j.err          
 #SBATCH --time=07:00:00
@@ -37,7 +37,7 @@ while [[ "$#" -gt 0 ]]; do
   shift
 done
 
-EXPERIMENT_NAME="$EXPERIMENT_PRENAME/dogfinetune"
+EXPERIMENT_NAME="$EXPERIMENT_PRENAME/dogfinetune_latestart${LATESTART}_mghigh${MGHIGH}"
 
 # Load all logic
 source scripts/config.sh
