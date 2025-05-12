@@ -31,12 +31,6 @@ EXPERIMENT_PRENAME="All_0"
 #  "cub-200-2011_processed run_baselines_finetune.sh"
 
 declare -a TASKS=(
-  "food-101_processed run_ours.sh"
-  "food-101_processed run_baseline_mg.sh"
-  "food-101_processed run_baselines_finetune.sh"
-  "cub-200-2011_processed run_ours.sh"
-  "cub-200-2011_processed run_baseline_mg.sh"
-  "cub-200-2011_processed run_baselines_finetune.sh"
   "df-20m_processed run_ours.sh"
   "df-20m_processed run_baseline_mg.sh"
   "df-20m_processed run_baselines_finetune.sh"

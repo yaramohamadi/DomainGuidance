@@ -5,7 +5,7 @@ IMAGE_SIZE=256
 TOTAL_STEPS=24000
 MODEL="DiT-XL/2"
 LOG_EVERY=1000
-CKPT_EVERY=10
+CKPT_EVERY=24000
 BATCH_SIZE=32
 VAE="ema"
 NUM_WORKERS=4
@@ -15,6 +15,9 @@ NSAMPLE=10000
 
 FID_DEVICE="cuda:0"
 NPROC_PER_NODE=2
+
+PORT=$(shuf -i 20000-40000 -n 1)
+MASTER_PORT=$PORT
 
 # Set paths and dataset details
 resolve_dataset_config() {
