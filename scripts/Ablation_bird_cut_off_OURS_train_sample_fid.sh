@@ -175,7 +175,7 @@ cleanup_dataset() {
 create_environment
 prepare_dataset
 
-MG_HIGH_VALUES=(0.6 0.7 0.8 0.9 1.0)
+MG_HIGH_VALUES=(0.5) # 0.6 0.7 0.8 0.9 1.0)
 
 for MG_HIGH in "${MG_HIGH_VALUES[@]}"; do
     EXPERIMENT_NAME="ablation_mghigh/dogfinetune1_5_EMA_CUTOFF_MG${MG_HIGH}"
