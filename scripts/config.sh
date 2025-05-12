@@ -100,17 +100,14 @@ create_environment() {
     else
       python -m venv "$ENV_PATH"
     fi
-
-    WHEELHOUSE=/cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo2023/x86-64-v3
-
-
+    
     # Activate and install packages
     source "$ENV_PATH/bin/activate"
     nvidia-smi
-    pip install --upgrade pip --no-index --find-links $WHEELHOUSE
-    pip install torch torchvision --no-index --find-links $WHEELHOUSE
-    pip install timm diffusers accelerate pytorch-fid --no-index --find-links $WHEELHOUSE
-    pip install numpy==1.23.2 --no-index --find-links $WHEELHOUSE
+    pip install --upgrade pip --no-index
+    pip install torch torchvision --no-index
+    pip install timm diffusers accelerate pytorch-fid --no-index
+    pip install numpy==1.23.2 --no-index
 
     # Install dgm-eval
     if [ ! -d "dgm-eval" ]; then
@@ -142,38 +139,6 @@ create_environment() {
     popd
   fi
 }
-
-create_environment() {
-    echo ">>> Setting up Python virtual environment..."
-
-    # Load required modules (adjust CUDA version if needed)
-    module load python/3.11 cuda/12.2  # Match CUDA to your desired version
-
-    # Create the environment directory if it doesn't exist
-    if [ -d "$ENV_PATH" ]; then
-        echo "Using existing virtualenv at $ENV_PATH"
-    else
-        python -m venv "$ENV_PATH"
-    fi
-
-    # Activate the virtual environment
-    source "$ENV_PATH/bin/activate"
-
-    # Upgrade pip and install packages
-    pip install --upgrade pip
-    pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
-    pip install timm diffusers accelerate pytorch-fid
-
-    # Clone and install dgm-eval if not present
-    if [ ! -d "dgm-eval" ]; then
-        git clone https://github.com/layer6ai-labs/dgm-eval.git
-    fi
-    pushd dgm-eval
-    pip install -e .
-    popd
-}
-
-
 
 prepare_dataset() {
   find $REAL_DATA_DIR -name '._*' -delete # Delete metadata if exists in dataset (Exists for Artbench)
