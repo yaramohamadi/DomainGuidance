@@ -19,14 +19,14 @@ fi
 # Activate and install packages
 source "$ENV_PATH/bin/activate"
 nvidia-smi
-pip install --upgrade pip 
-pip install torch torchvision 
-pip install timm diffusers accelerate pytorch-fid 
+pip install --upgrade pip --no-index
+pip install torch torchvision --no-index
+pip install timm diffusers accelerate pytorch-fid --no-index
 
 # Install dgm-eval
 if [ ! -d "dgm-eval" ]; then
     git clone https://github.com/layer6ai-labs/dgm-eval.git
 fi
 pushd dgm-eval
-pip install --no-deps -e . 
+pip install -e . --no-index
 popd
