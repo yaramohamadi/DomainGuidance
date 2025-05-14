@@ -50,8 +50,8 @@ sample_CG1() {
     log_and_run "Sampling images for CG1..." \
     env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES MASTER_PORT=$PORT torchrun --nproc_per_node=$NPROC_PER_NODE sample_ddp.py \
         --model "$MODEL" --vae "$VAE" \
-        --sample-dir "$GENERATED_DIR_CG1" \
-        --ckpt "$CHECKPOINT_DIR" \
+        --sample-dir "$GENERATED_DIR/$PADDED_STEP" \
+        --ckpt "$CHECKPOINT_DIR/$PADDED_CKPT" \
         --per-proc-batch-size "$BATCH_SIZE" --num-fid-samples "$NSAMPLE" \
         --image-size "$IMAGE_SIZE" --num-classes "$NUM_CLASSES" \
         --cfg-scale 1 --num-sampling-steps "$NUM_SAMPLE_STEPS"
@@ -59,12 +59,12 @@ sample_CG1() {
 
 fid_CG1() {
     log_and_run "Calculating FID for CG1..." \
-    env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES python -m dgm_eval "$REAL_DATA_DIR" "$GENERATED_DIR_CG1" \
+    env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES python -m dgm_eval "$REAL_DATA_DIR" "$GENERATED_DIR/$PADDED_STEP" \
         --model inception --device "$FID_DEVICE" --nsample $NSAMPLE --clean_resize \
         --metrics fd prdc --save --output_dir "$RESULTS_FILE_CG1"
 
     log_and_run "Calculating Dino FID for CG1..." \
-    env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES python -m dgm_eval "$REAL_DATA_DIR" "$GENERATED_DIR_CG1" \
+    env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES python -m dgm_eval "$REAL_DATA_DIR" "$GENERATED_DIR/$PADDED_STEP" \
         --model dinov2 --device "$FID_DEVICE" --nsample $NSAMPLE --clean_resize \
         --metrics fd prdc --save --output_dir "$RESULTS_FILE_CG1"
 }
@@ -73,8 +73,8 @@ sample_CG1_5() {
     log_and_run "Sampling images for CG1.5..." \
     env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES MASTER_PORT=$PORT torchrun --nproc_per_node=$NPROC_PER_NODE sample_ddp.py \
         --model "$MODEL" --vae "$VAE" \
-        --sample-dir "$GENERATED_DIR_CG1_5" \
-        --ckpt "$CHECKPOINT_DIR" \
+        --sample-dir "$GENERATED_DIR/$PADDED_STEP" \
+        --ckpt "$CHECKPOINT_DIR/$PADDED_CKPT" \
         --per-proc-batch-size "$BATCH_SIZE" --num-fid-samples "$NSAMPLE" \
         --image-size "$IMAGE_SIZE" --num-classes "$NUM_CLASSES" \
         --cfg-scale 1.5 --num-sampling-steps "$NUM_SAMPLE_STEPS"
@@ -82,12 +82,12 @@ sample_CG1_5() {
 
 fid_CG1_5() {
     log_and_run "Calculating FID for CG1.5..." \
-    env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES python -m dgm_eval "$REAL_DATA_DIR" "$GENERATED_DIR_CG1_5" \
+    env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES python -m dgm_eval "$REAL_DATA_DIR" "$GENERATED_DIR/$PADDED_STEP" \
         --model inception --device "$FID_DEVICE" --nsample $NSAMPLE --clean_resize \
         --metrics fd prdc --save --output_dir "$RESULTS_FILE_CG1_5"
 
     log_and_run "Calculating Dino FID for CG1.5..." \
-    env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES python -m dgm_eval "$REAL_DATA_DIR" "$GENERATED_DIR_CG1_5" \
+    env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES python -m dgm_eval "$REAL_DATA_DIR" "$GENERATED_DIR/$PADDED_STEP" \
         --model dinov2 --device "$FID_DEVICE" --nsample $NSAMPLE --clean_resize \
         --metrics fd prdc --save --output_dir "$RESULTS_FILE_CG1_5"
 }
@@ -96,8 +96,8 @@ sample_DoG1_5() {
     log_and_run "Sampling images for DoG1.5..." \
     env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES MASTER_PORT=$PORT torchrun --nproc_per_node=$NPROC_PER_NODE sample_dog_ddp.py \
         --model "$MODEL" --vae "$VAE" \
-        --sample-dir "$GENERATED_DIR_DoG1_5" \
-        --ckpt "$CHECKPOINT_DIR" \
+        --sample-dir "$GENERATED_DIR/$PADDED_STEP" \
+        --ckpt "$CHECKPOINT_DIR/$PADDED_CKPT" \
         --per-proc-batch-size "$BATCH_SIZE" --num-fid-samples "$NSAMPLE" \
         --image-size "$IMAGE_SIZE" --num-classes "$NUM_CLASSES" \
         --cfg-scale 1.5 --num-sampling-steps "$NUM_SAMPLE_STEPS"
@@ -105,12 +105,12 @@ sample_DoG1_5() {
 
 fid_DoG1_5() {
     log_and_run "Calculating FID for DoG1.5..." \
-    env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES python -m dgm_eval "$REAL_DATA_DIR" "$GENERATED_DIR_DoG1_5" \
+    env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES python -m dgm_eval "$REAL_DATA_DIR" "$GENERATED_DIR/$PADDED_STEP" \
         --model inception --device "$FID_DEVICE" --nsample $NSAMPLE --clean_resize \
         --metrics fd prdc --save --output_dir "$RESULTS_FILE_DoG1_5"
 
     log_and_run "Calculating Dino FID for DoG1.5..." \
-    env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES python -m dgm_eval "$REAL_DATA_DIR" "$GENERATED_DIR_DoG1_5" \
+    env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES python -m dgm_eval "$REAL_DATA_DIR" "$GENERATED_DIR/$PADDED_STEP" \
         --model dinov2 --device "$FID_DEVICE" --nsample $NSAMPLE --clean_resize \
         --metrics fd prdc --save --output_dir "$RESULTS_FILE_DoG1_5"
 }
@@ -125,14 +125,24 @@ create_environment
 prepare_dataset
 train_model
 
-sample_CG1
-fid_CG1
+for ((i=0; i<=TOTAL_STEPS; i+=CKPT_EVERY)); do
+    if [[ $i -eq 0 && "$SKIP_FIRST_CKPT" -eq 1 ]]; then
+    continue
+    fi
+    printf -v PADDED_CKPT "%07d.pt" "$i"
 
-sample_CG1_5
-fid_CG1_5
+    printf -v PADDED_STEP "%07d_cg1" "$i"
+    sample_CG1
+    fid_CG1
 
-sample_DoG1_5
-fid_DoG1_5
+    printf -v PADDED_STEP "%07d_cg1_5" "$i"
+    sample_CG1_5
+    fid_CG1_5
+
+    printf -v PADDED_STEP "%07d_dog1_5" "$i"
+    sample_DoG1_5
+    fid_DoG1_5
+done
 
 cleanup_dataset
 

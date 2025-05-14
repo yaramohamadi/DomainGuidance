@@ -57,8 +57,8 @@ run_sampling() {
     env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES MASTER_PORT=$PORT torchrun --nproc_per_node=$NPROC_PER_NODE sample_ddp.py \
         --model $MODEL \
         --vae $VAE \
-        --sample-dir "$GENERATED_DIR" \
-        --ckpt "$CHECKPOINT_DIR" \
+        --sample-dir "$GENERATED_DIR/$PADDED_STEP" \
+        --ckpt "$CHECKPOINT_DIR/$PADDED_CKPT" \
         --per-proc-batch-size $BATCH_SIZE \
         --num-fid-samples $NSAMPLE \
         --image-size $IMAGE_SIZE \
@@ -69,7 +69,7 @@ run_sampling() {
 
 calculate_fid() {
     log_and_run "Calculating FID..." \
-    env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES python -m dgm_eval "$REAL_DATA_DIR" "$GENERATED_DIR" \
+    env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES python -m dgm_eval "$REAL_DATA_DIR" "$GENERATED_DIR/$PADDED_STEP" \
         --model inception \
         --device "$FID_DEVICE" \
         --nsample $NSAMPLE \
@@ -79,7 +79,7 @@ calculate_fid() {
         --output_dir $RESULTS_FILE
 
     log_and_run "Calculating FID DINO..." \
-    env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES python -m dgm_eval "$REAL_DATA_DIR" "$GENERATED_DIR" \
+    env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES python -m dgm_eval "$REAL_DATA_DIR" "$GENERATED_DIR/$PADDED_STEP" \
         --model dinov2 \
         --device "$FID_DEVICE" \
         --nsample $NSAMPLE \
@@ -97,8 +97,17 @@ mkdir -p "$(dirname "$LOG_FILE")"
 create_environment
 prepare_dataset
 train_model
-run_sampling
-calculate_fid
+
+for ((i=0; i<=TOTAL_STEPS; i+=CKPT_EVERY)); do
+  if [[ $i -eq 0 && "$SKIP_FIRST_CKPT" -eq 1 ]]; then
+    continue
+  fi
+  printf -v PADDED_STEP "%07d" "$i"
+  printf -v PADDED_CKPT "%07d.pt" "$i"
+  run_sampling
+  calculate_fid
+done
+
 cleanup_dataset
 
 echo ">>> All tasks completed successfully!"
