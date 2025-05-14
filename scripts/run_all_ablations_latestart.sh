@@ -1,20 +1,19 @@
 #!/bin/bash
 
 # ========== GLOBAL CONFIGURATION ==========
-SERVER="computecanada"
-CUDA_DEVICES="0,1"
+SERVER="bool"
+CUDA_DEVICES="1,2"
 SCRIPT="run_ours.sh"
-EXPERIMENT_PRENAME="ablation_mghigh"
-# EXPERIMENT_PRENAME="ablation_latestart"
 
-#     "stanford-cars_processed" "cub-200-2011_processed"
+
+#   "stanford-cars_processed" "cub-200-2011_processed"
 declare -a TASKS=(
   "artbench-10_processed"
   "food-101_processed"
   "caltech-101_processed"
 )
 
-# ========== Define per-task (latestart, mghigh) pairs ==========
+# ========== Define per-task (latestart, mghigh, experiment_prename) triples ==========
 declare -A PAIR_MAP
 # Format: "latestart,mghigh latestart,mghigh ..."
 # PAIR_MAP["stanford-cars_processed"]="0,0.5 0,0.4 6000,1 7000 1"
@@ -28,14 +27,11 @@ PAIR_MAP["caltech-101_processed"]="1000,1.0,ablation_latestart 2000,1.0,ablation
 # ========== EXECUTION LOOP ==========
 for DATASET in "${TASKS[@]}"; do
   PAIRS=(${PAIR_MAP["$DATASET"]})
-  echo "$PAIRS"
   for PAIR in "${PAIRS[@]}"; do
-    LATESTART="${PAIR%%,*}"  # extract before comma
-    MGHIGH="${PAIR##*,}"     # extract after comma
-    
+    IFS=',' read -r LATESTART MGHIGH EXPERIMENT_PRENAME <<< "$PAIR"
 
     echo "=============================================="
-    echo "Running $SCRIPT on $DATASET | latestart: $LATESTART | mghigh: $MGHIGH"
+    echo "Running $SCRIPT on $DATASET | latestart: $LATESTART | mghigh: $MGHIGH | prename: $EXPERIMENT_PRENAME"
     echo "Server: $SERVER | CUDA Devices: $CUDA_DEVICES"
     echo "----------------------------------------------"
 
@@ -53,7 +49,7 @@ for DATASET in "${TASKS[@]}"; do
     eval "bash $CMD"
     #fi
 
-    echo "✅ Finished $SCRIPT on $DATASET | latestart: $LATESTART | mghigh: $MGHIGH"
+    echo "✅ Finished $SCRIPT on $DATASET | latestart: $LATESTART | mghigh: $MGHIGH | prename: $EXPERIMENT_PRENAME"
     echo "=============================================="
   done
 done
