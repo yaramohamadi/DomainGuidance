@@ -51,7 +51,7 @@ DROPOUT_RATIO=0.0
 
 train_model() {
     log_and_run "Training model..." \
-    env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES MASTER_PORT=$PORT torchrun --nproc_per_node=$NPROC_PER_NODE train_OURS.py \
+    env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES torchrun --master_port=$PORT --nproc_per_node=$NPROC_PER_NODE train_OURS.py \
         --data-path "$REAL_DATA_DIR" \
         --results-dir "$RESULTS_DIR" \
         --model "$MODEL" \
@@ -72,7 +72,7 @@ train_model() {
 
 run_sampling() {
     log_and_run "Sampling images..." \
-    env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES MASTER_PORT=$PORT torchrun --nproc_per_node=$NPROC_PER_NODE sample_ddp.py \
+    env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES torchrun --master_port=$PORT --nproc_per_node=$NPROC_PER_NODE sample_ddp.py \
         --model "$MODEL" \
         --vae "$VAE" \
         --sample-dir "$GENERATED_DIR/$PADDED_STEP" \

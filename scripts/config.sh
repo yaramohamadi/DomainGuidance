@@ -17,8 +17,17 @@ NSAMPLE=10000
 
 FID_DEVICE="cuda:0"
 NPROC_PER_NODE=2
-PORT=$(shuf -i 20000-40000 -n 1)
-MASTER_PORT=$PORT
+is_port_in_use() {
+  local port=$1
+  (echo >/dev/tcp/127.0.0.1/$port) &>/dev/null
+}
+
+PORT=$(shuf -i 20000-40000 -n 1)  # 🔧 Initialize first
+while is_port_in_use $PORT; do
+  PORT=$(shuf -i 20000-40000 -n 1)
+done
+export PORT
+echo "Using MASTER_PORT=$PORT"
 
 # Set paths and dataset details
 resolve_dataset_config() {

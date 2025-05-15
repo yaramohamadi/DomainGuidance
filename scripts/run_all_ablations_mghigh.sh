@@ -1,15 +1,15 @@
 #!/bin/bash
 
 # ========== GLOBAL CONFIGURATION ==========
-SERVER="bool"
-CUDA_DEVICES="1,2"
+SERVER="taylor"
+CUDA_DEVICES="2,3"
 SCRIPT="run_ours.sh"
 
 
-#   "stanford-cars_processed" "cub-200-2011_processed"
+#   "stanford-cars_processed" "cub-200-2011_processed"  "artbench-10_processed"
+#   "food-101_processed"
+
 declare -a TASKS=(
-  "artbench-10_processed"
-  "food-101_processed"
   "caltech-101_processed"
 )
 
