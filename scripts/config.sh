@@ -156,10 +156,10 @@ prepare_dataset() {
     echo ">>> Dataset already exists at: $REAL_DATA_DIR. Skipping extraction."
     return
   fi
-
   echo ">>> Preparing dataset..."
   mkdir -p "$DATA_TARGET_DIR"
   unzip -qn "$DATA_DIR_ZIP" -d "$DATA_TARGET_DIR"
+  find $REAL_DATA_DIR -name '._*' -delete # Delete metadata if exists in dataset (Exists for Artbench)
   echo ">>> Dataset prepared at: $REAL_DATA_DIR"
 }
 

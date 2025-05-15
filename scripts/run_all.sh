@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ========== GLOBAL CONFIGURATION ==========
-SERVER="taylor"
+SERVER="bool"
 CUDA_DEVICES="0,1"
 EXPERIMENT_PRENAME="All_0"
 
