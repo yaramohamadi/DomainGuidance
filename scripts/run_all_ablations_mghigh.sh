@@ -10,7 +10,12 @@ SCRIPT="run_ours.sh"
 #   "food-101_processed"
 
 declare -a TASKS=(
+<<<<<<< HEAD
   "artbench-10_processed"
+=======
+  "caltech-101_processed",
+  "food-101_processed"
+>>>>>>> fe6ba1866ade8c496bcb0a5abebbe5701b3a0d42
 )
 
 # ========== Define per-task (latestart, mghigh, experiment_prename) triples ==========

@@ -15,9 +15,9 @@ EXPERIMENT_PRENAME="ablation_train_traverse"
 #  "cub-200-2011_processed run_baseline_mg.sh"
 #  "cub-200-2011_processed run_baselines_finetune.sh"
 
+ # "cub-200-2011_processed run_ours.sh"
+ # "cub-200-2011_processed run_baseline_mg.sh"
 declare -a TASKS=(
-  "cub-200-2011_processed run_ours.sh"
-  "cub-200-2011_processed run_baseline_mg.sh"
   "cub-200-2011_processed run_baselines_finetune.sh"
 )
 
