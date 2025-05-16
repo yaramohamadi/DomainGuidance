@@ -2,7 +2,7 @@
 
 # ========== GLOBAL CONFIGURATION ==========
 SERVER="bool"
-CUDA_DEVICES="0,1"
+CUDA_DEVICES="1,2"
 EXPERIMENT_PRENAME="All_0"
 
 # ========== DATASET TO SCRIPT MAPPING ==========
@@ -31,15 +31,15 @@ EXPERIMENT_PRENAME="All_0"
 #  "cub-200-2011_processed run_baselines_finetune.sh"
 
 declare -a TASKS=(
+  "cub-200-2011_processed run_ours.sh"
+  "cub-200-2011_processed run_baseline_mg.sh"
+  "cub-200-2011_processed run_baselines_finetune.sh"
   "artbench-10_processed run_ours.sh"
   "artbench-10_processed run_baseline_mg.sh"
   "artbench-10_processed run_baselines_finetune.sh"
   "food-101_processed run_ours.sh"
   "food-101_processed run_baseline_mg.sh"
   "food-101_processed run_baselines_finetune.sh"
-  "cub-200-2011_processed run_ours.sh"
-  "cub-200-2011_processed run_baseline_mg.sh"
-  "cub-200-2011_processed run_baselines_finetune.sh"
   "stanford-cars_processed run_ours.sh"
   "stanford-cars_processed run_baseline_mg.sh"
   "stanford-cars_processed run_baselines_finetune.sh"
