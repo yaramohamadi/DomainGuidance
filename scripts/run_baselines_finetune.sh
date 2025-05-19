@@ -19,6 +19,7 @@ CUDA_DEVICES="0,3"
 DATASET="food-101_processed"  # Options: caltech, birds, etc.
 SERVER="taylor"  # Options: taylor, bool, computecanada
 EXPERIMENT_PRENAME=""
+DROPOUT_RATIO=0.1
 
 # ====================== ARGUMENT PARSING ======================
 
@@ -56,7 +57,8 @@ train_model() {
         --ckpt-every $CKPT_EVERY \
         --global-batch-size $BATCH_SIZE \
         --vae $VAE \
-        --num-workers $NUM_WORKERS 
+        --num-workers $NUM_WORKERS \
+        --dropout-ratio $DROPOUT_RATIO
 }
 sample_CG1() {
     log_and_run "Sampling images for CG1..." \
@@ -66,7 +68,8 @@ sample_CG1() {
         --ckpt "$CHECKPOINT_DIR/$PADDED_CKPT" \
         --per-proc-batch-size "$BATCH_SIZE" --num-fid-samples "$NSAMPLE" \
         --image-size "$IMAGE_SIZE" --num-classes "$NUM_CLASSES" \
-        --cfg-scale 1 --num-sampling-steps "$NUM_SAMPLE_STEPS"
+        --cfg-scale 1 --num-sampling-steps "$NUM_SAMPLE_STEPS" \
+        --dropout-ratio $DROPOUT_RATIO
 }
 
 fid_CG1() {
@@ -89,7 +92,8 @@ sample_CG1_5() {
         --ckpt "$CHECKPOINT_DIR/$PADDED_CKPT" \
         --per-proc-batch-size "$BATCH_SIZE" --num-fid-samples "$NSAMPLE" \
         --image-size "$IMAGE_SIZE" --num-classes "$NUM_CLASSES" \
-        --cfg-scale 1.5 --num-sampling-steps "$NUM_SAMPLE_STEPS"
+        --cfg-scale 1.5 --num-sampling-steps "$NUM_SAMPLE_STEPS" \
+        --dropout-ratio $DROPOUT_RATIO
 }
 
 fid_CG1_5() {
@@ -112,7 +116,8 @@ sample_DoG1_5() {
         --ckpt "$CHECKPOINT_DIR/$PADDED_CKPT" \
         --per-proc-batch-size "$BATCH_SIZE" --num-fid-samples "$NSAMPLE" \
         --image-size "$IMAGE_SIZE" --num-classes "$NUM_CLASSES" \
-        --cfg-scale 1.5 --num-sampling-steps "$NUM_SAMPLE_STEPS"
+        --cfg-scale 1.5 --num-sampling-steps "$NUM_SAMPLE_STEPS" \
+        --dropout-ratio $DROPOUT_RATIO
 }
 
 fid_DoG1_5() {
@@ -135,17 +140,26 @@ mkdir -p "$(dirname "$LOG_FILE")"
 
 create_environment
 prepare_dataset
+
+if [[ "$DATASET" == "ffhq256" ]]; then
+    DROPOUT_RATIO=0
+fi
+
 train_model
 
 for ((i=0; i<=TOTAL_STEPS; i+=CKPT_EVERY)); do
     if [[ $i -eq 0 && "$SKIP_FIRST_CKPT" -eq 1 ]]; then
-    continue
+        continue
     fi
     printf -v PADDED_CKPT "%07d.pt" "$i"
 
     printf -v PADDED_STEP "%07d_cg1" "$i"
     sample_CG1
     fid_CG1
+
+    if [[ "$DATASET" == "ffhq256" ]]; then
+        continue
+    fi
 
     printf -v PADDED_STEP "%07d_cg1_5" "$i"
     sample_CG1_5

@@ -48,9 +48,9 @@
 # Remove the GOOGLE_BACKGROUND class
 # ZIP again
 # zip -r /export/datasets/public/diffusion_datasets/caltech-101/caltech-101.zip /export/datasets/public/diffusion_datasets/caltech-101/caltech-101
-pushd /export/datasets/public/diffusion_datasets/caltech-101_processed > /dev/null
-zip -r /export/datasets/public/diffusion_datasets/caltech-101_processed.zip caltech-101_processed
-popd > /dev/null
+#pushd /export/datasets/public/diffusion_datasets/caltech-101_processed > /dev/null
+#zip -r /export/datasets/public/diffusion_datasets/caltech-101_processed.zip caltech-101_processed
+#popd > /dev/null
 
 
 ############################### CUB-200-2011 DATASET #############################
@@ -96,3 +96,13 @@ popd > /dev/null
 #pushd /export/datasets/public/diffusion_datasets/artbench-10_processed/ > /dev/null
 #zip -r artbench-10_processed.zip artbench-10_processed/*
 #popd > /dev/null
+
+
+################################## FFHQ ##########################################
+
+
+TARGET_DIR="/export/datasets/public/diffusion_datasets"
+mkdir -p "$TARGET_DIR"
+curl -L -o "$TARGET_DIR/ffhq256.zip" \
+  https://www.kaggle.com/api/v1/datasets/download/denislukovnikov/ffhq256-images-only
+unzip -o "$TARGET_DIR/ffhq256.zip" -d "$TARGET_DIR"
