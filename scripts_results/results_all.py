@@ -4,8 +4,8 @@ import pandas as pd
 # === Config ===
 root_dir = "/home/ens/AT74470/results/DoG"
 save_dir = "./scripts_results/tables"
-metric_to_extract = "recall"  # 'fd', 'precision', 'recall', etc.
-model_prefix = "fd_dinov2" # fd_dinov2
+metric_to_extract = "precision"  # 'fd', 'precision', 'recall', etc.
+model_prefix = "fd_inception" # fd_dinov2
 
 os.makedirs(save_dir, exist_ok=True)
 

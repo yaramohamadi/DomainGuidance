@@ -2,14 +2,15 @@
 
 # ========== GLOBAL CONFIGURATION ==========
 SERVER="taylor"
-CUDA_DEVICES="0,1"
+CUDA_DEVICES="2,3"
 SCRIPT="run_ours.sh"
 
  
 #   "stanford-cars_processed" "cub-200-2011_processed" "artbench-10_processed" "food-101_processed" "caltech-101_processed"
 declare -a TASKS=(
-  "cub-200-2011_processed"
-  "stanford-cars_processed"
+  "caltech-101_processed"
+  "food-101_processed"
+  "artbench-10_processed"
 )
 
 # ========== Define per-task (latestart, mghigh, experiment_prename) triples ==========
