@@ -44,3 +44,7 @@ tables/**
 venv/
 venv/*
 venv/**
+
+logs/
+logs/*
+logs/** 
