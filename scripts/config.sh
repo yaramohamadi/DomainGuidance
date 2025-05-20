@@ -38,7 +38,6 @@ resolve_dataset_config() {
     food-101_processed) NUM_CLASSES=101 ;;
     df-20m_processed) NUM_CLASSES=1577 ;;
     artbench-10_processed) NUM_CLASSES=10 ;;
-    ffhq256) NUM_CLASSES=1;;
     *) echo "Unknown dataset: $DATASET"; exit 1 ;;
   esac
   DATA_DIR_ZIP="$DATASETS_DIR/$DATASET.zip"
@@ -88,6 +87,7 @@ resolve_server_paths() {
             DATASETS_DIR="/home/ymbahram/scratch/diffusion_datasets"
             RESULTS_PRE_DIR="/home/ymbahram/scratch/results/DoG"
             ENV_PATH="/home/ymbahram/projects/def-hadi87/ymbahram/envs/DiT"
+            python download.py
             ;;
         *)
             echo "Unknown server: $SERVER" >&2
@@ -152,25 +152,16 @@ create_environment() {
 }
 
 prepare_dataset() {
-  find "$REAL_DATA_DIR" -name '._*' -delete # Delete metadata if exists
-
+  find $REAL_DATA_DIR -name '._*' -delete # Delete metadata if exists in dataset (Exists for Artbench)
   if [ -d "$REAL_DATA_DIR" ] && [ "$(ls -A "$REAL_DATA_DIR")" ]; then
     echo ">>> Dataset already exists at: $REAL_DATA_DIR. Skipping extraction."
-  else
-    echo ">>> Preparing dataset..."
-    mkdir -p "$DATA_TARGET_DIR"
-    unzip -qn "$DATA_DIR_ZIP" -d "$DATA_TARGET_DIR"
-    find "$REAL_DATA_DIR" -name '._*' -delete
-    echo ">>> Dataset prepared at: $REAL_DATA_DIR"
+    return
   fi
-
-  # === FFHQ-specific directory fix ===
-  if [[ "$REAL_DATA_DIR" == *"ffhq256" ]]; then
-    echo ">>> Detected FFHQ dataset. Restructuring for ImageFolder compatibility..."
-    mkdir -p "$REAL_DATA_DIR/dummy_class"
-    find "$REAL_DATA_DIR" -maxdepth 1 -type f \( -iname "*.jpg" -o -iname "*.png" \) -exec mv {} "$REAL_DATA_DIR/dummy_class/" \;
-    echo ">>> Moved all images into dummy_class subfolder."
-  fi
+  echo ">>> Preparing dataset..."
+  mkdir -p "$DATA_TARGET_DIR"
+  unzip -qn "$DATA_DIR_ZIP" -d "$DATA_TARGET_DIR"
+  find $REAL_DATA_DIR -name '._*' -delete # Delete metadata if exists in dataset (Exists for Artbench)
+  echo ">>> Dataset prepared at: $REAL_DATA_DIR"
 }
 
 
