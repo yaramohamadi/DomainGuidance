@@ -188,7 +188,8 @@ def main(args):
     latent_size = args.image_size // 8
     model = DiT_models[args.model](
         input_size=latent_size,
-        num_classes=args.num_classes
+        num_classes=args.num_classes,
+        class_dropout_prob=args.dropout_ratio,
     )
 
     # Load pre-trained weights if provided:
@@ -337,5 +338,6 @@ if __name__ == "__main__":
     parser.add_argument("--ckpt-every", type=int, default=50_000)
     parser.add_argument("--pretrained-ckpt", type=str, default=None,
                         help="Optional path to a DiT checkpoint (default: auto-download a pre-trained DiT-XL/2 model).")
+    parser.add_argument("--dropout-ratio", type=float, default=0.1, help="Have null labels or no") # DOG
     args = parser.parse_args()
     main(args)
