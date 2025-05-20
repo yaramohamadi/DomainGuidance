@@ -38,6 +38,7 @@ resolve_dataset_config() {
     food-101_processed) NUM_CLASSES=101 ;;
     df-20m_processed) NUM_CLASSES=1577 ;;
     artbench-10_processed) NUM_CLASSES=10 ;;
+    ffhq256) NUM_CLASSES=1 ;;
     *) echo "Unknown dataset: $DATASET"; exit 1 ;;
   esac
   DATA_DIR_ZIP="$DATASETS_DIR/$DATASET.zip"
@@ -170,7 +171,6 @@ prepare_dataset() {
   # For other servers, proceed with normal extraction
   if [ -d "$REAL_DATA_DIR" ] && [ "$(ls -A "$REAL_DATA_DIR")" ]; then
     echo ">>> Dataset already exists at: $REAL_DATA_DIR. Skipping extraction."
-    return
   fi
 
   echo ">>> Preparing dataset..."
@@ -178,6 +178,14 @@ prepare_dataset() {
   unzip -qn "$DATA_DIR_ZIP" -d "$DATA_TARGET_DIR"
   find "$REAL_DATA_DIR" -name '._*' -delete
   echo ">>> Dataset prepared at: $REAL_DATA_DIR"
+
+  # Special case: ffhq256 needs images inside a dummy class folder
+  if [[ "$DATASET" == "ffhq256" ]]; then
+    echo ">>> Detected ffhq256: moving images to dummy class folder..."
+    mkdir -p "$REAL_DATA_DIR/dummy_class"
+    find "$REAL_DATA_DIR" -maxdepth 1 -type f -iname '*.png' -exec mv {} "$REAL_DATA_DIR/dummy_class/" \;
+  fi
+
 }
 
 
