@@ -81,7 +81,8 @@ def main(args):
     latent_size = args.image_size // 8
     model = DiT_models[args.model](
         input_size=latent_size,
-        num_classes=args.num_classes
+        num_classes=args.num_classes,
+        class_dropout_prob=args.dropout_ratio,
     ).to(device)
 
     uncond_model = DiT_models[args.uncond_model](
@@ -185,16 +186,4 @@ if __name__ == "__main__":
     parser.add_argument("--num-fid-samples", type=int, default=50_000)
     parser.add_argument("--image-size", type=int, choices=[256, 512], default=256)
     parser.add_argument("--num-classes", type=int, default=1000)
-    parser.add_argument("--cfg-scale",  type=float, default=1.5)
-    parser.add_argument("--num-sampling-steps", type=int, default=250)
-    parser.add_argument("--global-seed", type=int, default=0)
-    parser.add_argument("--tf32", action=argparse.BooleanOptionalAction, default=True,
-                        help="By default, use TF32 matmuls. This massively accelerates sampling on Ampere GPUs.")
-    parser.add_argument("--ckpt", type=str, default=None,
-                        help="Optional path to a DiT checkpoint (default: auto-download a pre-trained DiT-XL/2 model).")
-    parser.add_argument("--uncond-ckpt", type=str, default=None,
-                        help="Optional path to a unconditional DiT checkpoint (default: auto-download a pre-trained DiT-XL/2 model).")
-    parser.add_argument("--uncond-model", type=str, choices=list(DiT_models.keys()), default="DiT-XL/2")
-
-    args = parser.parse_args()
-    main(args)
+    parser.add_argument("--cfg-

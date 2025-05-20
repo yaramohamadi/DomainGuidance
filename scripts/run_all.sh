@@ -34,7 +34,6 @@ EXPERIMENT_PRENAME="All_unconditional"
 #  "ffhq256 run_baselines_finetune.sh"
 
 declare -a TASKS=(
-  "ffhq256 run_ours.sh"
   "ffhq256 run_baselines_finetune.sh"
 )
 
