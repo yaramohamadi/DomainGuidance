@@ -38,7 +38,6 @@ resolve_dataset_config() {
     food-101_processed) NUM_CLASSES=101 ;;
     df-20m_processed) NUM_CLASSES=1577 ;;
     artbench-10_processed) NUM_CLASSES=10 ;;
-    ffhq256) NUM_CLASSES=1;;
     *) echo "Unknown dataset: $DATASET"; exit 1 ;;
   esac
   DATA_DIR_ZIP="$DATASETS_DIR/$DATASET.zip"
@@ -84,10 +83,11 @@ resolve_server_paths() {
             ;;
         computecanada) 
             CODE_PRE_DIR="/home/ens/AT74470/DomainGuidance" # TODO 
-            DATA_TARGET_DIR="$SLURM_TMPDIR"
+            DATA_TARGET_DIR="/home/ymbahram/scratch/diffusion_datasets"
             DATASETS_DIR="/home/ymbahram/scratch/diffusion_datasets"
             RESULTS_PRE_DIR="/home/ymbahram/scratch/results/DoG"
             ENV_PATH="/home/ymbahram/projects/def-hadi87/ymbahram/envs/DiT"
+            python download.py
             ;;
         *)
             echo "Unknown server: $SERVER" >&2
@@ -115,18 +115,18 @@ create_environment() {
     # Activate and install packages
     source "$ENV_PATH/bin/activate"
     nvidia-smi
-    pip install --upgrade pip --no-index
-    pip install torch torchvision --no-index
-    pip install timm diffusers accelerate pytorch-fid --no-index
-    pip install numpy==1.23.2 --no-index
-
-    # Install dgm-eval
-    if [ ! -d "dgm-eval" ]; then
-      git clone https://github.com/layer6ai-labs/dgm-eval.git
-    fi
-    pushd dgm-eval
-    pip install --no-deps -e .
-    popd
+    # pip install --upgrade pip --no-index
+    # pip install torch torchvision --no-index
+    # pip install timm diffusers accelerate pytorch-fid --no-index
+    # pip install numpy==1.23.2 --no-index
+# 
+    # # Install dgm-eval
+    # if [ ! -d "dgm-eval" ]; then
+    #   git clone https://github.com/layer6ai-labs/dgm-eval.git
+    # fi
+    # pushd dgm-eval
+    # pip install --no-deps -e .
+    # popd
 
   else
     echo ">>> Detected local server: using conda env setup"
@@ -152,25 +152,32 @@ create_environment() {
 }
 
 prepare_dataset() {
-  find "$REAL_DATA_DIR" -name '._*' -delete # Delete metadata if exists
+  # Clean up metadata if exists
+  find "$REAL_DATA_DIR" -name '._*' -delete
 
+  if [[ "$SERVER" == "computecanada" ]]; then
+    echo ">>> Running on Compute Canada"
+    if [ -d "$REAL_DATA_DIR" ] && [ "$(ls -A "$REAL_DATA_DIR")" ]; then
+      echo ">>> Dataset already exists at: $REAL_DATA_DIR. Proceeding..."
+    else
+      echo ">>> ERROR: Dataset not found at $REAL_DATA_DIR."
+      echo ">>> Dataset preparation must be done before SLURM job submission on Compute Canada."
+      exit 1
+    fi
+    return
+  fi
+
+  # For other servers, proceed with normal extraction
   if [ -d "$REAL_DATA_DIR" ] && [ "$(ls -A "$REAL_DATA_DIR")" ]; then
     echo ">>> Dataset already exists at: $REAL_DATA_DIR. Skipping extraction."
-  else
-    echo ">>> Preparing dataset..."
-    mkdir -p "$DATA_TARGET_DIR"
-    unzip -qn "$DATA_DIR_ZIP" -d "$DATA_TARGET_DIR"
-    find "$REAL_DATA_DIR" -name '._*' -delete
-    echo ">>> Dataset prepared at: $REAL_DATA_DIR"
+    return
   fi
 
-  # === FFHQ-specific directory fix ===
-  if [[ "$REAL_DATA_DIR" == *"ffhq256" ]]; then
-    echo ">>> Detected FFHQ dataset. Restructuring for ImageFolder compatibility..."
-    mkdir -p "$REAL_DATA_DIR/dummy_class"
-    find "$REAL_DATA_DIR" -maxdepth 1 -type f \( -iname "*.jpg" -o -iname "*.png" \) -exec mv {} "$REAL_DATA_DIR/dummy_class/" \;
-    echo ">>> Moved all images into dummy_class subfolder."
-  fi
+  echo ">>> Preparing dataset..."
+  mkdir -p "$DATA_TARGET_DIR"
+  unzip -qn "$DATA_DIR_ZIP" -d "$DATA_TARGET_DIR"
+  find "$REAL_DATA_DIR" -name '._*' -delete
+  echo ">>> Dataset prepared at: $REAL_DATA_DIR"
 }
 
 

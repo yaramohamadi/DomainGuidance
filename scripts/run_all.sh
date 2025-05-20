@@ -45,7 +45,7 @@ for TASK in "${TASKS[@]}"; do
   echo "Running $SCRIPT on dataset $DATASET"
   echo "Server: $SERVER | CUDA Devices: $CUDA_DEVICES"
   echo "----------------------------------------------"
-
+  
   bash "scripts/$SCRIPT" \
     --dataset "$DATASET" \
     --server "$SERVER" \

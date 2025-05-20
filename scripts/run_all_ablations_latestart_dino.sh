@@ -6,8 +6,14 @@ CUDA_DEVICES="0,1"
 SCRIPT="run_ours.sh"
 
  
-#   "stanford-cars_processed" "cub-200-2011_processed" "artbench-10_processed" "food-101_processed" "caltech-101_processed"   "cub-200-2011_processed"
+# "stanford-cars_processed" "cub-200-2011_processed" "artbench-10_processed" "food-101_processed" "caltech-101_processed"   "cub-200-2011_processed"
+#  "cub-200-2011_processed"
+#  "stanford-cars_processed"
+#   "food-101_processed"
+
 declare -a TASKS=(
+  "cub-200-2011_processed"
+  "caltech-101_processed"
   "stanford-cars_processed"
 )
 
@@ -15,11 +21,11 @@ declare -a TASKS=(
 declare -A PAIR_MAP
 # Format: "latestart,mghigh latestart,mghigh ..."
 # 3000,0.8,ablation_latestart cub-200-2011 -> Sampling is done but it NEEDS FID calculation!
-PAIR_MAP["cub-200-2011_processed"]="5000,0.8,ablation_latestart 6000,0.8,ablation_latestart 7000,0.8,ablation_latestart"
-PAIR_MAP["stanford-cars_processed"]="1000,0.6,ablation_latestart 2000,0.6,ablation_latestart 3000,0.6,ablation_latestart 4000,0.6,ablation_latestart 5000,0.6,ablation_latestart 6000,0.6,ablation_latestart 7000,0.6,ablation_latestart"
-PAIR_MAP["food-101_processed"]="1000,0.6,ablation_latestart 2000,0.6,ablation_latestart 3000,0.6,ablation_latestart 4000,0.6,ablation_latestart 5000,0.6,ablation_latestart 6000,0.6,ablation_latestart 7000,0.6,ablation_latestart"
-PAIR_MAP["artbench-10_processed"]="1000,1,ablation_latestart 2000,1,ablation_latestart 3000,1,ablation_latestart 4000,1,ablation_latestart 5000,1,ablation_latestart 6000,1,ablation_latestart 7000,1,ablation_latestart"
-PAIR_MAP["caltech-101_processed"]="1000,0.4,ablation_latestart 2000,0.4,ablation_latestart 3000,0.4,ablation_latestart 4000,0.4,ablation_latestart 5000,0.4,ablation_latestart 6000,0.4,ablation_latestart 7000,0.4,ablation_latestart"
+PAIR_MAP["cub-200-2011_processed"]="5000,1.0,ablation_latestart 6000,1.0,ablation_latestart 7000,1.0,ablation_latestart"
+PAIR_MAP["stanford-cars_processed"]="1000,1.0,ablation_latestart 2000,1.0,ablation_latestart 3000,1.0,ablation_latestart 4000,1.0,ablation_latestart 5000,1.0,ablation_latestart 6000,1.0,ablation_latestart 7000,1.0,ablation_latestart"
+PAIR_MAP["food-101_processed"]="1000,1.0,ablation_latestart 2000,1.0,ablation_latestart 3000,1.0,ablation_latestart 4000,1.0,ablation_latestart 5000,1.0,ablation_latestart 6000,1.0,ablation_latestart 7000,1.0,ablation_latestart"
+PAIR_MAP["caltech-101_processed"]="1000,0.7,ablation_latestart 2000,0.7,ablation_latestart 3000,0.7,ablation_latestart 4000,0.7,ablation_latestart 5000,0.7,ablation_latestart 6000,0.7,ablation_latestart 7000,0.7,ablation_latestart"
+PAIR_MAP["artbench-10_processed"]="1000,0.8,ablation_latestart 2000,0.8,ablation_latestart 3000,0.8,ablation_latestart 4000,0.8,ablation_latestart 5000,0.8,ablation_latestart 6000,0.8,ablation_latestart 7000,0.8,ablation_latestart"
 
 # ========== EXECUTION LOOP ==========
 for DATASET in "${TASKS[@]}"; do

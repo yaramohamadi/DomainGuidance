@@ -39,6 +39,23 @@ def download_model(model_name):
         os.makedirs('pretrained_models', exist_ok=True)
         web_path = f'https://dl.fbaipublicfiles.com/DiT/models/{model_name}'
         download_url(web_path, 'pretrained_models')
+
+    from diffusers import AutoencoderKL
+    vae_dir = f"pretrained_models/sd-vae-ft-ema"
+    if not os.path.exists(os.path.join(vae_dir, "config.json")):
+        try:
+            print(f">>> Downloading VAE model: stabilityai/sd-vae-ft-ema")
+            vae = AutoencoderKL.from_pretrained(f"stabilityai/sd-vae-ft-ema")
+            os.makedirs(vae_dir, exist_ok=True)
+            vae.save_pretrained(vae_dir)
+        except Exception as e:
+            raise RuntimeError(
+                f"Failed to download VAE model 'stabilityai/sd-vae-ft-ema'. "
+                f"Please pre-download manually if running on a cluster. Error: {e}"
+            )
+    else:
+        print(f">>> VAE model already exists at: {vae_dir}")
+
     model = torch.load(local_path, map_location=lambda storage, loc: storage)
     return model
 
