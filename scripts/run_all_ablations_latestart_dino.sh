@@ -17,15 +17,20 @@ declare -a TASKS=(
   "stanford-cars_processed"
 )
 
+
 # ========== Define per-task (latestart, mghigh, experiment_prename) triples ==========
 declare -A PAIR_MAP
-# Format: "latestart,mghigh latestart,mghigh ..."
-# 3000,0.8,ablation_latestart cub-200-2011 -> Sampling is done but it NEEDS FID calculation!
+# Only need to compute FID
 PAIR_MAP["cub-200-2011_processed"]="5000,1.0,ablation_latestart 6000,1.0,ablation_latestart 7000,1.0,ablation_latestart"
+PAIR_MAP["caltech-101_processed"]="1000,0.7,ablation_latestart 2000,0.7,ablation_latestart 7000,0.7,ablation_latestart"
 PAIR_MAP["stanford-cars_processed"]="1000,1.0,ablation_latestart 2000,1.0,ablation_latestart 3000,1.0,ablation_latestart 4000,1.0,ablation_latestart 5000,1.0,ablation_latestart 6000,1.0,ablation_latestart 7000,1.0,ablation_latestart"
-PAIR_MAP["food-101_processed"]="1000,1.0,ablation_latestart 2000,1.0,ablation_latestart 3000,1.0,ablation_latestart 4000,1.0,ablation_latestart 5000,1.0,ablation_latestart 6000,1.0,ablation_latestart 7000,1.0,ablation_latestart"
-PAIR_MAP["caltech-101_processed"]="1000,0.7,ablation_latestart 2000,0.7,ablation_latestart 3000,0.7,ablation_latestart 4000,0.7,ablation_latestart 5000,0.7,ablation_latestart 6000,0.7,ablation_latestart 7000,0.7,ablation_latestart"
-PAIR_MAP["artbench-10_processed"]="1000,0.8,ablation_latestart 2000,0.8,ablation_latestart 3000,0.8,ablation_latestart 4000,0.8,ablation_latestart 5000,0.8,ablation_latestart 6000,0.8,ablation_latestart 7000,0.8,ablation_latestart"
+
+# Format: "latestart,mghigh latestart,mghigh ..."
+# PAIR_MAP["cub-200-2011_processed"]="1000,1.0,ablation_latestart 2000,1.0,ablation_latestart 3000,1.0,ablation_latestart 4000,1.0,ablation_latestart"
+# # PAIR_MAP["stanford-cars_processed"]="1000,1.0,ablation_latestart 2000,1.0,ablation_latestart 3000,1.0,ablation_latestart 4000,1.0,ablation_latestart 5000,1.0,ablation_latestart 6000,1.0,ablation_latestart 7000,1.0,ablation_latestart"
+# PAIR_MAP["food-101_processed"]="1000,0.7,ablation_latestart 2000,0.7,ablation_latestart 3000,0.7,ablation_latestart 4000,0.7,ablation_latestart 5000,0.7,ablation_latestart 6000,0.7,ablation_latestart 7000,0.7,ablation_latestart"
+# PAIR_MAP["caltech-101_processed"]="3000,1.0,ablation_latestart 4000,1.0,ablation_latestart 5000,1.0,ablation_latestart 6000,1.0,ablation_latestart"
+# PAIR_MAP["artbench-10_processed"]="1000,0.8,ablation_latestart 2000,0.8,ablation_latestart 3000,0.8,ablation_latestart 4000,0.8,ablation_latestart 5000,0.8,ablation_latestart 6000,0.8,ablation_latestart 7000,0.8,ablation_latestart"
 
 # ========== EXECUTION LOOP ==========
 for DATASET in "${TASKS[@]}"; do
@@ -46,11 +51,11 @@ for DATASET in "${TASKS[@]}"; do
       --latestart \"$LATESTART\" \
       --mghigh \"$MGHIGH\""
 
-    if [[ "$SERVER" == "computecanada" ]]; then
-      eval "JOB_NAME=$EXPERIMENT_PRENAME sbatch $CMD"
-    else
-      eval "bash $CMD"
-    fi
+    # if [[ "$SERVER" == "computecanada" ]]; then
+    #   eval "JOB_NAME=$EXPERIMENT_PRENAME sbatch $CMD"
+    # else
+    eval "bash $CMD"
+    # fi
 
     echo "✅ Finished $SCRIPT on $DATASET | latestart: $LATESTART | mghigh: $MGHIGH | prename: $EXPERIMENT_PRENAME"
     echo "=============================================="
