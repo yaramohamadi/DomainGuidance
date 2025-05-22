@@ -5,7 +5,7 @@ import re
 # === Config ===
 root_dir = "/home/ens/AT74470/results/DoG/"
 metric_to_extract = "fd"         # Options: 'fd', 'precision', 'recall', 'density', 'coverage'
-model_type = "inception"            # Options: 'dinov2' or 'inception'
+model_type = "dinov2"            # Options: 'dinov2' or 'inception'
 output_dir = "./tables"
 os.makedirs(output_dir, exist_ok=True)
 output_csv_path = os.path.join(

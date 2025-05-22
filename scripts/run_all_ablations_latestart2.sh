@@ -17,11 +17,11 @@ declare -a TASKS=(
 declare -A PAIR_MAP
 # Format: "latestart,mghigh latestart,mghigh ..."
 # 3000,0.8,ablation_latestart cub-200-2011 -> Sampling is done but it NEEDS FID calculation!
-PAIR_MAP["cub-200-2011_processed"]="4000,0.8,ablation_latestart 5000,0.8,ablation_latestart 6000,0.8,ablation_latestart 7000,0.8,ablation_latestart"
-PAIR_MAP["stanford-cars_processed"]="1000,0.6,ablation_latestart 2000,0.6,ablation_latestart 3000,0.6,ablation_latestart 4000,0.6,ablation_latestart 5000,0.6,ablation_latestart 6000,0.6,ablation_latestart 7000,0.6,ablation_latestart"
-PAIR_MAP["food-101_processed"]="1000,0.6,ablation_latestart 2000,0.6,ablation_latestart 3000,0.6,ablation_latestart 4000,0.6,ablation_latestart 5000,0.6,ablation_latestart 6000,0.6,ablation_latestart 7000,0.6,ablation_latestart"
-PAIR_MAP["artbench-10_processed"]="1000,1,ablation_latestart 2000,1,ablation_latestart 3000,1,ablation_latestart 4000,1,ablation_latestart 5000,1,ablation_latestart 6000,1,ablation_latestart 7000,1,ablation_latestart"
-PAIR_MAP["caltech-101_processed"]="1000,1,ablation_latestart 2000,0.4,ablation_latestart 3000,0.4,ablation_latestart 4000,0.4,ablation_latestart 5000,0.4,ablation_latestart 6000,0.4,ablation_latestart 7000,0.4,ablation_latestart"
+PAIR_MAP["cub-200-2011_processed"]="8000,0.8,ablation_latestart 9000,0.8,ablation_latestart 1000,0.8,ablation_latestart 11000,0.8,ablation_latestart 12000,0.8,ablation_latestart 13000,0.8,ablation_latestart 14000,0.8,ablation_latestart 15000,0.8,ablation_latestart 16000,0.8,ablation_latestart 16000,0.8,ablation_latestart"
+PAIR_MAP["stanford-cars_processed"]="8000,0.6,ablation_latestart 9000,0.6,ablation_latestart 1000,0.6,ablation_latestart 11000,0.6,ablation_latestart"
+PAIR_MAP["food-101_processed"]="8000,0.8,ablation_latestart 9000,0.8,ablation_latestart 1000,0.8,ablation_latestart 11000,0.8,ablation_latestart"
+PAIR_MAP["artbench-10_processed"]="8000,0.8,ablation_latestart 9000,0.8,ablation_latestart 1000,0.8,ablation_latestart 11000,0.8,ablation_latestart"
+PAIR_MAP["caltech-101_processed"]="8000,0.8,ablation_latestart 9000,0.8,ablation_latestart 1000,0.8,ablation_latestart 11000,0.8,ablation_latestart"
 
 # ========== EXECUTION LOOP ==========
 for DATASET in "${TASKS[@]}"; do
