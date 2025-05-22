@@ -405,7 +405,13 @@ def main(args):
     diffusion = create_diffusion(timestep_respacing="")  # default: 1000 steps, linear noise schedule
     # Monkey-patch the loss function
     diffusion.training_losses = MethodType(our_training_losses, diffusion) # DoG
-    vae = AutoencoderKL.from_pretrained(f"stabilityai/sd-vae-ft-{args.vae}").to(device)
+    
+    vae_path = f"/pretrained_models/sd-vae-ft-{args.vae}"
+    if not os.path.exists(vae_path):
+        vae = AutoencoderKL.from_pretrained(f"stabilityai/sd-vae-ft-{args.vae}").to(device)
+    else:
+        vae = AutoencoderKL.from_pretrained(vae_path).to(device)
+
     logger.info(f"DiT Parameters: {sum(p.numel() for p in model.parameters()):,}")
 
     logger.info("[DoG] Patched diffusion training loss with Domain Guidance (w_DoG={})".format(args.w_dog))

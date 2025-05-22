@@ -81,7 +81,8 @@ def main(args):
     latent_size = args.image_size // 8
     model = DiT_models[args.model](
         input_size=latent_size,
-        num_classes=args.num_classes
+        num_classes=args.num_classes,
+        class_dropout_prob=args.dropout_ratio,
     ).to(device)
 
     uncond_model = DiT_models[args.uncond_model](
@@ -195,6 +196,6 @@ if __name__ == "__main__":
     parser.add_argument("--uncond-ckpt", type=str, default=None,
                         help="Optional path to a unconditional DiT checkpoint (default: auto-download a pre-trained DiT-XL/2 model).")
     parser.add_argument("--uncond-model", type=str, choices=list(DiT_models.keys()), default="DiT-XL/2")
-
+    parser.add_argument("--dropout-ratio", type=float, default=0.1)
     args = parser.parse_args()
     main(args)

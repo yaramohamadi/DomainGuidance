@@ -7,15 +7,19 @@ SCRIPT="run_ours.sh"
 
 
 #   "stanford-cars_processed" "cub-200-2011_processed"  "artbench-10_processed"
-#   "food-101_processed"
+#   "food-101_processed"  "food-101_processed"   # "food-101_processed"
 
 declare -a TASKS=(
+<<<<<<< HEAD
 <<<<<<< HEAD
   "artbench-10_processed"
 =======
   "caltech-101_processed",
   "food-101_processed"
 >>>>>>> fe6ba1866ade8c496bcb0a5abebbe5701b3a0d42
+=======
+  "caltech-101_processed"
+>>>>>>> 726b892f1b752c7f094d78bc156a65a588bfbeed
 )
 
 # ========== Define per-task (latestart, mghigh, experiment_prename) triples ==========

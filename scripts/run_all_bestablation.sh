@@ -15,8 +15,8 @@ declare -a TASKS=(
 # ========== Define per-task (latestart, mghigh) pairs ==========
 declare -A PAIR_MAP
 # Format: "latestart,mghigh latestart,mghigh ..."
-# PAIR_MAP["stanford-cars_processed"]="0,0.5 0,0.4 6000,1 7000 1"
-PAIR_MAP["cub-200-2011_processed"]="3000,0.75"
+PAIR_MAP["stanford-cars_processed"]="0,0.5 0,0.4 6000,1 7000 1"
+PAIR_MAP["cub-200-2011_processed"]="3000,0.8"
 
 # ========== EXECUTION LOOP ==========
 for DATASET in "${TASKS[@]}"; do
