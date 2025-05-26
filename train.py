@@ -5,7 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 """
-A minimal training script for DiT using PyTorch DDP.
+A minimal training script for DiT and SiT using PyTorch DDP.
 """
 import torch
 # the first flag below was False when we tested this script but True makes A100 training a lot faster:
@@ -29,8 +29,9 @@ import os
 
 from download import find_model
 
-from models import DiT_models
+from models import DiT_models, SiT_models
 from diffusion import create_diffusion
+from transport import create_transport
 
 from diffusers.models import AutoencoderKL
 
@@ -60,6 +61,11 @@ def load_pretrained_model(model, pretrained_ckpt_path, image_size, tmp_dir="tmp"
 
     # Only rank 0 downloads
     if dist.get_rank() == 0:
+        if pretrained_ckpt_path is None:
+            if args.model.startswith("DiT-XL/2"):
+                f"DiT-XL-2-{image_size}x{image_size}.pt"
+            elif args.model.startswith("SiT-XL/2"):
+                f"SiT-XL-2-{image_size}x{image_size}.pt"
         ckpt_path = pretrained_ckpt_path or f"DiT-XL-2-{image_size}x{image_size}.pt"
         state_dict = find_model(ckpt_path)
         torch.save(state_dict, os.path.join(tmp_dir, "local_pretrained_ckpt.pt"))
@@ -158,7 +164,7 @@ def center_crop_arr(pil_image, image_size):
 
 def main(args):
     """
-    Trains a new DiT model.
+    Trains a new DiT or SiT model.
     """
     assert torch.cuda.is_available(), "Training currently requires at least one GPU."
 
@@ -186,9 +192,16 @@ def main(args):
     # Create model:
     assert args.image_size % 8 == 0, "Image size must be divisible by 8 (for the VAE encoder)."
     latent_size = args.image_size // 8
-    model = DiT_models[args.model](
+    
+    if args.model in SiT_models:
+        model = SiT_models[args.model](
         input_size=latent_size,
         num_classes=args.num_classes
+    )
+    elif args.model in DiT_models:
+        model = DiT_models[args.model](
+            input_size=latent_size,
+            num_classes=args.num_classes
     )
 
     # Load pre-trained weights if provided:
@@ -198,9 +211,21 @@ def main(args):
     ema = deepcopy(model).to(device)  # Create an EMA of the model for use after training
     requires_grad(ema, False)
     model = DDP(model.to(device), device_ids=[rank])
-    diffusion = create_diffusion(timestep_respacing="")  # default: 1000 steps, linear noise schedule
+
+    if args.model in SiT_models:
+        transport = create_transport(
+            args.path_type,
+            args.prediction,
+            args.loss_weight,
+            args.train_eps,
+            args.sample_eps
+        )  # default: velocity; 
+        transport_sampler = Sampler(transport)
+        logger.info(f"SiT Parameters: {sum(p.numel() for p in model.parameters()):,}")
+    elif args.model in DiT_models:
+        logger.info(f"SiT Parameters: {sum(p.numel() for p in model.parameters()):,}")
+        diffusion = create_diffusion(timestep_respacing="")  # default: 1000 steps, linear noise schedule
     vae = AutoencoderKL.from_pretrained(f"stabilityai/sd-vae-ft-{args.vae}").to(device)
-    logger.info(f"DiT Parameters: {sum(p.numel() for p in model.parameters()):,}")
 
     # Setup optimizer (we used default Adam betas=(0.9, 0.999) and a constant learning rate of 1e-4 in our paper):
     opt = torch.optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0)
@@ -267,7 +292,10 @@ def main(args):
                 x = vae.encode(x).latent_dist.sample().mul_(0.18215)
             t = torch.randint(0, diffusion.num_timesteps, (x.shape[0],), device=device)
             model_kwargs = dict(y=y)
-            loss_dict = diffusion.training_losses(model, x, t, model_kwargs)
+            if args.model in SiT_models:
+                loss_dict = transport.training_losses(model, x, model_kwargs)
+            elif args.model in DiT_models:
+                loss_dict = diffusion.training_losses(model, x, t, model_kwargs)
             loss = loss_dict["loss"].mean()
             opt.zero_grad()
             loss.backward()
@@ -319,12 +347,15 @@ def main(args):
     cleanup()
 
 
+
+all_models = list(SiT_models.keys()) + list(DiT_models.keys())
+
 if __name__ == "__main__":
     # Default args here will train DiT-XL/2 with the hyperparameters we used in our paper (except training iters).
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-path", type=str, required=True)
     parser.add_argument("--results-dir", type=str, default="results")
-    parser.add_argument("--model", type=str, choices=list(DiT_models.keys()), default="DiT-XL/2")
+    parser.add_argument("--model", type=str, choices=all_models, default="DiT-XL/2")
     parser.add_argument("--image-size", type=int, choices=[256, 512], default=256)
     parser.add_argument("--num-classes", type=int, default=1000)
     # parser.add_argument("--epochs", type=int, default=1400) # Instead train based on training iterations (Epochs different for each dataset)
@@ -337,5 +368,14 @@ if __name__ == "__main__":
     parser.add_argument("--ckpt-every", type=int, default=50_000)
     parser.add_argument("--pretrained-ckpt", type=str, default=None,
                         help="Optional path to a DiT checkpoint (default: auto-download a pre-trained DiT-XL/2 model).")
+
+    # For SiT transport models
+    group = parser.add_argument_group("Transport arguments")
+    group.add_argument("--path-type", type=str, default="Linear", choices=["Linear", "GVP", "VP"])
+    group.add_argument("--prediction", type=str, default="velocity", choices=["velocity", "score", "noise"])
+    group.add_argument("--loss-weight", type=none_or_str, default=None, choices=[None, "velocity", "likelihood"])
+    group.add_argument("--sample-eps", type=float)
+    group.add_argument("--train-eps", type=float)
+
     args = parser.parse_args()
     main(args)

@@ -11,9 +11,10 @@ from torchvision.datasets.utils import download_url
 import torch
 import os
 
-
-pretrained_models = {'DiT-XL-2-256x256.pt'} 
-
+pretrained_models = {
+                        'DiT-XL-2-256x256.pt',
+                        'SiT-XL-2-256x256.pt',
+                    } 
 
 def find_model(model_name):
     """
@@ -37,8 +38,11 @@ def download_model(model_name):
     local_path = f'pretrained_models/{model_name}'
     if not os.path.isfile(local_path):
         os.makedirs('pretrained_models', exist_ok=True)
-        web_path = f'https://dl.fbaipublicfiles.com/DiT/models/{model_name}'
-        download_url(web_path, 'pretrained_models')
+        if model_name.startswith('DiT'):
+            web_path = f'https://dl.fbaipublicfiles.com/DiT/models/{model_name}'
+        elif model_name.startswith('SiT'):
+            web_path = f'https://www.dl.dropboxusercontent.com/scl/fi/as9oeomcbub47de5g4be0/SiT-XL-2-256.pt?rlkey=uxzxmpicu46coq3msb17b9ofa&dl=0'
+        download_url(web_path, 'pretrained_models', filename=model_name)
     model = torch.load(local_path, map_location=lambda storage, loc: storage)
     return model
 
