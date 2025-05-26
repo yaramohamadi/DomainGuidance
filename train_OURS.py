@@ -186,8 +186,6 @@ def our_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, 
                 save_image(norm_to_01(initial_noise_decoded),         f"{save_dir}/initial_noise_decoded.png",        nrow=8)
 
                 print(f"[DEBUG] Saved DoG debugging images to {save_dir}")
-                exit()
-
             counter += 1
             
             assert model_output.shape == target.shape == x_start.shape
