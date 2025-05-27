@@ -1,23 +1,19 @@
-accelerate==1.6.0
+accelerate==1.7.0
 certifi==2025.4.26
 charset-normalizer==3.4.2
-contourpy==1.3.2
-cycler==0.12.1
+-e git+https://github.com/layer6ai-labs/dgm-eval.git@74c79f7527fbf38fdccfbac51f25d759bc02ab07#egg=dgm_eval
 diffusers==0.33.1
 filelock==3.18.0
-fonttools==4.58.0
-fsspec==2025.3.2
+fsspec==2025.5.1
 ftfy==6.3.1
-hf-xet==1.1.0
-huggingface-hub==0.31.1
+hf-xet==1.1.2
+huggingface-hub==0.32.1
 idna==3.10
 imageio==2.37.0
 importlib_metadata==8.7.0
 Jinja2==3.1.6
-joblib==1.5.0
-kiwisolver==1.4.8
+joblib==1.5.1
 MarkupSafe==3.0.2
-matplotlib==3.10.3
 mpmath==1.3.0
 networkx==3.4.2
 numpy==1.23.3
@@ -42,8 +38,8 @@ pandas==1.5.3
 Pillow==9.2.0
 protobuf==3.20.3
 psutil==7.0.0
-pyparsing==3.2.3
 python-dateutil==2.9.0.post0
+pytorch-fid==0.3.0
 pytz==2025.2
 PyWavelets==1.8.0
 PyYAML==6.0.2
@@ -57,7 +53,7 @@ sentencepiece==0.2.0
 six==1.17.0
 sympy==1.14.0
 threadpoolctl==3.6.0
-tifffile==2025.3.30
+tifffile==2025.5.26
 timm==0.8.19.dev0
 tokenizers==0.13.3
 torch==2.7.0
@@ -69,5 +65,4 @@ typing_extensions==4.13.2
 urllib3==2.4.0
 wcwidth==0.2.13
 xformers==0.0.30
-zipp==3.21.0
--e git+https://github.com/layer6ai-labs/dgm-eval.git@74c79f7527fbf38fdccfbac51f25d759bc02ab07#egg=dgm_eval
+zipp==3.22.0

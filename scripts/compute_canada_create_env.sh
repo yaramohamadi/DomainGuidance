@@ -1,7 +1,7 @@
 unset PIP_FIND_LINKS
 unset PIP_NO_INDEX
 
-ENV_PATH="/home/ymbahram/projects/def-hadi87/ymbahram/envs/DiT"
+ENV_PATH="/home/ymbahram/projects/def-hadi87/ymbahram/envs/tmp_DiT"
 
 
 echo ">>> Setting up environment..."
@@ -16,22 +16,13 @@ else
     python -m venv "$ENV_PATH"
 fi
 
-# # Load required system-level modules before activating the virtualenv
-module load StdEnv/2020 gcc/9.3.0 cuda/11.7 opencv/4.7.0
-
-export LD_LIBRARY_PATH=/cvmfs/soft.computecanada.ca/nix/store/z87lf4q1l809fpnmsj9850nb5qxvw2lv-glog-0.3.4/lib:$LD_LIBRARY_PATH
-export LD_LIBRARY_PATH=/cvmfs/soft.computecanada.ca/nix/store/q8w6jn55815n83mwyyk31n9wh23a9sds-libtiff-4.0.7/lib:$LD_LIBRARY_PATH
-
 # # Activate and install packages
 source "$ENV_PATH/bin/activate"
 
-# pip uninstall xformers
-pip install xformers==0.0.20 --no-binary xformers
+pip install --upgrade pip --no-index
+pip install -r requirements.txt
 
-# pip install omegaconf
-# 
-# python -c "import cv2; print(cv2.__file__)"
-# 
+echo "✅ Environment '$ENV_PATH' set up from requirements.txt!"
 
 # nvidia-smi
 # pip install --upgrade pip --no-index

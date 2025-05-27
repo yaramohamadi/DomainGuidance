@@ -88,8 +88,6 @@ resolve_server_paths() {
             DATASETS_DIR="/home/ymbahram/scratch/diffusion_datasets"
             RESULTS_PRE_DIR="/home/ymbahram/scratch/results/DoG"
             ENV_PATH="/home/ymbahram/projects/def-hadi87/ymbahram/envs/DiT"
-            export XFORMERS_DISABLE_MEMORY_EFFICIENT_ATTENTION=1
-            echo "Disabling FAST ATTENTION"
             python download.py
             ;;
         *)

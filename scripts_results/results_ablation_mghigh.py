@@ -5,8 +5,8 @@ import re
 # === Config ===
 root_dir = "/home/ens/AT74470/results/DoG/"
 # root_dir = "/export/datasets/public/diffusion_datasets/tmp_weights/"
-metric_to_extract = "fd"         # Options: 'fd', 'precision', 'recall', 'density', 'coverage'
-model_type = "dinov2"            # Options: 'dinov2' or 'inception'
+metric_to_extract = "recall"         # Options: 'fd', 'precision', 'recall', 'density', 'coverage'
+model_type = "inception"            # Options: 'dinov2' or 'inception'
 output_dir = "./tables"
 os.makedirs(output_dir, exist_ok=True)
 output_csv_path = os.path.join(
