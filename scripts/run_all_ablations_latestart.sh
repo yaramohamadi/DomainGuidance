@@ -2,15 +2,15 @@
 
 # ========== GLOBAL CONFIGURATION ==========
 SERVER="taylor"
-CUDA_DEVICES="2,3"
+CUDA_DEVICES="0,1"
 SCRIPT="run_ours.sh"
 
  
 #   "stanford-cars_processed" "cub-200-2011_processed" "artbench-10_processed" "food-101_processed" "caltech-101_processed"
 declare -a TASKS=(
-  "ffhq256"
-  "cub-200-2011_processed"
-  "stanford-cars_processed"
+  "caltech-101_processed"
+  "food-101_processed"
+  "artbench-10_processed"
 )
 
 # ========== Define per-task (latestart, mghigh, experiment_prename) triples ==========
@@ -22,7 +22,7 @@ PAIR_MAP["stanford-cars_processed"]="8000,0.6,ablation_latestart 10000,0.6,ablat
 PAIR_MAP["food-101_processed"]="8000,0.8,ablation_latestart 10000,0.8,ablation_latestart 12000,0.8,ablation_latestart 14000,0.8,ablation_latestart 16000,0.8,ablation_latestart 18000,0.8,ablation_latestart 20000,0.8,ablation_latestart 22000,0.8,ablation_latestart"
 PAIR_MAP["artbench-10_processed"]="8000,0.8,ablation_latestart 10000,0.8,ablation_latestart 12000,0.8,ablation_latestart 14000,0.8,ablation_latestart 16000,0.8,ablation_latestart 18000,0.8,ablation_latestart 20000,0.8,ablation_latestart 22000,0.8,ablation_latestart"
 PAIR_MAP["caltech-101_processed"]="8000,0.8,ablation_latestart 10000,0.8,ablation_latestart 12000,0.8,ablation_latestart 14000,0.8,ablation_latestart 16000,0.8,ablation_latestart 18000,0.8,ablation_latestart 20000,0.8,ablation_latestart 22000,0.8,ablation_latestart"
-PAIR_MAP["ffhq256"]="8000,0.5,ablation_latestart 10000,0.5,ablation_latestart 12000,0.5,ablation_latestart 14000,0.5,ablation_latestart 16000,0.5,ablation_latestart 18000,0.5,ablation_latestart 20000,0.5,ablation_latestart 22000,0.5,ablation_latestart 2000,0.5,ablation_latestart 4000,0.5,ablation_latestart 6000,0.5,ablation_latestart"
+PAIR_MAP["ffhq256"]="8000,0.6,ablation_latestart 10000,0.6,ablation_latestart 12000,0.6,ablation_latestart 14000,0.6,ablation_latestart 16000,0.6,ablation_latestart 18000,0.6,ablation_latestart 20000,0.6,ablation_latestart 22000,0.6,ablation_latestart 2000,0.6,ablation_latestart 4000,0.6,ablation_latestart 6000,0.6,ablation_latestart"
 
 
 # ========== EXECUTION LOOP ==========

@@ -7,9 +7,10 @@ SCRIPT="run_ours.sh"
 
 
 declare -a TASKS=(
-  "ffhq256"
-  "stanford-cars_processed"
+  "cub-200-2011_processed"
+  "food-101_processed"
 )
+
 
 # ========== Define per-task (latestart, mghigh, experiment_prename) triples ==========
 declare -A PAIR_MAP

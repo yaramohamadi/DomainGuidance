@@ -40,6 +40,8 @@ from diffusers.models import AutoencoderKL
 from types import MethodType
 from torchvision.utils import save_image
 
+
+
 ##################################################################################
 #                              Training loss                                     #
 ##################################################################################
@@ -129,6 +131,7 @@ def our_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, 
                 # target = target + (w_dog - 1) * (target - pretrained_output)
 
                 # Guidance Cut Off
+                initial_target = target.clone().detach()
                 if guidance_cutoff:
                     t_norm = t.float() / (self.num_timesteps - 1)
                     mg_high = mg_high
@@ -170,15 +173,19 @@ def our_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, 
                     x0_model_decoded = vae.decode(x0_model / 0.18215).sample
                     x0_pretrained_decoded = vae.decode(x0_pretrained / 0.18215).sample
                     x0_diff_decoded = (x0_model_decoded - x0_pretrained_decoded).abs()
+                    model_noise_decoded = vae.decode(model_output / 0.18215).sample
+                    initial_noise_decoded = vae.decode(initial_target / 0.18215).sample
+                    
 
                 # Save normalized images
                 save_image(norm_to_01(x_start_decoded),        f"{save_dir}/x_start.png",        nrow=8)
                 save_image(norm_to_01(x0_model_decoded),        f"{save_dir}/x0_model.png",       nrow=8)
                 save_image(norm_to_01(x0_pretrained_decoded),   f"{save_dir}/x0_pretrained.png",  nrow=8)
                 save_image(norm_to_01(x0_diff_decoded),         f"{save_dir}/x0_diff.png",        nrow=8)
+                save_image(norm_to_01(model_noise_decoded),         f"{save_dir}/model_noise.png",        nrow=8)
+                save_image(norm_to_01(initial_noise_decoded),         f"{save_dir}/initial_noise_decoded.png",        nrow=8)
 
                 print(f"[DEBUG] Saved DoG debugging images to {save_dir}")
-            
             counter += 1
             
             assert model_output.shape == target.shape == x_start.shape

@@ -7,8 +7,8 @@ SCRIPT="run_ours.sh"
 
 
 declare -a TASKS=(
-  "ffhq256"
-  "stanford-cars_processed"
+  "artbench-10_processed"
+  "caltech-101_processed"
 )
 
 # ========== Define per-task (latestart, mghigh, experiment_prename) triples ==========
