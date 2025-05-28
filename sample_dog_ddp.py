@@ -115,7 +115,13 @@ def main(args):
     dist.barrier() 
 
     diffusion = create_diffusion(str(args.num_sampling_steps))
-    vae = AutoencoderKL.from_pretrained(f"stabilityai/sd-vae-ft-{args.vae}").to(device)
+
+    vae_path = f"pretrained_models/sd-vae-ft-{args.vae}"
+    if not os.path.exists(vae_path):
+        vae = AutoencoderKL.from_pretrained(f"stabilityai/sd-vae-ft-{args.vae}").to(device)
+    else:
+        vae = AutoencoderKL.from_pretrained(vae_path).to(device)
+        
     assert args.cfg_scale >= 1.0, "In almost all cases, cfg_scale be >= 1.0"
     using_cfg = args.cfg_scale > 1.0
 

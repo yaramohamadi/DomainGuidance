@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # ========== GLOBAL CONFIGURATION ==========
-SERVER="taylor"
-CUDA_DEVICES="2,3"
+SERVER="computecanada"
+CUDA_DEVICES="0,1"
 SCRIPT="run_ours.sh"
 
  
@@ -39,7 +39,7 @@ for DATASET in "${TASKS[@]}"; do
     if [[ "$SERVER" == "computecanada" ]]; then
       eval "JOB_NAME=$EXPERIMENT_PRENAME sbatch $CMD"
     else
-     eval "bash $CMD"
+      eval "bash $CMD"
     fi
 
     echo "✅ Finished $SCRIPT on $DATASET | w_train_dog: $W_TRAIN_DOG | latestart: $LATESTART | mghigh: $MGHIGH | prename: $EXPERIMENT_PRENAME"

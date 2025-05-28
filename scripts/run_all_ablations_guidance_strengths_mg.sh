@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # ========== GLOBAL CONFIGURATION ==========
-SERVER="bool"
-CUDA_DEVICES="1,2"
+SERVER="computecanada"
+CUDA_DEVICES="0,1"
 SCRIPT="run_baseline_mg.sh"
 
  

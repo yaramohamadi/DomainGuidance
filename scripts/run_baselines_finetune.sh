@@ -14,7 +14,7 @@
 
 # ====================== DEFAULT CONFIGURATION ======================
 
-CUDA_DEVICES="0,3"
+CUDA_DEVICES="0,1"
 DATASET="food-101_processed"  # Options: caltech, birds, etc.
 SERVER="taylor"  # Options: taylor, bool, computecanada
 EXPERIMENT_PRENAME=""
@@ -42,7 +42,7 @@ while [[ "$#" -gt 0 ]]; do
   shift
 done
 
-EXPERIMENT_NAME="$EXPERIMENT_PRENAME/baselines_finetune"
+EXPERIMENT_NAME="$EXPERIMENT_PRENAME/baselines_finetune_W_CG${W_CFG}"
 
 resolve_server_paths
 resolve_dataset_config

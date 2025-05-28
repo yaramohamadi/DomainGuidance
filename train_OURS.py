@@ -404,7 +404,7 @@ def main(args):
     # Monkey-patch the loss function
     diffusion.training_losses = MethodType(our_training_losses, diffusion) # DoG
     
-    vae_path = f"/pretrained_models/sd-vae-ft-{args.vae}"
+    vae_path = f"pretrained_models/sd-vae-ft-{args.vae}"
     if not os.path.exists(vae_path):
         vae = AutoencoderKL.from_pretrained(f"stabilityai/sd-vae-ft-{args.vae}").to(device)
     else:

@@ -37,7 +37,7 @@ while [[ "$#" -gt 0 ]]; do
   shift
 done
 
-EXPERIMENT_NAME="$EXPERIMENT_PRENAME/baseline_mgfinetune"
+EXPERIMENT_NAME="$EXPERIMENT_PRENAME/baseline_mgfinetune_wtraincg$W_TRAIN_CG"
 
 # Load all logic
 source scripts/config.sh

@@ -1,14 +1,14 @@
 #!/bin/bash
 
 # ========== GLOBAL CONFIGURATION ==========
-SERVER="bool"
+SERVER="computecanada"
 CUDA_DEVICES="0,1"
 SCRIPT="run_ours.sh"
 
 
 declare -a TASKS=(
-  "artbench-10_processed"
   "caltech-101_processed"
+  "artbench-10_processed"
 )
 
 # ========== Define per-task (latestart, mghigh, experiment_prename) triples ==========
