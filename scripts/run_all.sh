@@ -34,7 +34,7 @@ EXPERIMENT_PRENAME="All_unconditional"
 #  "ffhq256 run_baselines_finetune.sh"
 
 declare -a TASKS=(
-  "ffhq256 run_baselines_finetune.sh"
+  "caltech-101 run_baselines_finetune.sh"
 )
 
 # ========== EXECUTION LOOP ==========
