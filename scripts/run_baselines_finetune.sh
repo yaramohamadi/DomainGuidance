@@ -170,11 +170,11 @@ for ((i=0; i<=TOTAL_STEPS; i+=CKPT_EVERY)); do
 
     printf -v PADDED_STEP "%07d_cg1_5" "$i"
     sample_CG1_5
-    fid_CG1_5
+    #fid_CG1_5
 
     printf -v PADDED_STEP "%07d_dog1_5" "$i"
     sample_DoG1_5
-    fid_DoG1_5
+    #fid_DoG1_5
 done
 
 cleanup_dataset
