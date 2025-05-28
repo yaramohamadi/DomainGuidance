@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # ========== GLOBAL CONFIGURATION ==========
-SERVER="taylor"
-CUDA_DEVICES="2,3"
-SCRIPT="run_mg.sh"
+SERVER="bool"
+CUDA_DEVICES="1,2"
+SCRIPT="run_baseline_mg.sh"
 
  
 #   "stanford-cars_processed" "cub-200-2011_processed" "artbench-10_processed" "food-101_processed" "caltech-101_processed"
