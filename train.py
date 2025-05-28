@@ -31,7 +31,7 @@ from download import find_model
 
 from models import DiT_models, SiT_models
 from diffusion import create_diffusion
-from transport import create_transport
+from transport import create_transport, Sampler
 
 from diffusers.models import AutoencoderKL
 
@@ -295,11 +295,11 @@ def main(args):
             with torch.no_grad():
                 # Map input images to latent space + normalize latents:
                 x = vae.encode(x).latent_dist.sample().mul_(0.18215)
-            t = torch.randint(0, diffusion.num_timesteps, (x.shape[0],), device=device)
             model_kwargs = dict(y=y)
             if args.model in SiT_models:
                 loss_dict = transport.training_losses(model, x, model_kwargs)
             elif args.model in DiT_models:
+                t = torch.randint(0, diffusion.num_timesteps, (x.shape[0],), device=device)
                 loss_dict = diffusion.training_losses(model, x, t, model_kwargs)
             loss = loss_dict["loss"].mean()
             opt.zero_grad()
@@ -374,6 +374,11 @@ if __name__ == "__main__":
     parser.add_argument("--pretrained-ckpt", type=str, default=None,
                         help="Optional path to a DiT checkpoint (default: auto-download a pre-trained DiT-XL/2 model).")
     parser.add_argument("--dropout-ratio", type=float, default=0.1, help="Have null labels or no") # DOG    
+
+    def none_or_str(value):
+        if value == 'None':
+            return None
+        return value
 
     # For SiT transport models
     group = parser.add_argument_group("Transport arguments")

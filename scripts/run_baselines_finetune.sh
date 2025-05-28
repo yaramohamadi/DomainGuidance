@@ -37,6 +37,7 @@ while [[ "$#" -gt 0 ]]; do
     --checkpoint_dir) CHECKPOINT_DIR="$2"; shift ;;
     --wdog) W_DOG="$2"; shift ;;
     --wcfg) W_CG="$2"; shift ;;
+    --model_name) MODEL="$2"; shift ;;
     *) echo "Unknown parameter passed: $1"; exit 1 ;;
   esac
   shift
@@ -151,7 +152,7 @@ if [[ "$DATASET" == "ffhq256" ]]; then
     DROPOUT_RATIO=0
 fi
 
-# train_model
+train_model
 
 for ((i=0; i<=TOTAL_STEPS; i+=CKPT_EVERY)); do
     if [[ $i -eq 0 && "$SKIP_FIRST_CKPT" -eq 1 ]]; then
@@ -160,8 +161,8 @@ for ((i=0; i<=TOTAL_STEPS; i+=CKPT_EVERY)); do
     printf -v PADDED_CKPT "%07d.pt" "$i"
 
     printf -v PADDED_STEP "%07d_cg1" "$i"
-    #sample_CG1
-    #fid_CG1
+    sample_CG1
+    fid_CG1
 
     if [[ "$DATASET" == "ffhq256" ]]; then
         continue
