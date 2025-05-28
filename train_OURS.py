@@ -29,7 +29,8 @@ import os
 
 from download import find_model
 
-from models import DiT_models
+from models import DiT_models, SiT_models
+from transport import create_transport, Sampler, ModelType
 from diffusion import create_diffusion
 from diffusion import create_diffusion
 from diffusion.gaussian_diffusion import LossType, ModelMeanType, ModelVarType, mean_flat
@@ -39,7 +40,6 @@ from diffusers.models import AutoencoderKL
 
 from types import MethodType
 from torchvision.utils import save_image
-
 
 
 ##################################################################################
@@ -199,9 +199,92 @@ def our_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, 
 
         return terms
 
+
+
+##################################################################################
+#                              Training loss                                     #
+##################################################################################
+
+# DoG
+def our_training_losses_transport(self, model, x1, model_kwargs=None, pretrained_model=None, w_dog=1.0, ema=None, vae=None, guidance_cutoff=False, mg_high=0.75, late_start_iter=0, counter=0):
+
+    """Loss for training the score model
+    Args:
+    - model: backbone model; could be score, noise, or velocity
+    - x1: datapoint
+    - model_kwargs: additional arguments for the model
+    """
+    if model_kwargs == None:
+        model_kwargs = {}
+    
+    t, x0, x1 = self.sample(x1)
+    t, xt, ut = self.path_sampler.plan(t, x0, x1)
+    model_output = model(xt, t, **model_kwargs)
+    B, *_, C = xt.shape
+    assert model_output.size() == (B, *xt.size()[1:-1], C)
+
+    terms = {}
+    terms['pred'] = model_output
+    
+    if self.model_type != ModelType.VELOCITY:
+        raise NotImplementedError("DGF only implemented for velocity model type SiT currently!")
+
+    target = ut
+
+    if pretrained_model is not None and ema is not None and counter > late_start_iter:
+        with torch.no_grad():
+            print("Iterating")
+            y = model_kwargs["y"]
+            pretrained_kwargs = {"y": torch.full_like(y, 1000)}
+            pretrained_output = pretrained_model(xt, t, **pretrained_kwargs)
+            ema_output = ema(xt, t, **model_kwargs)
+
+        initial_target = target.clone().detach()
+
+        if guidance_cutoff:
+            t_norm = t.float()  # already in [0,1]
+            w = torch.where(t_norm < mg_high, w_dog - 1, 0.0)
+            target = target + w.view(-1, 1, 1, 1) * (ema_output.detach() - pretrained_output.detach())
+        else:
+            target = target + (w_dog - 1) * (ema_output.detach() - pretrained_output.detach())
+
+        if counter % 1000 == 0 and dist.get_rank() == 0:
+            def norm_to_01(x):
+                return (x.clamp(-1, 1) + 1) / 2
+
+            # Reverse xt → x0 from model predictions
+            x0_model = self.path_sampler.recover_x0_from_velocity(xt, t, model_output)
+            x0_pretrained = self.path_sampler.recover_x0_from_velocity(xt, t, pretrained_output)
+            x0_diff = (x0_model - x0_pretrained).abs()
+
+            save_dir = f"DoG_debug_SiT/{counter:06d}"
+            os.makedirs(save_dir, exist_ok=True)
+
+            with torch.no_grad():
+                x0_model_decoded = vae.decode(x0_model / 0.18215).sample
+                x0_pretrained_decoded = vae.decode(x0_pretrained / 0.18215).sample
+                x0_diff_decoded = (x0_model_decoded - x0_pretrained_decoded).abs()
+                x_start_decoded = vae.decode(x0 / 0.18215).sample
+                model_noise_decoded = vae.decode(model_output / 0.18215).sample
+                initial_noise_decoded = vae.decode(initial_target / 0.18215).sample
+
+            save_image(norm_to_01(x_start_decoded),       f"{save_dir}/x_start.png",          nrow=8)
+            save_image(norm_to_01(x0_model_decoded),       f"{save_dir}/x0_model.png",         nrow=8)
+            save_image(norm_to_01(x0_pretrained_decoded),  f"{save_dir}/x0_pretrained.png",    nrow=8)
+            save_image(norm_to_01(x0_diff_decoded),        f"{save_dir}/x0_diff.png",          nrow=8)
+            save_image(norm_to_01(model_noise_decoded),    f"{save_dir}/model_noise.png",      nrow=8)
+            save_image(norm_to_01(initial_noise_decoded),  f"{save_dir}/initial_noise.png",    nrow=8)
+
+            print(f"[DEBUG] Saved DoG SiT images to {save_dir}")
+
+    terms['loss'] = mean_flat((model_output - target) ** 2)
+    return terms
+
+
 #################################################################################
 #                             Training Helper Functions                         #
 #################################################################################
+
 
 def load_pretrained_model(model, pretrained_ckpt_path, image_size, tmp_dir="tmp"):
     """
@@ -224,7 +307,11 @@ def load_pretrained_model(model, pretrained_ckpt_path, image_size, tmp_dir="tmp"
 
     # Only rank 0 downloads
     if dist.get_rank() == 0:
-        ckpt_path = pretrained_ckpt_path or f"DiT-XL-2-{image_size}x{image_size}.pt"
+        if pretrained_ckpt_path is None:
+            if args.model.startswith("DiT-XL/2"):
+                ckpt_path = pretrained_ckpt_path or f"DiT-XL-2-{image_size}x{image_size}.pt"
+            elif args.model.startswith("SiT-XL/2"):
+                ckpt_path = pretrained_ckpt_path or f"SiT-XL-2-{image_size}x{image_size}.pt"
         state_dict = find_model(ckpt_path)
         torch.save(state_dict, os.path.join(tmp_dir, "local_pretrained_ckpt.pt"))
     
@@ -350,7 +437,7 @@ def center_crop_arr(pil_image, image_size):
 
 def main(args):
     """
-    Trains a new DiT model.
+    Trains a new DiT or SiT model.
     """
     assert torch.cuda.is_available(), "Training currently requires at least one GPU."
 
@@ -379,17 +466,25 @@ def main(args):
     # Create model:
     assert args.image_size % 8 == 0, "Image size must be divisible by 8 (for the VAE encoder)."
     latent_size = args.image_size // 8
-    model = DiT_models[args.model](
-        input_size=latent_size,
-        num_classes=args.num_classes,
-        class_dropout_prob=args.dropout_ratio,
-    )
+    if args.model in SiT_models:
+        model = SiT_models[args.model](
+            input_size=latent_size,
+            num_classes=args.num_classes,
+            class_dropout_prob=args.dropout_ratio,
+        )
+        pretrained_model = SiT_models[args.model](input_size=latent_size, num_classes=1000)
+    elif args.model in DiT_models:
+        model = DiT_models[args.model](
+            input_size=latent_size,
+            num_classes=args.num_classes,
+            class_dropout_prob=args.dropout_ratio,
+        )
+        pretrained_model = DiT_models[args.model](input_size=latent_size, num_classes=1000)
     # Load pre-trained weights if provided:
     model = load_pretrained_model(model, args.pretrained_ckpt, args.image_size)
 
     # DoG
     # Load a pre-trained model for domain guidance
-    pretrained_model = DiT_models[args.model](input_size=latent_size, num_classes=1000)
     pretrained_model = load_exact_pretrained_model(pretrained_model, args.pretrained_ckpt, args.image_size)  
     requires_grad(pretrained_model, False)
     pretrained_model.eval()
@@ -400,17 +495,31 @@ def main(args):
     ema = deepcopy(model).to(device)  # Create an EMA of the model for use after training
     requires_grad(ema, False)
     model = DDP(model.to(device), device_ids=[rank])
-    diffusion = create_diffusion(timestep_respacing="")  # default: 1000 steps, linear noise schedule
-    # Monkey-patch the loss function
-    diffusion.training_losses = MethodType(our_training_losses, diffusion) # DoG
+
+    if args.model in SiT_models:
+        transport = create_transport(
+            args.path_type,
+            args.prediction,
+            args.loss_weight,
+            args.train_eps,
+            args.sample_eps
+        )  # default: velocity; 
+        transport_sampler = Sampler(transport)
+        # Monkey-patch the loss function
+        transport.training_losses = MethodType(our_training_losses_transport, transport) # DoG
+        
+        logger.info(f"SiT Parameters: {sum(p.numel() for p in model.parameters()):,}")
+    elif args.model in DiT_models:
+        logger.info(f"DiT Parameters: {sum(p.numel() for p in model.parameters()):,}")
+        diffusion = create_diffusion(timestep_respacing="")  # default: 1000 steps, linear noise schedule
+        # Monkey-patch the loss function
+        diffusion.training_losses = MethodType(our_training_losses, diffusion) # DoG
     
     vae_path = f"/pretrained_models/sd-vae-ft-{args.vae}"
     if not os.path.exists(vae_path):
         vae = AutoencoderKL.from_pretrained(f"stabilityai/sd-vae-ft-{args.vae}").to(device)
     else:
         vae = AutoencoderKL.from_pretrained(vae_path).to(device)
-
-    logger.info(f"DiT Parameters: {sum(p.numel() for p in model.parameters()):,}")
 
     logger.info("[DoG] Patched diffusion training loss with Domain Guidance (w_DoG={})".format(args.w_dog))
 
@@ -478,26 +587,41 @@ def main(args):
             with torch.no_grad():
                 # Map input images to latent space + normalize latents:
                 x = vae.encode(x).latent_dist.sample().mul_(0.18215)
-            t = torch.randint(0, diffusion.num_timesteps, (x.shape[0],), device=device)
+
             model_kwargs = dict(y=y)
 
-            # DoG
-            # Patch the diffusion training loss to use Domain Guidance
-            loss_dict = diffusion.training_losses(
-                model,
-                x,
-                t,
-                model_kwargs,
-                pretrained_model=diffusion._wrap_model(pretrained_model),
-                ema=diffusion._wrap_model(ema),
-                vae=vae, # For debugging 
-                w_dog=args.w_dog,
-                guidance_cutoff=args.guidance_cutoff,
-                mg_high=args.mg_high, 
-                late_start_iter=args.late_start_iter,
-                counter=train_steps,
-            )
-
+            if args.model in SiT_models:
+                loss_dict = transport.training_losses(
+                    model, 
+                    x, 
+                    model_kwargs,
+                    pretrained_model=pretrained_model,
+                    ema=ema,
+                    vae=vae, # For debugging 
+                    w_dog=args.w_dog,
+                    guidance_cutoff=args.guidance_cutoff,
+                    mg_high=args.mg_high, 
+                    late_start_iter=args.late_start_iter,
+                    counter=train_steps,
+                    ) # TODO CHANGE !!!MONKEYPATCHING!!!!
+            elif args.model in DiT_models:
+                # DoG
+                # Patch the diffusion training loss to use Domain Guidance
+                t = torch.randint(0, diffusion.num_timesteps, (x.shape[0],), device=device)
+                loss_dict = diffusion.training_losses(
+                    model,
+                    x,
+                    t,
+                    model_kwargs,
+                    pretrained_model=diffusion._wrap_model(pretrained_model),
+                    ema=diffusion._wrap_model(ema),
+                    vae=vae, # For debugging 
+                    w_dog=args.w_dog,
+                    guidance_cutoff=args.guidance_cutoff,
+                    mg_high=args.mg_high, 
+                    late_start_iter=args.late_start_iter,
+                    counter=train_steps,
+                )
             loss = loss_dict["loss"].mean()
             opt.zero_grad()
             loss.backward()
@@ -548,14 +672,14 @@ def main(args):
 
     logger.info("Done!")
     cleanup()
-
+all_models = list(SiT_models.keys()) + list(DiT_models.keys())
 
 if __name__ == "__main__":
     # Default args here will train DiT-XL/2 with the hyperparameters we used in our paper (except training iters).
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-path", type=str, required=True)
     parser.add_argument("--results-dir", type=str, default="results")
-    parser.add_argument("--model", type=str, choices=list(DiT_models.keys()), default="DiT-XL/2")
+    parser.add_argument("--model", type=str, choices=all_models, default="DiT-XL/2")
     parser.add_argument("--image-size", type=int, choices=[256, 512], default=256)
     parser.add_argument("--num-classes", type=int, default=1000)
     # parser.add_argument("--epochs", type=int, default=1400) # Instead train based on training iterations (Epochs different for each dataset)
@@ -573,5 +697,18 @@ if __name__ == "__main__":
     parser.add_argument("--mg-high", type=float, default=0.75, help="Cutoff for domain guidance") # DOG
     parser.add_argument("--late-start-iter", type=int, default=0, help="Late start iteration for domain guidance") # DOG
     parser.add_argument("--dropout-ratio", type=float, default=0.1, help="Have null labels or no") # DOG
+    
+    def none_or_str(value):
+        if value == 'None':
+            return None
+        return value
+
+    # For SiT transport models
+    group = parser.add_argument_group("Transport arguments")
+    group.add_argument("--path-type", type=str, default="Linear", choices=["Linear", "GVP", "VP"])
+    group.add_argument("--prediction", type=str, default="velocity", choices=["velocity", "score", "noise"])
+    group.add_argument("--loss-weight", type=none_or_str, default=None, choices=[None, "velocity", "likelihood"])
+    group.add_argument("--sample-eps", type=float)
+    group.add_argument("--train-eps", type=float)
     args = parser.parse_args()
     main(args)

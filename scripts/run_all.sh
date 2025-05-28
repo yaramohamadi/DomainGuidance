@@ -2,8 +2,9 @@
 
 # ========== GLOBAL CONFIGURATION ==========
 SERVER="bool"
-CUDA_DEVICES="2,3"
-EXPERIMENT_PRENAME="All_unconditional"
+CUDA_DEVICES="1"
+EXPERIMENT_PRENAME="All_DiT"
+MODEL="DiT-XL/2" # DiT-XL/2 or SiT-XL/2
 
 # ========== DATASET TO SCRIPT MAPPING ==========
 # Format: dataset_name script_name
@@ -33,8 +34,9 @@ EXPERIMENT_PRENAME="All_unconditional"
 #  "ffhq256 run_baseline_mg.sh"
 #  "ffhq256 run_baselines_finetune.sh"
 
+
 declare -a TASKS=(
-  "ffhq256 run_baselines_finetune.sh"
+  "caltech-101_processed run_ours.sh"
 )
 
 # ========== EXECUTION LOOP ==========
@@ -50,7 +52,8 @@ for TASK in "${TASKS[@]}"; do
     --dataset "$DATASET" \
     --server "$SERVER" \
     --cuda_devices "$CUDA_DEVICES" \
-    --experiment_prename "$EXPERIMENT_PRENAME"
+    --experiment_prename "$EXPERIMENT_PRENAME" \
+    --model "$MODEL"
 
   echo "✅ Finished $SCRIPT on $DATASET"
   echo "=============================================="

@@ -1,13 +1,12 @@
 #!/bin/bash
 
 # Global Constants
-TOTAL_STEPS=24000
+TOTAL_STEPS=24000 
 LOG_EVERY=1000
-CKPT_EVERY=24000
+CKPT_EVERY=24000 
 SKIP_FIRST_CKPT=1
 
 IMAGE_SIZE=256
-MODEL="DiT-XL/2"
 BATCH_SIZE=32
 VAE="ema"
 NUM_WORKERS=4
@@ -196,7 +195,6 @@ prepare_dataset() {
   fi
 
 }
-
 
 # ====================== HELPER ======================
 log_and_run() {

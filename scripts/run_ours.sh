@@ -32,6 +32,7 @@ while [[ "$#" -gt 0 ]]; do
     --experiment_prename) EXPERIMENT_PRENAME="$2"; shift ;;
     --latestart) LATE_START="$2"; shift ;;
     --mghigh) MG_HIGH="$2"; shift ;;
+    --model) MODEL="$2"; shift ;;
     *) echo "Unknown parameter passed: $1"; exit 1 ;;
   esac
   shift

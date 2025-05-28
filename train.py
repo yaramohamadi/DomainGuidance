@@ -221,10 +221,9 @@ def main(args):
             args.train_eps,
             args.sample_eps
         )  # default: velocity; 
-        transport_sampler = Sampler(transport)
         logger.info(f"SiT Parameters: {sum(p.numel() for p in model.parameters()):,}")
     elif args.model in DiT_models:
-        logger.info(f"SiT Parameters: {sum(p.numel() for p in model.parameters()):,}")
+        logger.info(f"DiT Parameters: {sum(p.numel() for p in model.parameters()):,}")
         diffusion = create_diffusion(timestep_respacing="")  # default: 1000 steps, linear noise schedule
     vae_path = f"/pretrained_models/sd-vae-ft-{args.vae}"
     if not os.path.exists(vae_path):
@@ -282,6 +281,8 @@ def main(args):
             x = x.to(device)
             y = y.to(device)
 
+            print("Iterating")
+
             # DEBUGGGING
             if train_steps == 0 and rank == 0:
                 print("=" * 20)
@@ -295,11 +296,11 @@ def main(args):
             with torch.no_grad():
                 # Map input images to latent space + normalize latents:
                 x = vae.encode(x).latent_dist.sample().mul_(0.18215)
-            t = torch.randint(0, diffusion.num_timesteps, (x.shape[0],), device=device)
             model_kwargs = dict(y=y)
             if args.model in SiT_models:
                 loss_dict = transport.training_losses(model, x, model_kwargs)
             elif args.model in DiT_models:
+                t = torch.randint(0, diffusion.num_timesteps, (x.shape[0],), device=device)
                 loss_dict = diffusion.training_losses(model, x, t, model_kwargs)
             loss = loss_dict["loss"].mean()
             opt.zero_grad()
@@ -352,10 +353,8 @@ def main(args):
     cleanup()
 
 
-
-all_models = list(SiT_models.keys()) + list(DiT_models.keys())
-
 if __name__ == "__main__":
+    all_models = list(SiT_models.keys()) + list(DiT_models.keys())
     # Default args here will train DiT-XL/2 with the hyperparameters we used in our paper (except training iters).
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-path", type=str, required=True)
@@ -374,6 +373,11 @@ if __name__ == "__main__":
     parser.add_argument("--pretrained-ckpt", type=str, default=None,
                         help="Optional path to a DiT checkpoint (default: auto-download a pre-trained DiT-XL/2 model).")
     parser.add_argument("--dropout-ratio", type=float, default=0.1, help="Have null labels or no") # DOG    
+
+    def none_or_str(value):
+        if value == 'None':
+            return None
+        return value
 
     # For SiT transport models
     group = parser.add_argument_group("Transport arguments")

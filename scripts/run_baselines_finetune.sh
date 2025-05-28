@@ -28,6 +28,7 @@ while [[ "$#" -gt 0 ]]; do
     --dataset) DATASET="$2"; shift ;;
     --server) SERVER="$2"; shift ;;
     --experiment_prename) EXPERIMENT_PRENAME="$2"; shift ;;
+    --model) MODEL="$2"; shift ;;
     *) echo "Unknown parameter passed: $1"; exit 1 ;;
   esac
   shift
