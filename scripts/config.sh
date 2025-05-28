@@ -103,38 +103,14 @@ create_environment() {
   if [[ "$SERVER" == "computecanada" ]]; then
     echo ">>> Detected Compute Canada: using virtualenv + module setup"
 
-    module load StdEnv/2020 gcc/9.3.0 cuda/11.7 opencv/4.7.0
+    module load httpproxy #beluga and narval
+    module load StdEnv/2023 intel/2023.2.1
+    module load cuda/11.8
+    module load StdEnv/2023  gcc/12.3
+    module load opencv/4.9.0
 
-    export LD_LIBRARY_PATH=/cvmfs/soft.computecanada.ca/nix/store/z87lf4q1l809fpnmsj9850nb5qxvw2lv-glog-0.3.4/lib:$LD_LIBRARY_PATH
-    export LD_LIBRARY_PATH=/cvmfs/soft.computecanada.ca/nix/store/q8w6jn55815n83mwyyk31n9wh23a9sds-libtiff-4.0.7/lib:$LD_LIBRARY_PATH
-
-    # Load Compute Canada modules
-    module load python/3.11 cuda/12.2
-
-
-    
-    # Create virtualenv if needed
-    if [ -d "$ENV_PATH" ]; then
-      echo "Using existing virtualenv at $ENV_PATH"
-    else
-      python -m venv "$ENV_PATH"
-    fi
-    
-    # Activate and install packages
-    source "$ENV_PATH/bin/activate"
-    nvidia-smi
-    # pip install --upgrade pip --no-index
-    # pip install torch torchvision --no-index
-    # pip install timm diffusers accelerate pytorch-fid --no-index
-    # pip install numpy==1.23.2 --no-index
-# 
-    # # Install dgm-eval
-    # if [ ! -d "dgm-eval" ]; then
-    #   git clone https://github.com/layer6ai-labs/dgm-eval.git
-    # fi
-    # pushd dgm-eval
-    # pip install --no-deps -e .
-    # popd
+    module load StdEnv/2023 python/3.11.5
+    source $ENV_PATH/bin/activate
 
   else
     echo ">>> Detected local server: using conda env setup"
