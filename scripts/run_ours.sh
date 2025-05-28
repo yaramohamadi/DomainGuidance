@@ -22,6 +22,10 @@ USE_GUIDANCE_CUTOFF=1
 MG_HIGH=1
 LATE_START=0
 
+
+W_TRAIN_DOG=1.5
+DROPOUT_RATIO=0.0
+
 # ====================== ARGUMENT PARSING ======================
 
 while [[ "$#" -gt 0 ]]; do
@@ -32,6 +36,7 @@ while [[ "$#" -gt 0 ]]; do
     --experiment_prename) EXPERIMENT_PRENAME="$2"; shift ;;
     --latestart) LATE_START="$2"; shift ;;
     --mghigh) MG_HIGH="$2"; shift ;;
+    --wtraindog) W_TRAIN_DOG="$2"; shift ;;
     *) echo "Unknown parameter passed: $1"; exit 1 ;;
   esac
   shift
@@ -43,9 +48,6 @@ EXPERIMENT_NAME="$EXPERIMENT_PRENAME/dogfinetune_LATE_START_ITER${LATE_START}_MG
 source scripts/config.sh
 resolve_server_paths
 resolve_dataset_config
-
-W_TRAIN_DOG=1.5
-DROPOUT_RATIO=0.0
 
 # Define any additional specific parameters here
 

@@ -16,10 +16,10 @@ declare -a TASKS=(
 # ========== Define per-task (latestart, mghigh, experiment_prename) triples ==========
 declare -A PAIR_MAP
 # Format: "latestart,mghigh latestart,mghigh ..."
-# 3000,0.8,ablation_latestart cub-200-2011 -> Sampling is done but it NEEDS FID calculation!
-PAIR_MAP["stanford-cars_processed"]="7000,0.1,ablation_latestart 7000,0.2,ablation_latestart 7000,0.3,ablation_latestart 7000,0.4,ablation_latestart 7000,0.5,ablation_latestart 7000,0.6,ablation_latestart 7000,0.7,ablation_latestart 7000,0.8,ablation_latestart 7000,0.9,ablation_latestart 7000,1.0,ablation_latestart"
-PAIR_MAP["food-101_processed"]="7000,0.1,ablation_latestart 7000,0.2,ablation_latestart 7000,0.3,ablation_latestart 7000,0.4,ablation_latestart 7000,0.5,ablation_latestart 7000,0.6,ablation_latestart 7000,0.7,ablation_latestart 7000,0.8,ablation_latestart 7000,0.9,ablation_latestart 7000,1.0,ablation_latestart"
-PAIR_MAP["caltech-101_processed"]="6000,0.1,ablation_latestart 6000,0.2,ablation_latestart 6000,0.3,ablation_latestart 6000,0.4,ablation_latestart 6000,0.5,ablation_latestart 6000,0.6,ablation_latestart 6000,0.7,ablation_latestart 6000,0.8,ablation_latestart 6000,0.9,ablation_latestart 6000,1.0,ablation_latestart"
+# 3000,0.8,ablation_best_latestart_mg cub-200-2011 -> Sampling is done but it NEEDS FID calculation!
+PAIR_MAP["stanford-cars_processed"]="7000,0.1,ablation_best_latestart_mg 7000,0.2,ablation_best_latestart_mg 7000,0.3,ablation_best_latestart_mg 7000,0.4,ablation_best_latestart_mg 7000,0.5,ablation_best_latestart_mg 7000,0.6,ablation_best_latestart_mg 7000,0.7,ablation_best_latestart_mg 7000,0.8,ablation_best_latestart_mg 7000,0.9,ablation_best_latestart_mg 7000,1.0,ablation_best_latestart_mg"
+PAIR_MAP["food-101_processed"]="7000,0.1,ablation_best_latestart_mg 7000,0.2,ablation_best_latestart_mg 7000,0.3,ablation_best_latestart_mg 7000,0.4,ablation_best_latestart_mg 7000,0.5,ablation_best_latestart_mg 7000,0.6,ablation_best_latestart_mg 7000,0.7,ablation_best_latestart_mg 7000,0.8,ablation_best_latestart_mg 7000,0.9,ablation_best_latestart_mg 7000,1.0,ablation_best_latestart_mg"
+PAIR_MAP["caltech-101_processed"]="6000,0.1,ablation_best_latestart_mg 6000,0.2,ablation_best_latestart_mg 6000,0.3,ablation_best_latestart_mg 6000,0.4,ablation_best_latestart_mg 6000,0.5,ablation_best_latestart_mg 6000,0.6,ablation_best_latestart_mg 6000,0.7,ablation_best_latestart_mg 6000,0.8,ablation_best_latestart_mg 6000,0.9,ablation_best_latestart_mg 6000,1.0,ablation_best_latestart_mg"
 
 # ========== EXECUTION LOOP ==========
 for DATASET in "${TASKS[@]}"; do

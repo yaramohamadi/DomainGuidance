@@ -20,6 +20,9 @@ DATASET="stanford-cars_processed"  # Options: caltech, birds, etc.
 SERVER="taylor"  # Options: taylor, bool, computecanada
 EXPERIMENT_PRENAME=""
 
+W_TRAIN_CG=1.5
+USE_GUIDANCE_CUTOFF=0
+
 # ====================== ARGUMENT PARSING ======================
 
 while [[ "$#" -gt 0 ]]; do
@@ -28,6 +31,7 @@ while [[ "$#" -gt 0 ]]; do
     --dataset) DATASET="$2"; shift ;;
     --server) SERVER="$2"; shift ;;
     --experiment_prename) EXPERIMENT_PRENAME="$2"; shift ;;
+    --wtraincg) W_TRAIN_CG="$2"; shift ;;
     *) echo "Unknown parameter passed: $1"; exit 1 ;;
   esac
   shift
@@ -40,8 +44,7 @@ source scripts/config.sh
 resolve_server_paths
 resolve_dataset_config
 
-W_TRAIN_CG=1.5
-USE_GUIDANCE_CUTOFF=0
+
 
 # Define any additional specific parameters here
 

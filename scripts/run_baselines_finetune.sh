@@ -20,6 +20,12 @@ SERVER="taylor"  # Options: taylor, bool, computecanada
 EXPERIMENT_PRENAME=""
 DROPOUT_RATIO=0.1
 
+W_DOG=1.5
+W_CFG=1.5
+
+# Load all logic
+source scripts/config.sh
+
 # ====================== ARGUMENT PARSING ======================
 
 while [[ "$#" -gt 0 ]]; do
@@ -28,6 +34,9 @@ while [[ "$#" -gt 0 ]]; do
     --dataset) DATASET="$2"; shift ;;
     --server) SERVER="$2"; shift ;;
     --experiment_prename) EXPERIMENT_PRENAME="$2"; shift ;;
+    --checkpoint_dir) CHECKPOINT_DIR="$2"; shift ;;
+    --wdog) W_DOG="$2"; shift ;;
+    --wcfg) W_CG="$2"; shift ;;
     *) echo "Unknown parameter passed: $1"; exit 1 ;;
   esac
   shift
@@ -35,8 +44,6 @@ done
 
 EXPERIMENT_NAME="$EXPERIMENT_PRENAME/baselines_finetune"
 
-# Load all logic
-source scripts/config.sh
 resolve_server_paths
 resolve_dataset_config
 
@@ -91,7 +98,7 @@ sample_CG1_5() {
         --ckpt "$CHECKPOINT_DIR/$PADDED_CKPT" \
         --per-proc-batch-size "$BATCH_SIZE" --num-fid-samples "$NSAMPLE" \
         --image-size "$IMAGE_SIZE" --num-classes "$NUM_CLASSES" \
-        --cfg-scale 1.5 --num-sampling-steps "$NUM_SAMPLE_STEPS" \
+        --cfg-scale "$W_CFG" --num-sampling-steps "$NUM_SAMPLE_STEPS" \
         --dropout-ratio $DROPOUT_RATIO
 }
 
@@ -115,7 +122,7 @@ sample_DoG1_5() {
         --ckpt "$CHECKPOINT_DIR/$PADDED_CKPT" \
         --per-proc-batch-size "$BATCH_SIZE" --num-fid-samples "$NSAMPLE" \
         --image-size "$IMAGE_SIZE" --num-classes "$NUM_CLASSES" \
-        --cfg-scale 1.5 --num-sampling-steps "$NUM_SAMPLE_STEPS" \
+        --cfg-scale "$W_DOG" --num-sampling-steps "$NUM_SAMPLE_STEPS" \
         --dropout-ratio $DROPOUT_RATIO
 }
 
@@ -144,7 +151,7 @@ if [[ "$DATASET" == "ffhq256" ]]; then
     DROPOUT_RATIO=0
 fi
 
-train_model
+# train_model
 
 for ((i=0; i<=TOTAL_STEPS; i+=CKPT_EVERY)); do
     if [[ $i -eq 0 && "$SKIP_FIRST_CKPT" -eq 1 ]]; then
@@ -153,8 +160,8 @@ for ((i=0; i<=TOTAL_STEPS; i+=CKPT_EVERY)); do
     printf -v PADDED_CKPT "%07d.pt" "$i"
 
     printf -v PADDED_STEP "%07d_cg1" "$i"
-    sample_CG1
-    fid_CG1
+    #sample_CG1
+    #fid_CG1
 
     if [[ "$DATASET" == "ffhq256" ]]; then
         continue
