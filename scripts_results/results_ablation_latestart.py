@@ -28,7 +28,7 @@ table_data = {}
 
 for dataset_folder in sorted(os.listdir(root_dir)):
     dataset_path = os.path.join(root_dir, dataset_folder)
-    ablation_path = os.path.join(dataset_path, "ablation_latestart")
+    ablation_path = os.path.join(dataset_path, "mega_ablation_latestart")
     if not os.path.isdir(ablation_path):
         continue
 
