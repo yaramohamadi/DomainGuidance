@@ -207,6 +207,11 @@ if __name__ == "__main__":
                         help="Optional path to a DiT checkpoint (default: auto-download a pre-trained DiT-XL/2 model).")
     parser.add_argument("--dropout-ratio", type=float, default=0.1)
 
+    def none_or_str(value):
+        if value == 'None':
+            return None
+        return value
+
     group = parser.add_argument_group("Transport arguments")
     group.add_argument("--path-type", type=str, default="Linear", choices=["Linear", "GVP", "VP"])
     group.add_argument("--prediction", type=str, default="velocity", choices=["velocity", "score", "noise"])
