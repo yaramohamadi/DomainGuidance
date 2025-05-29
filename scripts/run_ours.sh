@@ -36,6 +36,7 @@ while [[ "$#" -gt 0 ]]; do
     --latestart) LATE_START="$2"; shift ;;
     --mghigh) MG_HIGH="$2"; shift ;;
     --wtraindog) W_TRAIN_DOG="$2"; shift ;;
+    --model_name) MODEL="$2"; shift ;;
     *) echo "Unknown parameter passed: $1"; exit 1 ;;
   esac
   shift
@@ -116,7 +117,7 @@ mkdir -p "$(dirname "$LOG_FILE")"
 
 create_environment
 prepare_dataset
-# train_model
+train_model
 
 for ((i=0; i<=TOTAL_STEPS; i+=CKPT_EVERY)); do
   if [[ $i -eq 0 && "$SKIP_FIRST_CKPT" -eq 1 ]]; then

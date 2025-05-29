@@ -295,11 +295,11 @@ def main(args):
             model_kwargs = dict(y=y)
 
 
-            # If doing profiling:
+            #If doing profiling:
             # profiling = True
             # if profiling:
             #     from torch.profiler import profile, record_function, ProfilerActivity
-# 
+# # 
             #     with profile(
             #         activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA], 
             #         record_shapes=True,
@@ -316,14 +316,14 @@ def main(args):
             #         elif args.model in DiT_models:
             #             t = torch.randint(0, diffusion.num_timesteps, (x.shape[0],), device=device)
             #             loss_dict = diffusion.training_losses(model, x, t, model_kwargs)
-# 
+# # 
             #         loss = loss_dict["loss"].mean()
             #         opt.zero_grad()
             #         loss.backward()
             #         opt.step()
-# 
+# # 
             #         prof.step()
-
+# 
             # print(prof.key_averages().table(sort_by="self_cuda_time_total", row_limit=30))
             # print("Total FLOPs:", sum([e.flops for e in prof.key_averages() if e.flops is not None]))
             # dist.barrier()
