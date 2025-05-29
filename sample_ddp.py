@@ -145,28 +145,28 @@ def main(args):
         # Sample images:
 
         # If doing profiling:
-        profiling = True
-        if profiling:
-            from torch.profiler import profile, record_function, ProfilerActivity
-
-            with profile(
-                activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA], 
-                record_shapes=True,
-                profile_memory=True,
-                with_stack=True,
-                with_flops=True
-            ) as prof:
-                if args.model.startswith("SiT"):
-                    samples = sample_fn(z, model_fn, **model_kwargs)[-1]
-                elif args.model.startswith("DiT"):
-                    samples = diffusion.p_sample_loop(
-                        model_fn, z.shape, z, clip_denoised=False, model_kwargs=model_kwargs, progress=False, device=device
-                    )
-                prof.step()
-            print(prof.key_averages().table(sort_by="self_cuda_time_total", row_limit=30))
-            print("Total FLOPs:", sum([e.flops for e in prof.key_averages() if e.flops is not None]))
-            dist.barrier()
-            exit()
+        # profiling = True
+        # if profiling:
+        #     from torch.profiler import profile, record_function, ProfilerActivity
+# 
+        #     with profile(
+        #         activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA], 
+        #         record_shapes=True,
+        #         profile_memory=True,
+        #         with_stack=True,
+        #         with_flops=True
+        #     ) as prof:
+        #         if args.model.startswith("SiT"):
+        #             samples = sample_fn(z, model_fn, **model_kwargs)[-1]
+        #         elif args.model.startswith("DiT"):
+        #             samples = diffusion.p_sample_loop(
+        #                 model_fn, z.shape, z, clip_denoised=False, model_kwargs=model_kwargs, progress=False, device=device
+        #             )
+        #         prof.step()
+        #     print(prof.key_averages().table(sort_by="self_cuda_time_total", row_limit=30))
+        #     print("Total FLOPs:", sum([e.flops for e in prof.key_averages() if e.flops is not None]))
+        #     dist.barrier()
+        #     exit()
 
 
         if args.model.startswith("SiT"):

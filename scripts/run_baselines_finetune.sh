@@ -152,7 +152,7 @@ if [[ "$DATASET" == "ffhq256" ]]; then
     DROPOUT_RATIO=0
 fi
 
-train_model
+# train_model
 
 for ((i=0; i<=TOTAL_STEPS; i+=CKPT_EVERY)); do
     if [[ $i -eq 0 && "$SKIP_FIRST_CKPT" -eq 1 ]]; then
@@ -161,25 +161,20 @@ for ((i=0; i<=TOTAL_STEPS; i+=CKPT_EVERY)); do
     printf -v PADDED_CKPT "%07d.pt" "$i"
 
     printf -v PADDED_STEP "%07d_cg1" "$i"
-<<<<<<< HEAD
-    #sample_CG1
-    #fid_CG1
-=======
     sample_CG1
     fid_CG1
->>>>>>> 45ef480eecdd9c079b2a6bda64ff7f5c0a83cfd4
 
     if [[ "$DATASET" == "ffhq256" ]]; then
         continue
     fi
 
     printf -v PADDED_STEP "%07d_cg1_5" "$i"
-    #sample_CG1_5
-    #fid_CG1_5
+    sample_CG1_5
+    fid_CG1_5
 
     printf -v PADDED_STEP "%07d_dog1_5" "$i"
     sample_DoG1_5
-    #fid_DoG1_5
+    fid_DoG1_5
 done
 
 cleanup_dataset
