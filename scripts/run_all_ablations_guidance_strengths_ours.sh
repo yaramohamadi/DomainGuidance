@@ -41,7 +41,7 @@ for DATASET in "${TASKS[@]}"; do
     else
       eval "bash $CMD"
     fi
-
+    
     echo "✅ Finished $SCRIPT on $DATASET | w_train_dog: $W_TRAIN_DOG | latestart: $LATESTART | mghigh: $MGHIGH | prename: $EXPERIMENT_PRENAME"
     echo "=============================================="
   done

@@ -3,7 +3,7 @@
 #SBATCH --job-name=${JOB_NAME:-Ours}  # Use $JOB_NAME if defined, else 'myjob'
 #SBATCH --output=logs/%x_%j.out
 #SBATCH --error=logs/%x_%j.err          
-#SBATCH --time=03:00:00
+#SBATCH --time=06:30:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=16
@@ -36,14 +36,14 @@ while [[ "$#" -gt 0 ]]; do
     --experiment_prename) EXPERIMENT_PRENAME="$2"; shift ;;
     --checkpoint_dir) CHECKPOINT_DIR="$2"; shift ;;
     --wdog) W_DOG="$2"; shift ;;
-    --wcfg) W_CG="$2"; shift ;;
+    --wcfg) W_CFG="$2"; shift ;;
     --model_name) MODEL="$2"; shift ;;
     *) echo "Unknown parameter passed: $1"; exit 1 ;;
   esac
   shift
 done
 
-EXPERIMENT_NAME="$EXPERIMENT_PRENAME/baselines_finetune_W_CG${W_CFG}"
+EXPERIMENT_NAME="$EXPERIMENT_PRENAME/baselines_finetune_W_CFG${W_CFG}"
 
 resolve_server_paths
 resolve_dataset_config
@@ -152,7 +152,7 @@ if [[ "$DATASET" == "ffhq256" ]]; then
     DROPOUT_RATIO=0
 fi
 
-# train_model
+train_model
 
 for ((i=0; i<=TOTAL_STEPS; i+=CKPT_EVERY)); do
     if [[ $i -eq 0 && "$SKIP_FIRST_CKPT" -eq 1 ]]; then
@@ -161,8 +161,8 @@ for ((i=0; i<=TOTAL_STEPS; i+=CKPT_EVERY)); do
     printf -v PADDED_CKPT "%07d.pt" "$i"
 
     printf -v PADDED_STEP "%07d_cg1" "$i"
-    sample_CG1
-    fid_CG1
+    # sample_CG1
+    # fid_CG1
 
     if [[ "$DATASET" == "ffhq256" ]]; then
         continue
