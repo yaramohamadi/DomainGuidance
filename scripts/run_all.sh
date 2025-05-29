@@ -2,7 +2,7 @@
 
 # ========== GLOBAL CONFIGURATION ==========
 SERVER="bool"
-CUDA_DEVICES="0,3"
+CUDA_DEVICES="1,3"
 EXPERIMENT_PRENAME="All_unconditional"
 
 # ========== DATASET TO SCRIPT MAPPING ==========

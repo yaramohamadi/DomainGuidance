@@ -34,7 +34,7 @@ from diffusion import create_diffusion
 from diffusion import create_diffusion
 from diffusion.gaussian_diffusion import LossType, ModelMeanType, ModelVarType, mean_flat
 from torchvision.utils import save_image
-from transport import create_transport, Sampler, ModelType
+from transport import create_transport, Sampler, ModelType, path
 
 from diffusers.models import AutoencoderKL
 
@@ -445,7 +445,7 @@ def main(args):
         )  # default: velocity; 
         transport_sampler = Sampler(transport)
         logger.info(f"SiT Parameters: {sum(p.numel() for p in model.parameters()):,}")
-        transport.training_losses = MethodType(mg_training_losses, transport)  # MG
+        transport.training_losses = MethodType(mg_training_losses_transport, transport)  # MG
     elif args.model in DiT_models:
         logger.info(f"SiT Parameters: {sum(p.numel() for p in model.parameters()):,}")
         diffusion = create_diffusion(timestep_respacing="")  # default: 1000 steps, linear noise schedule
@@ -558,12 +558,11 @@ def main(args):
             # exit()
 
             if args.model in SiT_models:
-                loss_dict = diffusion.training_losses(
+                loss_dict = transport.training_losses(
                     model,
                     x,
-                    t,
                     model_kwargs,
-                    ema=diffusion._wrap_model(ema),
+                    ema=ema,
                     vae=vae, # For debugging 
                     w_cg=args.w_cg,
                     guidance_cutoff=args.guidance_cutoff,
