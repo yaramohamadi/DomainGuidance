@@ -339,6 +339,7 @@ def main(args):
             if args.model in SiT_models:
                 loss_dict = transport.training_losses(model, x, model_kwargs)
             elif args.model in DiT_models:
+                t = torch.randint(0, diffusion.num_timesteps, (x.shape[0],), device=device)
                 loss_dict = diffusion.training_losses(model, x, t, model_kwargs)
             loss = loss_dict["loss"].mean()
             opt.zero_grad()
