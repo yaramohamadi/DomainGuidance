@@ -5,7 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 """
-A minimal training script for DiT using PyTorch DDP.
+A minimal training script for DiT and SiT using PyTorch DDP.
 """
 import torch
 # the first flag below was False when we tested this script but True makes A100 training a lot faster:
@@ -29,11 +29,12 @@ import os
 
 from download import find_model
 
-from models import DiT_models
+from models import DiT_models, SiT_models
 from diffusion import create_diffusion
 from diffusion import create_diffusion
 from diffusion.gaussian_diffusion import LossType, ModelMeanType, ModelVarType, mean_flat
 from torchvision.utils import save_image
+from transport import create_transport, Sampler, ModelType
 
 from diffusers.models import AutoencoderKL
 
@@ -189,6 +190,79 @@ def mg_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, w
 
         return terms
 
+def mg_training_losses_transport(
+    self, 
+    model,  
+    x1, 
+    model_kwargs=None,
+    ema=None,
+    w_cg=1.0,
+    guidance_cutoff=False,
+    vae=None,
+    counter=0
+):
+    if self.model_type != ModelType.VELOCITY:
+        raise NotImplementedError(f"MG guidance is only implemented for ModelType.VELOCITY, not {self.model_type}.")
+
+    if model_kwargs is None:
+        model_kwargs = {}
+
+    t, x0, x1 = self.sample(x1)
+    t, xt, ut = self.path_sampler.plan(t, x0, x1)
+    model_output = model(xt, t, **model_kwargs)
+
+    B, *_, C = xt.shape
+    assert model_output.size() == (B, *xt.size()[1:-1], C)
+
+    # === Model Guidance (Velocity only) ===
+    if ema is not None:
+        y = model_kwargs["y"]
+        uncond_kwargs = {"y": torch.full_like(y, fill_value=args.num_classes)}
+        ema_cond_output = ema(xt, t, **model_kwargs)
+        ema_uncond_output = ema(xt, t, **uncond_kwargs)
+
+        if guidance_cutoff:
+            t_norm = t.float() / (self.num_steps - 1)
+            mg_high = 0.75
+            w = torch.where(t_norm < mg_high, w_cg - 1, 0.0).view(-1, *([1] * (model_output.dim() - 1)))
+            ut = ut + w * (ema_cond_output.detach() - ema_uncond_output.detach())
+        else:
+            ut = ut + (w_cg - 1) * (ema_cond_output.detach() - ema_uncond_output.detach())
+
+    terms = {"pred": model_output}
+    terms["loss"] = mean_flat(((model_output - ut) ** 2))
+
+    # === Debugging and Visualization ===
+    if ema is not None and counter % 1000 == 0:
+        def norm_to_01(x):
+            return (x.clamp(-1, 1) + 1) / 2
+
+        # Recover x0 from velocity
+        alpha_t, _ = self.path_sampler.compute_alpha_t(path.expand_t_like_x(t, xt))
+        sigma_t, _ = self.path_sampler.compute_sigma_t(path.expand_t_like_x(t, xt))
+        x0_model = xt - sigma_t * model_output
+        x0_uncond = xt - sigma_t * ema_uncond_output
+        x0_diff = (x0_model - x0_uncond).abs()
+
+        # Decode and save
+        save_dir = f"CG_debug/{counter:06d}"
+        os.makedirs(save_dir, exist_ok=True)
+
+        with torch.no_grad():
+            x1_dec = vae.decode(x1 / 0.18215).sample
+            x0_model_dec = vae.decode(x0_model / 0.18215).sample
+            x0_uncond_dec = vae.decode(x0_uncond / 0.18215).sample
+            x0_diff_dec = (x0_model_dec - x0_uncond_dec).abs()
+
+        save_image(norm_to_01(x1_dec),         f"{save_dir}/x_start.png",     nrow=8)
+        save_image(norm_to_01(x0_model_dec),   f"{save_dir}/x0_model.png",    nrow=8)
+        save_image(norm_to_01(x0_uncond_dec),  f"{save_dir}/x0_uncond.png",   nrow=8)
+        save_image(norm_to_01(x0_diff_dec),    f"{save_dir}/x0_diff.png",     nrow=8)
+
+        print(f"[DEBUG] Saved CG debug images to {save_dir}")
+
+    return terms
+
 #################################################################################
 #                             Training Helper Functions                         #
 #################################################################################
@@ -214,7 +288,11 @@ def load_pretrained_model(model, pretrained_ckpt_path, image_size, tmp_dir="tmp"
 
     # Only rank 0 downloads
     if dist.get_rank() == 0:
-        ckpt_path = pretrained_ckpt_path or f"DiT-XL-2-{image_size}x{image_size}.pt"
+        if pretrained_ckpt_path is None:
+            if args.model.startswith("DiT-XL/2"):
+                ckpt_path = pretrained_ckpt_path or f"DiT-XL-2-{image_size}x{image_size}.pt"
+            elif args.model.startswith("SiT-XL/2"):
+                ckpt_path = pretrained_ckpt_path or f"SiT-XL-2-{image_size}x{image_size}.pt"
         state_dict = find_model(ckpt_path)
         torch.save(state_dict, os.path.join(tmp_dir, "local_pretrained_ckpt.pt"))
     
@@ -311,7 +389,7 @@ def center_crop_arr(pil_image, image_size):
 
 def main(args):
     """
-    Trains a new DiT model.
+    Trains a new DiT or SiT model.
     """
     assert torch.cuda.is_available(), "Training currently requires at least one GPU."
 
@@ -339,9 +417,15 @@ def main(args):
     # Create model:
     assert args.image_size % 8 == 0, "Image size must be divisible by 8 (for the VAE encoder)."
     latent_size = args.image_size // 8
-    model = DiT_models[args.model](
+    if args.model in SiT_models:
+        model = SiT_models[args.model](
         input_size=latent_size,
         num_classes=args.num_classes,
+    )
+    elif args.model in DiT_models:
+        model = DiT_models[args.model](
+            input_size=latent_size,
+            num_classes=args.num_classes,
     )
     # Load pre-trained weights if provided:
     model = load_pretrained_model(model, args.pretrained_ckpt, args.image_size)
@@ -350,18 +434,27 @@ def main(args):
     ema = deepcopy(model).to(device)  # Create an EMA of the model for use after training
     requires_grad(ema, False)
     model = DDP(model.to(device), device_ids=[rank])
-    diffusion = create_diffusion(timestep_respacing="")  # default: 1000 steps, linear noise schedule
-    # Monkey-patch the loss function
-    diffusion.training_losses = MethodType(mg_training_losses, diffusion) # CG
 
+    if args.model in SiT_models:
+        transport = create_transport(
+            args.path_type,
+            args.prediction,
+            args.loss_weight,
+            args.train_eps,
+            args.sample_eps
+        )  # default: velocity; 
+        transport_sampler = Sampler(transport)
+        logger.info(f"SiT Parameters: {sum(p.numel() for p in model.parameters()):,}")
+        transport.training_losses = MethodType(mg_training_losses, transport)  # MG
+    elif args.model in DiT_models:
+        logger.info(f"SiT Parameters: {sum(p.numel() for p in model.parameters()):,}")
+        diffusion = create_diffusion(timestep_respacing="")  # default: 1000 steps, linear noise schedule
+        diffusion.training_losses = MethodType(mg_training_losses, diffusion) # CG
     vae_path = f"pretrained_models/sd-vae-ft-{args.vae}"
     if not os.path.exists(vae_path):
         vae = AutoencoderKL.from_pretrained(f"stabilityai/sd-vae-ft-{args.vae}").to(device)
     else:
         vae = AutoencoderKL.from_pretrained(vae_path).to(device)
-        
-    logger.info(f"DiT Parameters: {sum(p.numel() for p in model.parameters()):,}")
-
     logger.info("[MG CG] Patched diffusion training loss with Classifier Guidance (w_CG={})".format(args.w_cg))
 
     # Setup optimizer (we used default Adam betas=(0.9, 0.999) and a constant learning rate of 1e-4 in our paper):
@@ -375,7 +468,6 @@ def main(args):
         transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True)
     ])
     dataset = ImageFolder(args.data_path, transform=transform)
-
     sampler = DistributedSampler(
         dataset,
         num_replicas=dist.get_world_size(),
@@ -428,22 +520,70 @@ def main(args):
             with torch.no_grad():
                 # Map input images to latent space + normalize latents:
                 x = vae.encode(x).latent_dist.sample().mul_(0.18215)
-            t = torch.randint(0, diffusion.num_timesteps, (x.shape[0],), device=device)
             model_kwargs = dict(y=y)
 
-            # MG
-            # Patch the diffusion training loss to use Domain Guidance
-            loss_dict = diffusion.training_losses(
-                model,
-                x,
-                t,
-                model_kwargs,
-                ema=diffusion._wrap_model(ema),
-                vae=vae, # For debugging 
-                w_cg=args.w_cg,
-                guidance_cutoff=args.guidance_cutoff,
-                counter=train_steps,
-            )
+
+            # If doing profiling:
+            # profiling = True
+            # if profiling:
+            #     from torch.profiler import profile, record_function, ProfilerActivity
+# # 
+            #     with profile(
+            #         activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA], 
+            #         record_shapes=True,
+            #         profile_memory=True,
+            #         with_stack=True,
+            #         with_flops=True
+            #     ) as prof:
+            #         # MG
+            #         # Patch the diffusion training loss to use Domain Guidance
+            #         # DoG
+            #         # Patch the diffusion training loss to use Domain Guidance
+            #         if args.model in SiT_models:
+            #             loss_dict = transport.training_losses(model, x, model_kwargs)
+            #         elif args.model in DiT_models:
+            #             t = torch.randint(0, diffusion.num_timesteps, (x.shape[0],), device=device)
+            #             loss_dict = diffusion.training_losses(model, x, t, model_kwargs)
+# # 
+            #         loss = loss_dict["loss"].mean()
+            #         opt.zero_grad()
+            #         loss.backward()
+            #         opt.step()
+# # 
+            #         prof.step()
+# 
+            # print(prof.key_averages().table(sort_by="self_cuda_time_total", row_limit=30))
+            # print("Total FLOPs:", sum([e.flops for e in prof.key_averages() if e.flops is not None]))
+            # dist.barrier()
+            # exit()
+
+            if args.model in SiT_models:
+                loss_dict = diffusion.training_losses(
+                    model,
+                    x,
+                    t,
+                    model_kwargs,
+                    ema=diffusion._wrap_model(ema),
+                    vae=vae, # For debugging 
+                    w_cg=args.w_cg,
+                    guidance_cutoff=args.guidance_cutoff,
+                    counter=train_steps,
+                )
+            elif args.model in DiT_models:
+                t = torch.randint(0, diffusion.num_timesteps, (x.shape[0],), device=device)
+                # MG
+                # Patch the diffusion training loss to use Domain Guidance
+                loss_dict = diffusion.training_losses(
+                    model,
+                    x,
+                    t,
+                    model_kwargs,
+                    ema=diffusion._wrap_model(ema),
+                    vae=vae, # For debugging 
+                    w_cg=args.w_cg,
+                    guidance_cutoff=args.guidance_cutoff,
+                    counter=train_steps,
+                )
 
             loss = loss_dict["loss"].mean()
             opt.zero_grad()
@@ -489,20 +629,20 @@ def main(args):
                 break
         if train_steps > args.total_steps:
                 break
-
     model.eval()  # important! This disables randomized embedding dropout
     # do any sampling/FID calculation/etc. with ema (or model) in eval mode ...
 
     logger.info("Done!")
     cleanup()
 
+all_models = list(SiT_models.keys()) + list(DiT_models.keys())
 
 if __name__ == "__main__":
     # Default args here will train DiT-XL/2 with the hyperparameters we used in our paper (except training iters).
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-path", type=str, required=True)
     parser.add_argument("--results-dir", type=str, default="results")
-    parser.add_argument("--model", type=str, choices=list(DiT_models.keys()), default="DiT-XL/2")
+    parser.add_argument("--model", type=str, choices=all_models, default="DiT-XL/2")
     parser.add_argument("--image-size", type=int, choices=[256, 512], default=256)
     parser.add_argument("--num-classes", type=int, default=1000)
     # parser.add_argument("--epochs", type=int, default=1400) # Instead train based on training iterations (Epochs different for each dataset)
@@ -517,5 +657,19 @@ if __name__ == "__main__":
                         help="Optional path to a DiT checkpoint (default: auto-download a pre-trained DiT-XL/2 model).")
     parser.add_argument("--w-cg",type=float,default=1.0,help="Classifier Guidance strength (w_cg).") # MG
     parser.add_argument("--guidance-cutoff", type=float, default=0, help="Cutoff for classifier-free guidance. ") # MG
+
+    def none_or_str(value):
+        if value == 'None':
+            return None
+        return value
+
+    # For SiT transport models
+    group = parser.add_argument_group("Transport arguments")
+    group.add_argument("--path-type", type=str, default="Linear", choices=["Linear", "GVP", "VP"])
+    group.add_argument("--prediction", type=str, default="velocity", choices=["velocity", "score", "noise"])
+    group.add_argument("--loss-weight", type=none_or_str, default=None, choices=[None, "velocity", "likelihood"])
+    group.add_argument("--sample-eps", type=float)
+    group.add_argument("--train-eps", type=float)
+
     args = parser.parse_args()
     main(args)

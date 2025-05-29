@@ -39,7 +39,6 @@ from diffusers.models import AutoencoderKL
 #                             Training Helper Functions                         #
 #################################################################################
 
-
 def load_pretrained_model(model, pretrained_ckpt_path, image_size, tmp_dir="tmp"):
     """
     Load a pre-trained DiT model for fine-tuning.
@@ -89,7 +88,6 @@ def load_pretrained_model(model, pretrained_ckpt_path, image_size, tmp_dir="tmp"
         print(f"[INFO] Loaded pre-trained weights from {local_ckpt_path}")
 
     return model
-
 
 @torch.no_grad()
 def update_ema(ema_model, model, decay=0.9999):
@@ -191,7 +189,6 @@ def main(args):
     # Create model:
     assert args.image_size % 8 == 0, "Image size must be divisible by 8 (for the VAE encoder)."
     latent_size = args.image_size // 8
-    
     if args.model in SiT_models:
         model = SiT_models[args.model](
         input_size=latent_size,
@@ -295,9 +292,7 @@ def main(args):
             with torch.no_grad():
                 # Map input images to latent space + normalize latents:
                 x = vae.encode(x).latent_dist.sample().mul_(0.18215)
-            
             model_kwargs = dict(y=y)
-
 
 
             # If doing profiling:
@@ -390,8 +385,6 @@ def main(args):
 
     logger.info("Done!")
     cleanup()
-
-
 
 all_models = list(SiT_models.keys()) + list(DiT_models.keys())
 
