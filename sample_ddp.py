@@ -168,7 +168,6 @@ def main(args):
         #     dist.barrier()
         #     exit()
 
-
         if args.model.startswith("SiT"):
             samples = sample_fn(z, model_fn, **model_kwargs)[-1]
         elif args.model.startswith("DiT"):
