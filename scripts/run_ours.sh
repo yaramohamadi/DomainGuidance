@@ -3,7 +3,7 @@
 #SBATCH --job-name=${JOB_NAME:-Ours}  # Use $JOB_NAME if defined, else 'myjob'
 #SBATCH --output=logs/%x_%j.out
 #SBATCH --error=logs/%x_%j.err          
-#SBATCH --time=06:00:00
+#SBATCH --time=02:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=16
@@ -116,7 +116,7 @@ mkdir -p "$(dirname "$LOG_FILE")"
 
 create_environment
 prepare_dataset
-train_model
+# train_model
 
 for ((i=0; i<=TOTAL_STEPS; i+=CKPT_EVERY)); do
   if [[ $i -eq 0 && "$SKIP_FIRST_CKPT" -eq 1 ]]; then
