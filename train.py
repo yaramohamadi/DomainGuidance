@@ -328,11 +328,19 @@ def main(args):
             #         opt.step()
 # 
             #         prof.step()
+<<<<<<< HEAD
 
             print(prof.key_averages().table(sort_by="self_cuda_time_total", row_limit=30))
             print("Total FLOPs:", sum([e.flops for e in prof.key_averages() if e.flops is not None]))
             dist.barrier()
             exit()
+=======
+# 
+            # print(prof.key_averages().table(sort_by="self_cuda_time_total", row_limit=30))
+            # print("Total FLOPs:", sum([e.flops for e in prof.key_averages() if e.flops is not None]))
+            # dist.barrier()
+            # exit()
+>>>>>>> 12fbfab904e4b0fd2957a8d46416500731c089c1
 
 
 

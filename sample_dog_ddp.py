@@ -222,7 +222,10 @@ def main(args):
         #     print("Total FLOPs:", sum([e.flops for e in prof.key_averages() if e.flops is not None]))
         #     dist.barrier()
         #     exit()
+<<<<<<< HEAD
         
+=======
+>>>>>>> 12fbfab904e4b0fd2957a8d46416500731c089c1
         if args.model.startswith("SiT"):
             samples = sample_fn(z, model_fn, **model_kwargs)[-1]
         elif args.model.startswith("DiT"):
