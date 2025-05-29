@@ -93,7 +93,7 @@ def main(args):
     elif args.model.startswith("DiT"):
         diffusion = create_diffusion(str(args.num_sampling_steps))
 
-        
+
     vae_path = f"pretrained_models/sd-vae-ft-{args.vae}"
     if not os.path.exists(vae_path):
         vae = AutoencoderKL.from_pretrained(f"stabilityai/sd-vae-ft-{args.vae}").to(device)
@@ -154,6 +154,7 @@ def main(args):
                 record_shapes=True,
                 profile_memory=True,
                 with_stack=True,
+                with_flops=True
             ) as prof:
                 if args.model.startswith("SiT"):
                     samples = sample_fn(z, model_fn, **model_kwargs)[-1]
@@ -162,7 +163,8 @@ def main(args):
                         model_fn, z.shape, z, clip_denoised=False, model_kwargs=model_kwargs, progress=False, device=device
                     )
                 prof.step()
-            print(prof.key_averages().table(sort_by="self_cud_time_total", row_limit=30))
+            print(prof.key_averages().table(sort_by="self_cuda_time_total", row_limit=30))
+            print("Total FLOPs:", sum([e.flops for e in prof.key_averages() if e.flops is not None]))
             dist.barrier()
             exit()
 

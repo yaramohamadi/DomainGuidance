@@ -160,7 +160,7 @@ for ((i=0; i<=TOTAL_STEPS; i+=CKPT_EVERY)); do
     printf -v PADDED_CKPT "%07d.pt" "$i"
 
     printf -v PADDED_STEP "%07d_cg1" "$i"
-    sample_CG1
+    #sample_CG1
     #fid_CG1
 
     if [[ "$DATASET" == "ffhq256" ]]; then
@@ -168,7 +168,7 @@ for ((i=0; i<=TOTAL_STEPS; i+=CKPT_EVERY)); do
     fi
 
     printf -v PADDED_STEP "%07d_cg1_5" "$i"
-    sample_CG1_5
+    #sample_CG1_5
     #fid_CG1_5
 
     printf -v PADDED_STEP "%07d_dog1_5" "$i"
