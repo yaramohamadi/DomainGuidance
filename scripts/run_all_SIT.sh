@@ -41,6 +41,11 @@ EXPERIMENT_PRENAME="All_SiT"
 
 declare -a TASKS=(
   "stanford-cars_processed run_baselines_finetune.sh"
+  "food-101_processed run_baselines_finetune.sh"
+  "df-20m_processed run_baselines_finetune.sh"
+  "artbench-10_processed run_baselines_finetune.sh"
+  "ffhq256 run_baselines_finetune.sh"
+  "cub-200-2011_processed run_baselines_finetune.sh"
 )
 
 # ========== EXECUTION LOOP ==========
