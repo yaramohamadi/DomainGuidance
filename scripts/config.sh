@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # Global Constants
-TOTAL_STEPS=24000
+TOTAL_STEPS=2 # 24000
 LOG_EVERY=1000
-CKPT_EVERY=24000
+CKPT_EVERY=2 # 24000
 SKIP_FIRST_CKPT=1
 
 IMAGE_SIZE=256
@@ -13,7 +13,7 @@ VAE="ema"
 NUM_WORKERS=4
 CFG_SCALE=1.0
 NUM_SAMPLE_STEPS=50
-NSAMPLE=10000
+NSAMPLE=100 # 10000
 
 FID_DEVICE="cuda:0"
 NPROC_PER_NODE=2
@@ -123,7 +123,7 @@ create_environment() {
       source "$(conda info --base)/etc/profile.d/conda.sh"
       conda activate "$ENV_PATH"
       conda install pytorch torchvision pytorch-cuda=12.6 -c pytorch -c nvidia
-      pip install timm diffusers accelerate pytorch-fid
+      pip install timm diffusers accelerate pytorch-fid torchdiffeq
     fi
 
     if [ ! -d "dgm-eval" ]; then

@@ -13,9 +13,10 @@ For a simple single-GPU/CPU sampling script, see sample.py.
 """
 import torch
 import torch.distributed as dist
-from models import DiT_models
+from models import DiT_models, SiT_models
 from download import find_model
 from diffusion import create_diffusion
+from transport import create_transport, Sampler
 from diffusers.models import AutoencoderKL
 from tqdm import tqdm
 import os
@@ -73,27 +74,40 @@ def main(args):
         assert args.image_size in [256, 512]
         assert args.num_classes == 1000
     if args.uncond_ckpt is None:
-        assert args.model == "DiT-XL/2", "Only DiT-XL/2 models are available for auto-download."
+        assert args.model == "DiT-XL/2" or args.model == "SiT-XL/2", "Only DiT-XL/2 and SiT-XL/2 models are available for auto-download."
         assert args.image_size in [256, 512]
         args.uncond_model = args.model
 
     # Load model:
     latent_size = args.image_size // 8
-    model = DiT_models[args.model](
-        input_size=latent_size,
-        num_classes=args.num_classes,
-        class_dropout_prob=args.dropout_ratio,
-    ).to(device)
+    if args.model.startswith("SiT"):
+        model = SiT_models[args.model](
+            input_size=latent_size,
+            num_classes=args.num_classes,
+            class_dropout_prob=args.dropout_ratio,
+        ).to(device)
+        ckpt_path = args.ckpt or f"SiT-XL-2-{args.image_size}x{args.image_size}.pt"
+        uncond_ckpt_path = args.uncond_ckpt or f"SiT-XL-2-{args.image_size}x{args.image_size}.pt"
+        uncond_model = SiT_models[args.uncond_model](
+            input_size=latent_size,
+            num_classes=1000
+        ).to(device)
+    elif args.model.startswith("DiT"):
+        model = DiT_models[args.model](
+            input_size=latent_size,
+            num_classes=args.num_classes,
+            class_dropout_prob=args.dropout_ratio,
+        ).to(device)
+        ckpt_path = args.ckpt or f"DiT-XL-2-{args.image_size}x{args.image_size}.pt"
+        uncond_ckpt_path = args.uncond_ckpt or f"DiT-XL-2-{args.image_size}x{args.image_size}.pt"
+        uncond_model = DiT_models[args.uncond_model](
+            input_size=latent_size,
+            num_classes=1000
+        ).to(device)
 
-    uncond_model = DiT_models[args.uncond_model](
-        input_size=latent_size,
-        num_classes=1000
-    ).to(device)
+    
 
     # Auto-download a pre-trained model or load a custom DiT checkpoint from train.py:
-    ckpt_path = args.ckpt or f"DiT-XL-2-{args.image_size}x{args.image_size}.pt"
-    uncond_ckpt_path = args.uncond_ckpt or f"DiT-XL-2-{args.image_size}x{args.image_size}.pt"
-    
     print(f"Loading model from {ckpt_path}")
     cond_state_dict = find_model(ckpt_path)
     model.load_state_dict(cond_state_dict)
@@ -114,14 +128,33 @@ def main(args):
     uncond_model.eval()  # important!
     dist.barrier() 
 
-    diffusion = create_diffusion(str(args.num_sampling_steps))
+    if args.model.startswith("SiT"):
+        transport = create_transport(
+            args.path_type,
+            args.prediction,
+            args.loss_weight,
+            args.train_eps,
+            args.sample_eps
+        )
+        sampler = Sampler(transport)
+        # Assume that the only mode is ODE
+        sample_fn = sampler.sample_ode(
+                sampling_method=args.sampling_method,
+                num_steps=args.num_sampling_steps,
+                atol=args.atol,
+                rtol=args.rtol,
+                reverse=args.reverse
+            )
+    elif args.model.startswith("DiT"):
+        diffusion = create_diffusion(str(args.num_sampling_steps))
+
 
     vae_path = f"pretrained_models/sd-vae-ft-{args.vae}"
     if not os.path.exists(vae_path):
         vae = AutoencoderKL.from_pretrained(f"stabilityai/sd-vae-ft-{args.vae}").to(device)
     else:
         vae = AutoencoderKL.from_pretrained(vae_path).to(device)
-        
+
     assert args.cfg_scale >= 1.0, "In almost all cases, cfg_scale be >= 1.0"
     using_cfg = args.cfg_scale > 1.0
 
@@ -159,15 +192,42 @@ def main(args):
             y_null = torch.tensor([args.num_classes] * n, device=device)
             y = torch.cat([y, y_null], 0)
             model_kwargs = dict(y=y, cfg_scale=args.cfg_scale)
-            sample_fn = build_cfg_fowrard_fn(model.forward, uncond_model.forward)
+            model_fn = build_cfg_fowrard_fn(model.forward, uncond_model.forward)
         else:
             model_kwargs = dict(y=y)
-            sample_fn = model.forward
+            model_fn = model.forward
 
         # Sample images:
-        samples = diffusion.p_sample_loop(
-            sample_fn, z.shape, z, clip_denoised=False, model_kwargs=model_kwargs, progress=False, device=device
-        )
+
+        # If doing profiling:
+        profiling = True
+        if profiling:
+            from torch.profiler import profile, record_function, ProfilerActivity
+
+            with profile(
+                activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA], 
+                record_shapes=True,
+                profile_memory=True,
+                with_stack=True,
+                with_flops=True
+            ) as prof:
+                if args.model.startswith("SiT"):
+                    samples = sample_fn(z, model_fn, **model_kwargs)[-1]
+                elif args.model.startswith("DiT"):
+                    samples = diffusion.p_sample_loop(
+                        model_fn, z.shape, z, clip_denoised=False, model_kwargs=model_kwargs, progress=False, device=device
+                    )
+                prof.step()
+            print(prof.key_averages().table(sort_by="self_cuda_time_total", row_limit=30))
+            print("Total FLOPs:", sum([e.flops for e in prof.key_averages() if e.flops is not None]))
+            dist.barrier()
+            exit()
+        if args.model.startswith("SiT"):
+            samples = sample_fn(z, model_fn, **model_kwargs)[-1]
+        elif args.model.startswith("DiT"):
+            samples = diffusion.p_sample_loop(
+                model_fn, z.shape, z, clip_denoised=False, model_kwargs=model_kwargs, progress=False, device=device
+            )
         if using_cfg:
             samples, _ = samples.chunk(2, dim=0)  # Remove null class samples
 
@@ -182,10 +242,11 @@ def main(args):
 
     dist.destroy_process_group()
 
+all_models = list(SiT_models.keys()) + list(DiT_models.keys())
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", type=str, choices=list(DiT_models.keys()), default="DiT-XL/2")
+    parser.add_argument("--model", type=str, choices=all_models, default="DiT-XL/2")
     parser.add_argument("--vae",  type=str, choices=["ema", "mse"], default="ema")
     parser.add_argument("--sample-dir", type=str, default="samples")
     parser.add_argument("--per-proc-batch-size", type=int, default=32)
@@ -203,5 +264,25 @@ if __name__ == "__main__":
                         help="Optional path to a unconditional DiT checkpoint (default: auto-download a pre-trained DiT-XL/2 model).")
     parser.add_argument("--uncond-model", type=str, choices=list(DiT_models.keys()), default="DiT-XL/2")
     parser.add_argument("--dropout-ratio", type=float, default=0.1)
+
+    def none_or_str(value):
+        if value == 'None':
+            return None
+        return value
+
+    group = parser.add_argument_group("Transport arguments")
+    group.add_argument("--path-type", type=str, default="Linear", choices=["Linear", "GVP", "VP"])
+    group.add_argument("--prediction", type=str, default="velocity", choices=["velocity", "score", "noise"])
+    group.add_argument("--loss-weight", type=none_or_str, default=None, choices=[None, "velocity", "likelihood"])
+    group.add_argument("--sample-eps", type=float)
+    group.add_argument("--train-eps", type=float)
+
+    group = parser.add_argument_group("ODE arguments")
+    group.add_argument("--sampling-method", type=str, default="dopri5", help="blackbox ODE solver methods; for full list check https://github.com/rtqichen/torchdiffeq")
+    group.add_argument("--atol", type=float, default=1e-6, help="Absolute tolerance")
+    group.add_argument("--rtol", type=float, default=1e-3, help="Relative tolerance")
+    group.add_argument("--reverse", action="store_true")
+    group.add_argument("--likelihood", action="store_true")
+
     args = parser.parse_args()
     main(args)
