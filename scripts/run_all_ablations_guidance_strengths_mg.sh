@@ -32,7 +32,7 @@ for DATASET in "${TASKS[@]}"; do
       --server \"$SERVER\" \
       --cuda_devices \"$CUDA_DEVICES\" \
       --experiment_prename \"$EXPERIMENT_PRENAME\" \
-      --wtraincg \"$W_TRAIN_CG\""
+      --wtraincfg \"$W_TRAIN_CG\""
 
     if [[ "$SERVER" == "computecanada" ]]; then
       eval "JOB_NAME=$EXPERIMENT_PRENAME sbatch $CMD"

@@ -17,7 +17,7 @@ source $ENV_PATH/bin/activate
 
 # pip install --no-index --ignore-installed torch==2.6.0 timm==1.0.15 diffusers==0.32.2 accelerate==1.6.0 pytorch-fid==0.3.0  scikit-image==0.25.1 scikit-learn==1.6.1 transformers==4.52.3 xformers==0.0.29.post2 scipy==1.15.1 open_clip_torch==2.29.0 pandas==2.2.3 pillow==11.1.0
 # pip install triton torchdiffeq
-pip install torchdiffeq
+# pip install torchdiffeq
 
 # Install dgm-eval
 # if [ ! -d "dgm-eval" ]; then

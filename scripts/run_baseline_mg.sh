@@ -20,7 +20,7 @@ DATASET="stanford-cars_processed"  # Options: caltech, birds, etc.
 SERVER="taylor"  # Options: taylor, bool, computecanada
 EXPERIMENT_PRENAME=""
 
-W_TRAIN_CG=1.5
+W_TRAIN_CFG=1.5
 USE_GUIDANCE_CUTOFF=0
 
 source scripts/config.sh
@@ -33,14 +33,14 @@ while [[ "$#" -gt 0 ]]; do
     --dataset) DATASET="$2"; shift ;;
     --server) SERVER="$2"; shift ;;
     --experiment_prename) EXPERIMENT_PRENAME="$2"; shift ;;
-    --wtraincg) W_TRAIN_CG="$2"; shift ;;
+    --wtraincfg) W_TRAIN_CFG="$2"; shift ;;
     --model_name) MODEL="$2"; shift ;;
     *) echo "Unknown parameter passed: $1"; exit 1 ;;
   esac
   shift
 done
 
-EXPERIMENT_NAME="$EXPERIMENT_PRENAME/baseline_mgfinetune_wtraincg$W_TRAIN_CG"
+EXPERIMENT_NAME="$EXPERIMENT_PRENAME/baseline_mgfinetune_wtraincfg$W_TRAIN_CFG"
 
 # Load all logic
 resolve_server_paths
@@ -64,7 +64,7 @@ train_model() {
         --global-batch-size $BATCH_SIZE \
         --vae $VAE \
         --num-workers $NUM_WORKERS \
-        --w-cg $W_TRAIN_CG \
+        --w-cg $W_TRAIN_CFG \
         --guidance-cutoff $USE_GUIDANCE_CUTOFF
 }
 
