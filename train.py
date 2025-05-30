@@ -39,7 +39,6 @@ from diffusers.models import AutoencoderKL
 #                             Training Helper Functions                         #
 #################################################################################
 
-
 def load_pretrained_model(model, pretrained_ckpt_path, image_size, tmp_dir="tmp"):
     """
     Load a pre-trained DiT model for fine-tuning.
@@ -89,7 +88,6 @@ def load_pretrained_model(model, pretrained_ckpt_path, image_size, tmp_dir="tmp"
         print(f"[INFO] Loaded pre-trained weights from {local_ckpt_path}")
 
     return model
-
 
 @torch.no_grad()
 def update_ema(ema_model, model, decay=0.9999):
@@ -191,7 +189,6 @@ def main(args):
     # Create model:
     assert args.image_size % 8 == 0, "Image size must be divisible by 8 (for the VAE encoder)."
     latent_size = args.image_size // 8
-    
     if args.model in SiT_models:
         model = SiT_models[args.model](
         input_size=latent_size,
@@ -295,16 +292,14 @@ def main(args):
             with torch.no_grad():
                 # Map input images to latent space + normalize latents:
                 x = vae.encode(x).latent_dist.sample().mul_(0.18215)
-            
             model_kwargs = dict(y=y)
 
 
-
-            # If doing profiling:
+            #If doing profiling:
             # profiling = True
             # if profiling:
             #     from torch.profiler import profile, record_function, ProfilerActivity
-# 
+# # 
             #     with profile(
             #         activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA], 
             #         record_shapes=True,
@@ -321,26 +316,18 @@ def main(args):
             #         elif args.model in DiT_models:
             #             t = torch.randint(0, diffusion.num_timesteps, (x.shape[0],), device=device)
             #             loss_dict = diffusion.training_losses(model, x, t, model_kwargs)
-# 
+# # 
             #         loss = loss_dict["loss"].mean()
             #         opt.zero_grad()
             #         loss.backward()
             #         opt.step()
-# 
+# # 
             #         prof.step()
-<<<<<<< HEAD
-
-            print(prof.key_averages().table(sort_by="self_cuda_time_total", row_limit=30))
-            print("Total FLOPs:", sum([e.flops for e in prof.key_averages() if e.flops is not None]))
-            dist.barrier()
-            exit()
-=======
 # 
             # print(prof.key_averages().table(sort_by="self_cuda_time_total", row_limit=30))
             # print("Total FLOPs:", sum([e.flops for e in prof.key_averages() if e.flops is not None]))
             # dist.barrier()
             # exit()
->>>>>>> 12fbfab904e4b0fd2957a8d46416500731c089c1
 
 
 
@@ -398,8 +385,6 @@ def main(args):
 
     logger.info("Done!")
     cleanup()
-
-
 
 all_models = list(SiT_models.keys()) + list(DiT_models.keys())
 

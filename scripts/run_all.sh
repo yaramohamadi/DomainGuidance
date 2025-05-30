@@ -2,7 +2,7 @@
 
 # ========== GLOBAL CONFIGURATION ==========
 SERVER="bool"
-CUDA_DEVICES="0,3"
+CUDA_DEVICES="1,3"
 EXPERIMENT_PRENAME="All_unconditional"
 
 # ========== DATASET TO SCRIPT MAPPING ==========
@@ -34,7 +34,7 @@ EXPERIMENT_PRENAME="All_unconditional"
 #  "ffhq256 run_baselines_finetune.sh"
 
 declare -a TASKS=(
-  "caltech-101_processed run_baselines_finetune.sh"
+  "caltech-101_processed run_baseline_mg.sh"
 )
 
 # ========== EXECUTION LOOP ==========

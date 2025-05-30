@@ -11,6 +11,7 @@ declare -a TASKS=(
 )
 
 # ========== Define per-task (latestart, mghigh, experiment_prename) triples ==========
+# 2000,0.8,mega_ablation_latestart 4000,0.8,mega_ablation_latestart 6000,0.8,mega_ablation_latestart 
 declare -A PAIR_MAP
 PAIR_MAP["cub-200-2011_processed"]="2000,1,mega_ablation_latestart 4000,1,mega_ablation_latestart 6000,1,mega_ablation_latestart 8000,1,mega_ablation_latestart 10000,1,mega_ablation_latestart 12000,1,mega_ablation_latestart 14000,1,mega_ablation_latestart 16000,1,mega_ablation_latestart 18000,1,mega_ablation_latestart 20000,1,mega_ablation_latestart 22000,1,mega_ablation_latestart"
 PAIR_MAP["stanford-cars_processed"]="2000,1,mega_ablation_latestart 4000,1,mega_ablation_latestart 6000,1,mega_ablation_latestart 8000,1,mega_ablation_latestart 10000,1,mega_ablation_latestart 12000,1,mega_ablation_latestart 14000,1,mega_ablation_latestart 16000,1,mega_ablation_latestart 18000,1,mega_ablation_latestart 20000,1,mega_ablation_latestart 22000,1,mega_ablation_latestart"

@@ -148,7 +148,7 @@ def main(args):
         # profiling = True
         # if profiling:
         #     from torch.profiler import profile, record_function, ProfilerActivity
-# 
+# # 
         #     with profile(
         #         activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA], 
         #         record_shapes=True,
@@ -167,7 +167,6 @@ def main(args):
         #     print("Total FLOPs:", sum([e.flops for e in prof.key_averages() if e.flops is not None]))
         #     dist.barrier()
         #     exit()
-
 
         if args.model.startswith("SiT"):
             samples = sample_fn(z, model_fn, **model_kwargs)[-1]
