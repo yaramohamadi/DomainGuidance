@@ -23,7 +23,7 @@ MG_HIGH=1
 LATE_START=0
 
 W_TRAIN_DOG=1.5
-DROPOUT_RATIO=0.1 # TODO Change this back to 0   
+DROPOUT_RATIO=0 # TODO Change this back to 0   
 
 # ====================== ARGUMENT PARSING ======================
 
@@ -125,7 +125,7 @@ for ((i=0; i<=TOTAL_STEPS; i+=CKPT_EVERY)); do
   fi
   printf -v PADDED_STEP "%07d" "$i"
   printf -v PADDED_CKPT "%07d.pt" "$i"
-  # run_sampling
+  run_sampling
   calculate_fid
 done
 
