@@ -40,8 +40,22 @@ EXPERIMENT_PRENAME="All_SiT"
 # "ffhq256 run_baselines_finetune.sh"
 # "cub-200-2011_processed run_baselines_finetune.sh"
 
+# "stanford-cars_processed run_baselines_finetune.sh"
+
 declare -a TASKS=(
-  "caltech-101_processed run_baselines_finetune.sh"
+ "caltech-101_processed run_baselines_finetune.sh"
+ "food-101_processed run_baselines_finetune.sh"
+ "df-20m_processed run_baselines_finetune.sh"
+ "artbench-10_processed run_baselines_finetune.sh"
+ "ffhq256 run_baselines_finetune.sh"
+ "cub-200-2011_processed run_baselines_finetune.sh"
+ "stanford-cars_processed run_baseline_mg.sh"
+ "caltech-101_processed run_baseline_mg.sh"
+ "food-101_processed run_baseline_mg.sh"
+ "df-20m_processed run_baseline_mg.sh"
+ "artbench-10_processed run_baseline_mg.sh"
+ "ffhq256 run_baseline_mg.sh"
+ "cub-200-2011_processed run_baseline_mg.sh"
 )
 
 # ========== EXECUTION LOOP ==========
