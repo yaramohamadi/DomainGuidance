@@ -125,7 +125,7 @@ for ((i=0; i<=TOTAL_STEPS; i+=CKPT_EVERY)); do
   fi
   printf -v PADDED_STEP "%07d" "$i"
   printf -v PADDED_CKPT "%07d.pt" "$i"
-  run_sampling
+  # run_sampling
   calculate_fid
 done
 

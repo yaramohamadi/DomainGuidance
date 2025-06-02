@@ -7,10 +7,9 @@ SCRIPT="run_ours.sh"
 
  
 #   "stanford-cars_processed" "cub-200-2011_processed" "artbench-10_processed" "food-101_processed" "caltech-101_processed"
+#   "food-101_processed" "stanford-cars_processed"
 declare -a TASKS=(
-  "food-101_processed"
   "caltech-101_processed"
-  "stanford-cars_processed"
 )
 
 # ========== Define per-task (latestart, mghigh, experiment_prename) triples ==========
@@ -19,7 +18,7 @@ declare -A PAIR_MAP
 # 3000,0.8,ablation_best_latestart_mg cub-200-2011 -> Sampling is done but it NEEDS FID calculation!
 PAIR_MAP["stanford-cars_processed"]="7000,0.1,ablation_best_latestart_mg 7000,0.2,ablation_best_latestart_mg 7000,0.3,ablation_best_latestart_mg 7000,0.4,ablation_best_latestart_mg 7000,0.5,ablation_best_latestart_mg 7000,0.6,ablation_best_latestart_mg 7000,0.7,ablation_best_latestart_mg 7000,0.8,ablation_best_latestart_mg 7000,0.9,ablation_best_latestart_mg 7000,1.0,ablation_best_latestart_mg"
 PAIR_MAP["food-101_processed"]="7000,0.1,ablation_best_latestart_mg 7000,0.2,ablation_best_latestart_mg 7000,0.3,ablation_best_latestart_mg 7000,0.4,ablation_best_latestart_mg 7000,0.5,ablation_best_latestart_mg 7000,0.6,ablation_best_latestart_mg 7000,0.7,ablation_best_latestart_mg 7000,0.8,ablation_best_latestart_mg 7000,0.9,ablation_best_latestart_mg 7000,1.0,ablation_best_latestart_mg"
-PAIR_MAP["caltech-101_processed"]="6000,0.1,ablation_best_latestart_mg 6000,0.2,ablation_best_latestart_mg 6000,0.3,ablation_best_latestart_mg 6000,0.4,ablation_best_latestart_mg 6000,0.5,ablation_best_latestart_mg 6000,0.6,ablation_best_latestart_mg 6000,0.7,ablation_best_latestart_mg 6000,0.8,ablation_best_latestart_mg 6000,0.9,ablation_best_latestart_mg 6000,1.0,ablation_best_latestart_mg"
+PAIR_MAP["caltech-101_processed"]="6000,0.6,ablation_best_latestart_mg 6000,0.7,ablation_best_latestart_mg 6000,0.8,ablation_best_latestart_mg 6000,0.9,ablation_best_latestart_mg 6000,1.0,ablation_best_latestart_mg"
 
 # ========== EXECUTION LOOP ==========
 for DATASET in "${TASKS[@]}"; do

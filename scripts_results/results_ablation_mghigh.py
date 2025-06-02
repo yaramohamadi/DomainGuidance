@@ -5,7 +5,7 @@ import re
 # === Config ===
 root_dir = "/home/ens/AT74470/results/DoG/"
 # root_dir = "/export/datasets/public/diffusion_datasets/tmp_weights/"
-metric_to_extract = "recall"         # Options: 'fd', 'precision', 'recall', 'density', 'coverage'
+metric_to_extract = "fd"         # Options: 'fd', 'precision', 'recall', 'density', 'coverage'
 model_type = "inception"            # Options: 'dinov2' or 'inception'
 output_dir = "./tables"
 os.makedirs(output_dir, exist_ok=True)
@@ -29,7 +29,7 @@ table_data = {}
 
 for dataset_folder in sorted(os.listdir(root_dir)):
     dataset_path = os.path.join(root_dir, dataset_folder)
-    ablation_path = os.path.join(dataset_path, "ablation_mghigh")
+    ablation_path = os.path.join(dataset_path, "ablation_best_latestart_mg")
     if not os.path.isdir(ablation_path):
         continue
 
@@ -41,9 +41,13 @@ for dataset_folder in sorted(os.listdir(root_dir)):
             continue
 
         # Extract MG value (e.g., from MG0.6)
-        match = re.search(r"MG([0-9.]+)", mg_folder, re.IGNORECASE)
+        match = re.search(r"MG([0-9.]+)(?:_|$)", mg_folder, re.IGNORECASE)
+
+        
         if not match:
             continue
+
+        print(mg_folder)
         mg_value = float(match.group(1))
 
         # Go to results folder and find metric file
