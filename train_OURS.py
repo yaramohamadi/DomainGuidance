@@ -466,11 +466,13 @@ def main(args):
         model = SiT_models[args.model](
         input_size=latent_size,
         num_classes=args.num_classes,
+        class_dropout_prob=args.dropout_ratio,  # Domain Guidance dropout ratio
     )
     elif args.model in DiT_models:
         model = DiT_models[args.model](
             input_size=latent_size,
             num_classes=args.num_classes,
+            class_dropout_prob=args.dropout_ratio,  # Domain Guidance dropout ratio
     )
     # Load pre-trained weights if provided:
     model = load_pretrained_model(model, args.pretrained_ckpt, args.image_size)
