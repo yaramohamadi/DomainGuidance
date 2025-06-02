@@ -2,12 +2,11 @@
 
 # ========== GLOBAL CONFIGURATION ==========
 SERVER="bool"
-CUDA_DEVICES="1,3"
+CUDA_DEVICES="2,3"
 SCRIPT="run_ours.sh"
 
-
+#   "caltech-101_processed"
 declare -a TASKS=(
-  "caltech-101_processed"
   "artbench-10_processed"
 )
 
