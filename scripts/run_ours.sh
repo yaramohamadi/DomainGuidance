@@ -23,7 +23,7 @@ MG_HIGH=1
 LATE_START=0
 
 W_TRAIN_DOG=1.5
-DROPOUT_RATIO=0 # TODO Change this back to 0   
+DROPOUT_RATIO=0.1 # TODO Change this back to 0   
 
 # Load all logic
 source scripts/config.sh
