@@ -25,6 +25,9 @@ LATE_START=0
 W_TRAIN_DOG=1.5
 DROPOUT_RATIO=0.1 # TODO Change this back to 0   
 
+# Load all logic
+source scripts/config.sh
+
 # ====================== ARGUMENT PARSING ======================
 
 while [[ "$#" -gt 0 ]]; do
@@ -44,8 +47,6 @@ done
 
 EXPERIMENT_NAME="$EXPERIMENT_PRENAME/dogfinetune_LATE_START_ITER${LATE_START}_MG${MG_HIGH}_W_TRAIN_DOG${W_TRAIN_DOG}"
 
-# Load all logic
-source scripts/config.sh
 resolve_server_paths
 resolve_dataset_config
 

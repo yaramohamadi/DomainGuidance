@@ -88,6 +88,7 @@ def plot_panel(ax, df, title, ylabel=None, smooth=False):
         mask = y.notna()
         x = np.array(x)[mask]
         y = np.array(y)[mask]
+<<<<<<< HEAD
         color = color_order.get(col, None)
         if smooth:
             x_smooth = np.linspace(x.min(), x.max(), 300)
@@ -100,10 +101,22 @@ def plot_panel(ax, df, title, ylabel=None, smooth=False):
     ax.set_title(title)
     ax.set_xticks([0, 0.3, 0.6, 0.9])
     ax.set_xlim([-0.05, 1.05])
+=======
+        if smooth:
+            x_smooth = np.linspace(x.min(), x.max(), 300)
+            y_smooth = make_interp_spline(x, y)(x_smooth)
+            ax.plot(x_smooth, y_smooth, label=col)
+        else:
+            smoothed = gaussian_filter1d(y, sigma=1)
+            ax.plot(x, smoothed, label=col)
+    ax.set_title(title)
+    ax.set_xlabel("Cutoff Threshold (MG)")
+>>>>>>> 25f5499e132b26df07de2593593b2793bb99ad52
     ax.grid(True, linestyle='-', alpha=0.5)
     if ylabel:
         ax.set_ylabel(ylabel)
 
+<<<<<<< HEAD
 # Plot panels
 plot_panel(axs[0], fid_df, "FID (↓)", "", smooth=False)
 plot_panel(axs[1], precision_df, "Precision (↑)", "", smooth=True)
@@ -137,3 +150,18 @@ fig.legend(
 plt.tight_layout(rect=[0, 0.05, 1, 1])
 plt.savefig("cutoff_threshold_ablation_final_ordered.png", bbox_inches='tight', dpi=300)
 plt.show()
+=======
+# Create figure
+fig, axs = plt.subplots(1, 3, figsize=(14, 4), sharex=True)
+plot_panel(axs[0], fid_df, "FID (↓)", "FID", smooth=False)
+plot_panel(axs[1], precision_df, "Precision (↑)", "Precision", smooth=True)
+plot_panel(axs[2], recall_df, "Recall (↑)", "Recall", smooth=True)
+
+# Shared legend
+handles, labels = axs[0].get_legend_handles_labels()
+fig.legend(handles, labels, loc='lower center', bbox_to_anchor=(0.5, -0.01), ncol=6)
+
+plt.tight_layout(rect=[0, 0.05, 1, 1])
+plt.savefig("cutoff_threshold_ablation_results.png", bbox_inches='tight', dpi=300)
+tools.display_image("cutoff_threshold_ablation_results.png")
+>>>>>>> 25f5499e132b26df07de2593593b2793bb99ad52

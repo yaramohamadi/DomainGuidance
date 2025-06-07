@@ -224,6 +224,10 @@ def our_training_losses_transport(
     t, xt, ut = self.path_sampler.plan(t, x0, x1)
     model_output = model(xt, t, **model_kwargs)
 
+    print("Sample eps:", self.sample_eps)
+    print("t: ", t)
+    print("t_norm: ", t.float() / (1.0 / self.sample_eps - 1))
+
     B, *_, C = xt.shape
     assert model_output.size() == (B, *xt.size()[1:-1], C)
 
@@ -467,19 +471,20 @@ def main(args):
         input_size=latent_size,
         num_classes=args.num_classes,
         class_dropout_prob=args.dropout_ratio,  # Domain Guidance dropout ratio
-    )
+        )
+        pretrained_model = SiT_models[args.model](input_size=latent_size, num_classes=1000)
     elif args.model in DiT_models:
         model = DiT_models[args.model](
             input_size=latent_size,
             num_classes=args.num_classes,
             class_dropout_prob=args.dropout_ratio,  # Domain Guidance dropout ratio
-    )
+        )
+        pretrained_model = DiT_models[args.model](input_size=latent_size, num_classes=1000)
     # Load pre-trained weights if provided:
     model = load_pretrained_model(model, args.pretrained_ckpt, args.image_size)
 
     # DoG
     # Load a pre-trained model for domain guidance
-    pretrained_model = DiT_models[args.model](input_size=latent_size, num_classes=1000)
     pretrained_model = load_exact_pretrained_model(pretrained_model, args.pretrained_ckpt, args.image_size)  
     requires_grad(pretrained_model, False)
     pretrained_model.eval()
@@ -492,6 +497,7 @@ def main(args):
     model = DDP(model.to(device), device_ids=[rank])
 
     if args.model in SiT_models:
+        print("LOADING SIT MODEL!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         transport = create_transport(
             args.path_type,
             args.prediction,
@@ -503,7 +509,8 @@ def main(args):
         logger.info(f"SiT Parameters: {sum(p.numel() for p in model.parameters()):,}")
         transport.training_losses = MethodType(our_training_losses_transport, transport)  # MG
     elif args.model in DiT_models:
-        logger.info(f"SiT Parameters: {sum(p.numel() for p in model.parameters()):,}")
+        print("LOADING DIT MODEL!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        logger.info(f"DiT Parameters: {sum(p.numel() for p in model.parameters()):,}")
         diffusion = create_diffusion(timestep_respacing="")  # default: 1000 steps, linear noise schedule
         diffusion.training_losses = MethodType(our_training_losses, diffusion) # CG
     vae_path = f"pretrained_models/sd-vae-ft-{args.vae}"
@@ -579,7 +586,7 @@ def main(args):
             model_kwargs = dict(y=y)
 
             #If doing profiling:
-            profiling = True
+            # profiling = True
             #if profiling:
             #    from torch.profiler import profile, record_function, ProfilerActivity
 # # # #
