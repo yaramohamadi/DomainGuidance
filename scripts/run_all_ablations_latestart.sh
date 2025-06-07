@@ -24,7 +24,6 @@ PAIR_MAP["artbench-10_processed"]="8000,0.8,ablation_latestart 10000,0.8,ablatio
 PAIR_MAP["caltech-101_processed"]="8000,0.8,ablation_latestart 10000,0.8,ablation_latestart 12000,0.8,ablation_latestart 14000,0.8,ablation_latestart 16000,0.8,ablation_latestart 18000,0.8,ablation_latestart 20000,0.8,ablation_latestart 22000,0.8,ablation_latestart"
 PAIR_MAP["ffhq256"]="8000,0.6,ablation_latestart 10000,0.6,ablation_latestart 12000,0.6,ablation_latestart 14000,0.6,ablation_latestart 16000,0.6,ablation_latestart 18000,0.6,ablation_latestart 20000,0.6,ablation_latestart 22000,0.6,ablation_latestart 2000,0.6,ablation_latestart 4000,0.6,ablation_latestart 6000,0.6,ablation_latestart"
 
-
 # ========== EXECUTION LOOP ==========
 for DATASET in "${TASKS[@]}"; do
   PAIRS=(${PAIR_MAP["$DATASET"]})

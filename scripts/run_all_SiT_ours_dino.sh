@@ -2,30 +2,36 @@
 
 # ========== GLOBAL CONFIGURATION ==========
 SERVER="taylor"
-CUDA_DEVICES="0,1"
+CUDA_DEVICES="2,3"
 SCRIPT="run_ours.sh"
+EXPERIMENT_PRENAME="SiT_dino_ours"
 
- 
-#   "stanford-cars_processed" "cub-200-2011_processed" "artbench-10_processed" "food-101_processed" "caltech-101_processed"
-#   "food-101_processed"  "caltech-101_processed"
+
 declare -a TASKS=(
   "stanford-cars_processed"
   "food-101_processed"
+  "artbench-10_processed"
+  "caltech-101_processed"
+  "cub-200-2011_processed"
+  "ffhq256"
 )
 
 # ========== Define per-task (latestart, mghigh, experiment_prename) triples ==========
 declare -A PAIR_MAP
-# Format: "latestart,mghigh latestart,mghigh ..."
-# 3000,0.8,ablation_best_latestart_mg cub-200-2011 -> Sampling is done but it NEEDS FID calculation!
-PAIR_MAP["stanford-cars_processed"]="7000,0.3,ablation_best_latestart_mg 7000,0.4,ablation_best_latestart_mg 7000,0.5,ablation_best_latestart_mg 7000,0.8,ablation_best_latestart_mg 7000,0.9,ablation_best_latestart_mg 7000,1.0,ablation_best_latestart_mg"
-PAIR_MAP["caltech-101_processed"]="6000,0.6,ablation_best_latestart_mg 6000,0.7,ablation_best_latestart_mg 6000,0.8,ablation_best_latestart_mg 6000,0.9,ablation_best_latestart_mg 6000,1.0,ablation_best_latestart_mg"
-PAIR_MAP["food-101_processed"]="7000,1.0,ablation_best_latestart_mg"
+
+# DINO:
+PAIR_MAP["stanford-cars_processed"]="8000,1"
+PAIR_MAP["caltech-101_processed"]="8000,0.7"
+PAIR_MAP["food-101_processed"]="8000,1"
+PAIR_MAP["artbench-10_processed"]="8000,0.9"
+PAIR_MAP["cub-200-2011_processed"]="6000,1"
+PAIR_MAP["ffhq256"]="10000,0.6"
 
 # ========== EXECUTION LOOP ==========
 for DATASET in "${TASKS[@]}"; do
   PAIRS=(${PAIR_MAP["$DATASET"]})
   for PAIR in "${PAIRS[@]}"; do
-    IFS=',' read -r LATESTART MGHIGH EXPERIMENT_PRENAME <<< "$PAIR"
+    IFS=',' read -r LATESTART MGHIGH <<< "$PAIR"
 
     echo "=============================================="
     echo "Running $SCRIPT on $DATASET | latestart: $LATESTART | mghigh: $MGHIGH | prename: $EXPERIMENT_PRENAME"
@@ -38,13 +44,10 @@ for DATASET in "${TASKS[@]}"; do
       --cuda_devices \"$CUDA_DEVICES\" \
       --experiment_prename \"$EXPERIMENT_PRENAME\" \
       --latestart \"$LATESTART\" \
-      --mghigh \"$MGHIGH\""
+      --mghigh \"$MGHIGH\" \
+      --model_name \"SiT-XL/2\""
 
-    #if [[ "$SERVER" == "computecanada" ]]; then
-    #  eval "JOB_NAME=$EXPERIMENT_PRENAME sbatch $CMD"
-    #else
     eval "bash $CMD"
-    #fi
 
     echo "✅ Finished $SCRIPT on $DATASET | latestart: $LATESTART | mghigh: $MGHIGH | prename: $EXPERIMENT_PRENAME"
     echo "=============================================="

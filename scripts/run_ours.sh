@@ -25,6 +25,9 @@ LATE_START=0
 W_TRAIN_DOG=1.5
 DROPOUT_RATIO=0 # TODO Change this back to 0   
 
+# Load all logic
+source scripts/config.sh
+
 # ====================== ARGUMENT PARSING ======================
 
 while [[ "$#" -gt 0 ]]; do
@@ -44,8 +47,6 @@ done
 
 EXPERIMENT_NAME="$EXPERIMENT_PRENAME/dogfinetune_LATE_START_ITER${LATE_START}_MG${MG_HIGH}_W_TRAIN_DOG${W_TRAIN_DOG}"
 
-# Load all logic
-source scripts/config.sh
 resolve_server_paths
 resolve_dataset_config
 
@@ -117,7 +118,7 @@ mkdir -p "$(dirname "$LOG_FILE")"
 
 create_environment
 prepare_dataset
-# train_model
+train_model
 
 for ((i=0; i<=TOTAL_STEPS; i+=CKPT_EVERY)); do
   if [[ $i -eq 0 && "$SKIP_FIRST_CKPT" -eq 1 ]]; then
