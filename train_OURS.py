@@ -222,11 +222,8 @@ def our_training_losses_transport(
 
     t, x0, x1 = self.sample(x1)
     t, xt, ut = self.path_sampler.plan(t, x0, x1)
-    model_output = model(xt, t, **model_kwargs)
 
-    print("Sample eps:", self.sample_eps)
-    print("t: ", t)
-    print("t_norm: ", t.float() / (1.0 / self.sample_eps - 1))
+    model_output = model(xt, t, **model_kwargs)
 
     B, *_, C = xt.shape
     assert model_output.size() == (B, *xt.size()[1:-1], C)
@@ -240,9 +237,9 @@ def our_training_losses_transport(
 
         # Apply DoG
         initial_ut = ut.clone().detach()
+        guidance_cutoff = False
         if guidance_cutoff:
-            t_norm = t.float() / (self.num_steps - 1)
-            w = torch.where(t_norm < mg_high, w_dog - 1, 0.0).view(-1, *([1] * (ut.dim() - 1)))
+            w = torch.where(t < mg_high, w_dog - 1, 0.0).view(-1, *([1] * (ut.dim() - 1)))
             ut = ut + w * (ema_output.detach() - pretrained_output.detach())
         else:
             ut = ut + (w_dog - 1) * (ema_output.detach() - pretrained_output.detach())
