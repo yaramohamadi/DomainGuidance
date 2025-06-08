@@ -200,6 +200,17 @@ def our_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, 
 
         return terms
 
+# This is borrowed from path.py in the transport package.
+def expand_t_like_x(t, x):
+    """Function to reshape time t to broadcastable dimension of x
+    Args:
+      t: [batch_dim,], time vector
+      x: [batch_dim,...], data point
+    """
+    dims = [1] * (len(x.size()) - 1)
+    t = t.view(t.size(0), *dims)
+    return t
+
 def our_training_losses_transport(
     self,
     model,
@@ -250,8 +261,8 @@ def our_training_losses_transport(
     if pretrained_model is not None and ema is not None and counter > late_start_iter and dist.get_rank() == 0 and counter % 1000 == 0:
         def norm_to_01(x): return (x.clamp(-1, 1) + 1) / 2
 
-        alpha_t, _ = self.path_sampler.compute_alpha_t(self.path_sampler.expand_t_like_x(t, xt))
-        sigma_t, _ = self.path_sampler.compute_sigma_t(self.path_sampler.expand_t_like_x(t, xt))
+        alpha_t, _ = self.path_sampler.compute_alpha_t(expand_t_like_x(t, xt))
+        sigma_t, _ = self.path_sampler.compute_sigma_t(expand_t_like_x(t, xt))
 
         x0_model = xt - sigma_t * model_output
         x0_pretrained = xt - sigma_t * pretrained_output
