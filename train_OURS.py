@@ -679,33 +679,33 @@ def main(args):
                     counter=train_steps,
             )
 
-                sample_fn = transport_sampler.sample_ode(
-                            sampling_method="dopri5",
-                            num_steps=50,
-                            atol=1e-6,
-                            rtol=1e-3,
-                            reverse=False,
-                        )
-
-                if dist.get_rank() == 0:
-                    # 1) noise in latent space
-                    z = torch.randn_like(x)            # [B,C,H,W] same shape as your batch
-                    y = torch.randint(0, 1000, (z.shape[0],), device=device)
-
-                    # 2) run your ODE sampler through the pretrained SiT
-                    with torch.no_grad():
-                        xs = sample_fn(z, pretrained_model, y=y)
-                    z0 = xs[-1]
-
-                    # 3) decode via VAE and normalize
-                    with torch.no_grad():
-                        img = vae.decode(z0 / 0.18215).sample
-                        img = (img.clamp(-1,1) + 1) * 0.5
-
-                    # 4) save a small grid
-                    os.makedirs("debug_samples", exist_ok=True)
-                    save_image(img, f"debug_samples/step_{train_steps:07d}.png", nrow=4)
-                    print(f"✅ [SiT] dumped samples to debug_samples/step_{train_steps:07d}.png")
+                # sample_fn = transport_sampler.sample_ode(
+                #             sampling_method="dopri5",
+                #             num_steps=50,
+                #             atol=1e-6,
+                #             rtol=1e-3,
+                #             reverse=False,
+                #         )
+# 
+                # if dist.get_rank() == 0:
+                #     # 1) noise in latent space
+                #     z = torch.randn_like(x)            # [B,C,H,W] same shape as your batch
+                #     y = torch.randint(0, 1000, (z.shape[0],), device=device)
+# 
+                #     # 2) run your ODE sampler through the pretrained SiT
+                #     with torch.no_grad():
+                #         xs = sample_fn(z, pretrained_model, y=y)
+                #     z0 = xs[-1]
+# 
+                #     # 3) decode via VAE and normalize
+                #     with torch.no_grad():
+                #         img = vae.decode(z0 / 0.18215).sample
+                #         img = (img.clamp(-1,1) + 1) * 0.5
+# 
+                #     # 4) save a small grid
+                #     os.makedirs("debug_samples", exist_ok=True)
+                #     save_image(img, f"debug_samples/step_{train_steps:07d}.png", nrow=4)
+                #     print(f"✅ [SiT] dumped samples to debug_samples/step_{train_steps:07d}.png")
  
              # … rest of your loop …
 
@@ -729,32 +729,30 @@ def main(args):
                     counter=train_steps,
                 )   
 
-                # assume x has shape [B, C, H, W]
-                B, C, H, W = x.shape
-                z = torch.randn(B, C, H, W, device=device)
-                y = torch.randint(0, args.num_classes, (B,), device=device)
-
-                model_kwargs = dict(y=y)
-                model_fn = diffusion._wrap_model(pretrained_model)
-
-                samples = diffusion.p_sample_loop(
-                    model_fn,
-                    z.shape,
-                    z,
-                    clip_denoised=False,
-                    model_kwargs=model_kwargs,
-                    progress=False,
-                    device=device
-                )
-
-                with torch.no_grad():
-                    dec = vae.decode(samples / 0.18215).sample
-                    img = (dec.clamp(-1,1) + 1) * 0.5  # [0,1] range
-                os.makedirs("debug_samples", exist_ok=True)
-                save_image(img, f"debug_samples/dit_step_{train_steps:07d}.png", nrow=4)
-                print(f"✅ [DiT] dumped samples to debug_samples/dit_step_{train_steps:07d}.png")
-
-
+                # # assume x has shape [B, C, H, W]
+                # B, C, H, W = x.shape
+                # z = torch.randn(B, C, H, W, device=device)
+                # y = torch.randint(0, args.num_classes, (B,), device=device)
+# 
+                # model_kwargs = dict(y=y)
+                # model_fn = diffusion._wrap_model(pretrained_model)
+# 
+                # samples = diffusion.p_sample_loop(
+                #     model_fn,
+                #     z.shape,
+                #     z,
+                #     clip_denoised=False,
+                #     model_kwargs=model_kwargs,
+                #     progress=False,
+                #     device=device
+                # )
+# 
+                # with torch.no_grad():
+                #     dec = vae.decode(samples / 0.18215).sample
+                #     img = (dec.clamp(-1,1) + 1) * 0.5  # [0,1] range
+                # os.makedirs("debug_samples", exist_ok=True)
+                # save_image(img, f"debug_samples/dit_step_{train_steps:07d}.png", nrow=4)
+                # print(f"✅ [DiT] dumped samples to debug_samples/dit_step_{train_steps:07d}.png")
 
 
             loss = loss_dict["loss"].mean()
