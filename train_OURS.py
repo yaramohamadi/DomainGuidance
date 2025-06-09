@@ -238,7 +238,7 @@ def our_training_losses_transport(
     B, *_, C = xt.shape
     assert model_output.size() == (B, *xt.size()[1:-1], C)
 
-    if pretrained_model is not None and ema is not None:# and counter > late_start_iter:
+    if pretrained_model is not None and ema is not None and counter > late_start_iter:
         with torch.no_grad():
             y = model_kwargs["y"]
             pretrained_kwargs = {"y": torch.full_like(y, 1000)}
