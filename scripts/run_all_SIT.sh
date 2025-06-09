@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # ========== GLOBAL CONFIGURATION ==========
-SERVER="taylor"
-CUDA_DEVICES="2,3"
+SERVER="bool"
+CUDA_DEVICES="1,2"
 EXPERIMENT_PRENAME="All_SiT"
 
 # ========== DATASET TO SCRIPT MAPPING ==========

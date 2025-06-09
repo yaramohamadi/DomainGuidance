@@ -21,7 +21,7 @@ declare -A PAIR_MAP
 # 3000,0.8,ablation_best_latestart_mg cub-200-2011 -> Sampling is done but it NEEDS FID calculation!
 
 # Inception:
-PAIR_MAP["stanford-cars_processed"]="7000,0.6" # 7000 first one
+PAIR_MAP["stanford-cars_processed"]="0,0.6" # 7000 first one
 PAIR_MAP["caltech-101_processed"]="6000,0.4"
 PAIR_MAP["food-101_processed"]="7000,0.5"
 PAIR_MAP["artbench-10_processed"]="12000,1"

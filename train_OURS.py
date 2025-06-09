@@ -33,7 +33,6 @@ from models import DiT_models, SiT_models
 from diffusion import create_diffusion
 from diffusion import create_diffusion
 from diffusion.gaussian_diffusion import LossType, ModelMeanType, ModelVarType, mean_flat
-from torchvision.utils import save_image
 from transport import create_transport, Sampler, ModelType, path
 
 from diffusers.models import AutoencoderKL
@@ -134,7 +133,6 @@ def our_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, 
                 # Guidance Cut Off
                 initial_target = target.clone().detach()
                 if guidance_cutoff:
-                    
                     t_norm = t.float() / (self.num_timesteps - 1)
                     mg_high = mg_high
                     w = torch.where(t_norm < mg_high, w_dog-1, 0.0)  # shape [B]
@@ -142,7 +140,7 @@ def our_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, 
                 else:
                     target = target + (w_dog - 1) * (ema_output.detach() - pretrained_output.detach())
 
-            if counter % 1000 == 0 and pretrained_model is not None and ema is not None and dist.get_rank() == 0:
+            if pretrained_model is not None and ema is not None and dist.get_rank() == 0 and counter > late_start_iter:#  and counter % 1000 == 0:
                 # Debugging functions
                 def norm_to_01(x):
                     """Normalize to [0,1] for visualization."""
@@ -234,11 +232,13 @@ def our_training_losses_transport(
 
     t, x0, x1 = self.sample(x1)
     t, xt, ut = self.path_sampler.plan(t, x0, x1)
+
     model_output = model(xt, t, **model_kwargs)
+
     B, *_, C = xt.shape
     assert model_output.size() == (B, *xt.size()[1:-1], C)
 
-    if pretrained_model is not None and ema is not None and counter > late_start_iter:
+    if pretrained_model is not None and ema is not None:# and counter > late_start_iter:
         with torch.no_grad():
             y = model_kwargs["y"]
             pretrained_kwargs = {"y": torch.full_like(y, 1000)}
@@ -257,11 +257,12 @@ def our_training_losses_transport(
     terms = {"pred": model_output}
     terms["loss"] = mean_flat((model_output - ut) ** 2)
 
-    if pretrained_model is not None and ema is not None and dist.get_rank() == 0 and counter % 1000 == 0:
+    if pretrained_model is not None and ema is not None and counter > late_start_iter and dist.get_rank() == 0: #  and counter % 1000 == 0:
         def norm_to_01(x): return (x.clamp(-1, 1) + 1) / 2
 
         alpha_t, _ = self.path_sampler.compute_alpha_t(expand_t_like_x(t, xt))
         sigma_t, _ = self.path_sampler.compute_sigma_t(expand_t_like_x(t, xt))
+
         x0_model = xt - sigma_t * model_output
         x0_pretrained = xt - sigma_t * pretrained_output
         x0_diff = (x0_model - x0_pretrained).abs()
@@ -355,7 +356,10 @@ def load_exact_pretrained_model(model, pretrained_ckpt_path, image_size, tmp_dir
     dist.barrier()
 
     if dist.get_rank() == 0:
-        ckpt_path = pretrained_ckpt_path or f"DiT-XL-2-{image_size}x{image_size}.pt"
+        if args.model.startswith("DiT-XL/2"):
+            ckpt_path = pretrained_ckpt_path or f"DiT-XL-2-{image_size}x{image_size}.pt"
+        elif args.model.startswith("SiT-XL/2"):
+            ckpt_path = pretrained_ckpt_path or f"SiT-XL-2-{image_size}x{image_size}.pt"
         state_dict = find_model(ckpt_path)
         torch.save(state_dict, os.path.join(tmp_dir, "local_pretrained_ckpt.pt"))
     dist.barrier()
@@ -583,7 +587,6 @@ def main(args):
                 print(f"Batch y shape: {y.shape}, dtype: {y.dtype}, unique labels: {torch.unique(y)}")
                 print("=" * 20)
                 # Optionally visualize a few images
-                from torchvision.utils import save_image
                 save_image(x[:8] * 0.5 + 0.5, f"tmp/sample_batch.png", nrow=4)
 
             with torch.no_grad():
@@ -675,6 +678,38 @@ def main(args):
                     late_start_iter=args.late_start_iter,
                     counter=train_steps,
             )
+
+                sample_fn = transport_sampler.sample_ode(
+                            sampling_method="dopri5",
+                            num_steps=50,
+                            atol=1e-6,
+                            rtol=1e-3,
+                            reverse=False,
+                        )
+
+                if dist.get_rank() == 0:
+                    # 1) noise in latent space
+                    z = torch.randn_like(x)            # [B,C,H,W] same shape as your batch
+                    y = torch.randint(0, 1000, (z.shape[0],), device=device)
+
+                    # 2) run your ODE sampler through the pretrained SiT
+                    with torch.no_grad():
+                        xs = sample_fn(z, pretrained_model, y=y)
+                    z0 = xs[-1]
+
+                    # 3) decode via VAE and normalize
+                    with torch.no_grad():
+                        img = vae.decode(z0 / 0.18215).sample
+                        img = (img.clamp(-1,1) + 1) * 0.5
+
+                    # 4) save a small grid
+                    os.makedirs("debug_samples", exist_ok=True)
+                    save_image(img, f"debug_samples/step_{train_steps:07d}.png", nrow=4)
+                    print(f"✅ [SiT] dumped samples to debug_samples/step_{train_steps:07d}.png")
+ 
+             # … rest of your loop …
+
+
             elif args.model in DiT_models:
                 t = torch.randint(0, diffusion.num_timesteps, (x.shape[0],), device=device)
                 # MG
@@ -693,6 +728,34 @@ def main(args):
                     late_start_iter=args.late_start_iter,
                     counter=train_steps,
                 )   
+
+                # assume x has shape [B, C, H, W]
+                B, C, H, W = x.shape
+                z = torch.randn(B, C, H, W, device=device)
+                y = torch.randint(0, args.num_classes, (B,), device=device)
+
+                model_kwargs = dict(y=y)
+                model_fn = diffusion._wrap_model(pretrained_model)
+
+                samples = diffusion.p_sample_loop(
+                    model_fn,
+                    z.shape,
+                    z,
+                    clip_denoised=False,
+                    model_kwargs=model_kwargs,
+                    progress=False,
+                    device=device
+                )
+
+                with torch.no_grad():
+                    dec = vae.decode(samples / 0.18215).sample
+                    img = (dec.clamp(-1,1) + 1) * 0.5  # [0,1] range
+                os.makedirs("debug_samples", exist_ok=True)
+                save_image(img, f"debug_samples/dit_step_{train_steps:07d}.png", nrow=4)
+                print(f"✅ [DiT] dumped samples to debug_samples/dit_step_{train_steps:07d}.png")
+
+
+
 
             loss = loss_dict["loss"].mean()
             opt.zero_grad()
