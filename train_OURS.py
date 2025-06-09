@@ -257,7 +257,7 @@ def our_training_losses_transport(
     terms = {"pred": model_output}
     terms["loss"] = mean_flat((model_output - ut) ** 2)
 
-    if pretrained_model is not None and ema is not None and counter > late_start_iter and dist.get_rank() == 0: #  and counter % 1000 == 0:
+    if pretrained_model is not None and ema is not None and counter > late_start_iter and dist.get_rank() == 0 and counter % 1000 == 0:
         def norm_to_01(x): return (x.clamp(-1, 1) + 1) / 2
 
         alpha_t, _ = self.path_sampler.compute_alpha_t(expand_t_like_x(t, xt))
