@@ -210,7 +210,6 @@ def mg_training_losses_transport(
     t, x0, x1 = self.sample(x1)
     t, xt, ut = self.path_sampler.plan(t, x0, x1)
     model_output = model(xt, t, **model_kwargs)
-
     B, *_, C = xt.shape
     assert model_output.size() == (B, *xt.size()[1:-1], C)
 
@@ -222,9 +221,8 @@ def mg_training_losses_transport(
         ema_uncond_output = ema(xt, t, **uncond_kwargs)
 
         if guidance_cutoff:
-            t_norm = t.float() / (self.num_steps - 1)
             mg_high = 0.75
-            w = torch.where(t_norm < mg_high, w_cg - 1, 0.0).view(-1, *([1] * (model_output.dim() - 1)))
+            w = torch.where(t < mg_high, w_cg - 1, 0.0).view(-1, *([1] * (model_output.dim() - 1)))
             ut = ut + w * (ema_cond_output.detach() - ema_uncond_output.detach())
         else:
             ut = ut + (w_cg - 1) * (ema_cond_output.detach() - ema_uncond_output.detach())

@@ -134,6 +134,7 @@ def our_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, 
                 # Guidance Cut Off
                 initial_target = target.clone().detach()
                 if guidance_cutoff:
+                    
                     t_norm = t.float() / (self.num_timesteps - 1)
                     mg_high = mg_high
                     w = torch.where(t_norm < mg_high, w_dog-1, 0.0)  # shape [B]
@@ -141,7 +142,7 @@ def our_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, 
                 else:
                     target = target + (w_dog - 1) * (ema_output.detach() - pretrained_output.detach())
 
-            if counter % 1000 == 0 and pretrained_model is not None and ema is not None and counter > late_start_iter and dist.get_rank() == 0:
+            if counter % 1000 == 0 and pretrained_model is not None and ema is not None and dist.get_rank() == 0:
                 # Debugging functions
                 def norm_to_01(x):
                     """Normalize to [0,1] for visualization."""
@@ -233,9 +234,7 @@ def our_training_losses_transport(
 
     t, x0, x1 = self.sample(x1)
     t, xt, ut = self.path_sampler.plan(t, x0, x1)
-
     model_output = model(xt, t, **model_kwargs)
-
     B, *_, C = xt.shape
     assert model_output.size() == (B, *xt.size()[1:-1], C)
 
@@ -258,12 +257,11 @@ def our_training_losses_transport(
     terms = {"pred": model_output}
     terms["loss"] = mean_flat((model_output - ut) ** 2)
 
-    if pretrained_model is not None and ema is not None and counter > late_start_iter and dist.get_rank() == 0 and counter % 1000 == 0:
+    if pretrained_model is not None and ema is not None and dist.get_rank() == 0 and counter % 1000 == 0:
         def norm_to_01(x): return (x.clamp(-1, 1) + 1) / 2
 
         alpha_t, _ = self.path_sampler.compute_alpha_t(expand_t_like_x(t, xt))
         sigma_t, _ = self.path_sampler.compute_sigma_t(expand_t_like_x(t, xt))
-
         x0_model = xt - sigma_t * model_output
         x0_pretrained = xt - sigma_t * pretrained_output
         x0_diff = (x0_model - x0_pretrained).abs()
