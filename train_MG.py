@@ -136,7 +136,7 @@ def mg_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, w
                 else:
                     target = target + (w_cg - 1) * (ema_cond_output.detach() - ema_uncond_output.detach())
 
-            if counter % 1000 == 0:
+            if counter % 100 == 0:
                 # Debugging functions
                 def norm_to_01(x):
                     """Normalize to [0,1] for visualization."""
@@ -231,7 +231,7 @@ def mg_training_losses_transport(
     terms["loss"] = mean_flat(((model_output - ut) ** 2))
 
     # === Debugging and Visualization ===
-    if ema is not None and counter % 1000 == 0:
+    if ema is not None and counter % 100 == 0:
         def norm_to_01(x):
             return (x.clamp(-1, 1) + 1) / 2
 
@@ -243,7 +243,7 @@ def mg_training_losses_transport(
         x0_diff = (x0_model - x0_uncond).abs()
 
         # Decode and save
-        save_dir = f"CG_debug/{counter:06d}"
+        save_dir = f"MG_debug/{counter:06d}"
         os.makedirs(save_dir, exist_ok=True)
 
         with torch.no_grad():

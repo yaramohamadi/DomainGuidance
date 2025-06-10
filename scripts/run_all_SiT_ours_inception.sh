@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # ========== GLOBAL CONFIGURATION ==========
-SERVER="bool"
-CUDA_DEVICES="1,2"
+SERVER="taylor"
+CUDA_DEVICES="0,1"
 SCRIPT="run_ours.sh"
 EXPERIMENT_PRENAME="SiT_inception_ours"
 

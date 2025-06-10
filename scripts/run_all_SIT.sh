@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # ========== GLOBAL CONFIGURATION ==========
-SERVER="bool"
-CUDA_DEVICES="1,2"
+SERVER="taylor"
+CUDA_DEVICES="0,1"
 EXPERIMENT_PRENAME="All_SiT"
 
 # ========== DATASET TO SCRIPT MAPPING ==========
@@ -42,15 +42,17 @@ EXPERIMENT_PRENAME="All_SiT"
 
 # "stanford-cars_processed run_baselines_finetune.sh"
 
+
+# "caltech-101_processed run_baseline_mg.sh"
+# "food-101_processed run_baseline_mg.sh"
+# "df-20m_processed run_baseline_mg.sh"
+# "artbench-10_processed run_baseline_mg.sh"
+# "ffhq256 run_baseline_mg.sh"
+# "cub-200-2011_processed run_baseline_mg.sh"
+# "ffhq256 run_baselines_finetune.sh"
+
 declare -a TASKS=(
  "stanford-cars_processed run_baseline_mg.sh"
- "caltech-101_processed run_baseline_mg.sh"
- "food-101_processed run_baseline_mg.sh"
- "df-20m_processed run_baseline_mg.sh"
- "artbench-10_processed run_baseline_mg.sh"
- "ffhq256 run_baseline_mg.sh"
- "cub-200-2011_processed run_baseline_mg.sh"
- "ffhq256 run_baselines_finetune.sh"
 )
 
 # ========== EXECUTION LOOP ==========
