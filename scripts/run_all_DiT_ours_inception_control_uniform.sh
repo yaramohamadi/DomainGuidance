@@ -2,7 +2,7 @@
 
 # ========== GLOBAL CONFIGURATION ==========
 SERVER="bool"
-CUDA_DEVICES="2,3"
+CUDA_DEVICES="0,1"
 SCRIPT="run_ours.sh"
 EXPERIMENT_PRENAME="DiT_inception_ours/control"
 
@@ -20,7 +20,7 @@ declare -a TASKS=(
 declare -A PAIR_MAP
 
 # Inception:
-PAIR_MAP["stanford-cars_processed"]="7000,0.6,1,2,1.5 7000,0.6,1,2.5,1.5 7000,0.6,1,3,1.5 7000,0.6,1,4,1.5" #  0,1,1,1.5 0,1,1,2 0,1,1,3 0,1,1,4" # "7000,0.6"
+PAIR_MAP["stanford-cars_processed"]="0,1,1,2,1.5 0,1,1,2.5,1.5 0,1,1,3,1.5 0,1,1,4,1.5" #  0,1,1,1.5 0,1,1,2 0,1,1,3 0,1,1,4" # "7000,0.6"
 
 # ========== EXECUTION LOOP ==========
 for DATASET in "${TASKS[@]}"; do

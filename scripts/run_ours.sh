@@ -60,11 +60,6 @@ EXPERIMENT_NAME="$EXPERIMENT_PRENAME/dogfinetune_LATE_START_ITER${LATE_START}_MG
 resolve_server_paths
 resolve_dataset_config
 
-if (( $(echo "$GUIDANCE_CONTROL > 0" | bc -l) )); then
-  RESULTS_FILE="${RESULTS_FILE}_w_dgft${SAMPLE_GUIDANCE}"
-  GENERATED_DIR="${GENERATED_DIR}_w_dgft${SAMPLE_GUIDANCE}"
-fi
-
 # Define any additional specific parameters here
 
 train_model() {
@@ -140,14 +135,37 @@ create_environment
 prepare_dataset
 train_model
 
+
+GUIDANCE_VALUES=(1 1.5 2 3 4 5)
+
 for ((i=0; i<=TOTAL_STEPS; i+=CKPT_EVERY)); do
   if [[ $i -eq 0 && "$SKIP_FIRST_CKPT" -eq 1 ]]; then
     continue
   fi
   printf -v PADDED_STEP "%07d" "$i"
   printf -v PADDED_CKPT "%07d.pt" "$i"
-  run_sampling
-  calculate_fid
+
+  if (( $(echo "$GUIDANCE_CONTROL > 0" | bc -l) )); then
+    if (( $(echo "$SAMPLE_GUIDANCE == 0" | bc -l) )); then
+      for SG in "${GUIDANCE_VALUES[@]}"; do
+        SAMPLE_GUIDANCE=$SG
+        RESULTS_FILE_ORIG="$RESULTS_FILE"
+        GENERATED_DIR_ORIG="$GENERATED_DIR"
+        RESULTS_FILE="${RESULTS_FILE_ORIG}_w_dgft${SAMPLE_GUIDANCE}"
+        GENERATED_DIR="${GENERATED_DIR_ORIG}_w_dgft${SAMPLE_GUIDANCE}"
+        run_sampling
+        calculate_fid
+      done
+    else
+      RESULTS_FILE="${RESULTS_FILE}_w_dgft${SAMPLE_GUIDANCE}"
+      GENERATED_DIR="${GENERATED_DIR}_w_dgft${SAMPLE_GUIDANCE}"
+      run_sampling
+      calculate_fid
+    fi
+  else
+    run_sampling
+    calculate_fid
+  fi
 done
 
 cleanup_dataset
