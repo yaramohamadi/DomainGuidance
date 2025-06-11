@@ -565,6 +565,7 @@ def main(args):
 
     # Setup optimizer (we used default Adam betas=(0.9, 0.999) and a constant learning rate of 1e-4 in our paper):
     # opt = torch.optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0)
+    # diffFit uses a higher learning rate:
     opt = torch.optim.AdamW(filter(lambda p: p.requires_grad, model.parameters()), lr=1e-3, weight_decay=0) # DiffFit (learning rate is x10)
 
 
