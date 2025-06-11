@@ -27,6 +27,8 @@ import argparse
 import logging
 import os
 
+import torch.nn as nn
+
 from download import find_model
 
 from models import DiT_models, SiT_models
@@ -70,14 +72,16 @@ def our_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, 
 
         terms = {}
 
+        
         ema_kwargs = dict(model_kwargs)
         # guidance control
         if model_kwargs.get("w", None) is not None:
             # Extract guidance weight w from model_kwargs
-            w_dog = model_kwargs["w"]
+            w = model_kwargs["w"]
             ema_kwargs["w"] = torch.ones_like(w)  # w = 1
         y = model_kwargs["y"]
         pretrained_kwargs = {"y": torch.full_like(y, 1000)}
+
 
         if self.loss_type == LossType.KL or self.loss_type == LossType.RESCALED_KL:
             terms["loss"] = self._vb_terms_bpd(
@@ -147,17 +151,19 @@ def our_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, 
 
             if pretrained_model is not None and ema is not None and counter > late_start_iter:
                 # Where the DoG Happens 
-                # target = target + (w_dog - 1) * (target - pretrained_output)
+                # target = target + (w - 1) * (target - pretrained_output)
 
                 # Guidance Cut Off
                 initial_target = target.clone().detach()
                 if guidance_cutoff:
                     t_norm = t.float() / (self.num_timesteps - 1)
                     mg_high = mg_high
-                    w = torch.where(t_norm < mg_high, w_dog-1, 0.0)  # shape [B]
+                    mask = (t_norm < mg_high).float().view(-1, 1)  # [16, 1]
+                    w = w - 1
+                    w = mask * w  # now w remains [16, 1]
                     target = target + w.view(-1, 1, 1, 1) * (ema_output.detach() - pretrained_output.detach())
                 else:
-                    target = target + (w_dog - 1) * (ema_output.detach() - pretrained_output.detach())
+                    target = target + (w - 1) * (ema_output.detach() - pretrained_output.detach())
 
             if pretrained_model is not None and ema is not None and dist.get_rank() == 0 and counter > late_start_iter and counter % 100 == 0:
                 # Debugging functions
@@ -266,7 +272,6 @@ def our_training_losses_transport(
 
         # Apply DoG
         initial_ut = ut.clone().detach()
-        guidance_cutoff = False
         if guidance_cutoff:
             w = torch.where(t < mg_high, w_dog - 1, 0.0).view(-1, *([1] * (ut.dim() - 1)))
             ut = ut + w * (ema_output.detach() - pretrained_output.detach())
@@ -347,6 +352,14 @@ class GuidedWrapper(nn.Module):
         x = self.base_model.final_layer(x, c)                 # (B, T, patch^2 * C)
         return self.base_model.unpatchify(x)                  # (B, out_channels, H, W)
 
+    def __getattr__(self, name):
+        # Only forward attribute access if not found on wrapper itself
+        if name in self.__dict__:
+            return self.__dict__[name]
+        try:
+            return super().__getattr__(name)
+        except AttributeError:
+            return getattr(self.base_model, name)
 
 #################################################################################
 #                             Training Helper Functions                         #
@@ -558,19 +571,19 @@ def main(args):
     requires_grad(pretrained_model, False)
     pretrained_model.eval()
     pretrained_model = pretrained_model.to(device)
-
-    # Note that parameter initialization is done within the DiT constructor
-    ema = deepcopy(model).to(device)  # Create an EMA of the model for use after training
-    requires_grad(ema, False)
     
     # Guidance control:
     if args.guidance_control:
         logger.info("[DoG] Using guided model wrapper with learnable guidance scale.")
-        guided_model = GuidedDiTWrapper(model).to(device)
-        model = DDP(guided_model, device_ids=[rank])
+        model = GuidedWrapper(model).to(device)
     else:
         logger.info("[DoG] Using standard model without guidance control.")
-        model = DDP(model, device_ids=[rank])
+
+    # Note that parameter initialization is done within the DiT constructor
+    ema = deepcopy(model).to(device)  # Create an EMA of the model for use after training
+    requires_grad(ema, False)
+
+    model = DDP(model, device_ids=[rank])
 
     if args.model in SiT_models:
         print("LOADING SIT MODEL!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
@@ -662,7 +675,7 @@ def main(args):
 
             if args.guidance_control:
                 # Sample w from Uniform[1.0, args.w_max]
-                w = torch.empty(x.shape[0], 1, device=device).uniform_(1.0, args.w_max)
+                w = torch.empty(x.shape[0], 1, device=device).uniform_(args.w_min, args.w_max)
                 model_kwargs["w"] = w
 
             #If doing profiling:
@@ -902,7 +915,8 @@ if __name__ == "__main__":
     parser.add_argument("--late-start-iter", type=int, default=0, help="Late start iteration for domain guidance") # DOG
     parser.add_argument("--dropout-ratio", type=float, default=0.1, help="Have null labels or no") # DOG
     parser.add_argument("--guidance-control", type=float, default=0, help="Use learnable guidance scale (w) in the model wrapper")  # DOG
-    parser.add_argument("--w-max", type=float, default=3.0, help="Maximum guidance scale") # DOG
+    parser.add_argument("--w-max", type=float, default=1.0, help="Maximum guidance scale") # DOG
+    parser.add_argument("--w-min", type=float, default=1.0, help="Maximum guidance scale") # DOG
     def none_or_str(value):
         if value == 'None':
             return None

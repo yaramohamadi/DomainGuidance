@@ -25,12 +25,67 @@ import numpy as np
 import math
 import argparse
 
+import torch.nn as nn
+
+##################################################################################
+#                              Guidance control                                  #
+##################################################################################
+
+class GuidedWrapper(nn.Module):
+    """
+    Universal wrapper for DiT or SiT that injects a learnable guidance scale `w`.
+    This wrapper adds w_emb only if `w` is provided.
+    """
+    def __init__(self, base_model, w_dim=1, embed_dim=1152):
+        super().__init__()
+        self.base_model = base_model
+        self.embed_dim = embed_dim
+
+        self.w_embed = nn.Sequential(
+            nn.Linear(w_dim, embed_dim),
+            nn.SiLU(),
+            nn.Linear(embed_dim, embed_dim),
+        )
+
+    def forward(self, x, t, y, w=None):
+        # Embed timestep and label
+        t_emb = self.base_model.t_embedder(t)                 # (B, D)
+        y_emb = self.base_model.y_embedder(y, self.training)  # (B, D)
+
+        # Inject guidance if available
+        if w is not None:
+            w_emb = self.w_embed(w)                           # (B, D)
+            c = t_emb + y_emb + w_emb
+        else:
+            c = t_emb + y_emb
+
+        # Run through the backbone
+        x = self.base_model.x_embedder(x) + self.base_model.pos_embed  # (B, T, D)
+        for block in self.base_model.blocks:
+            x = block(x, c)                                   # (B, T, D)
+        x = self.base_model.final_layer(x, c)                 # (B, T, patch^2 * C)
+        return self.base_model.unpatchify(x)                  # (B, out_channels, H, W)
+        
+    def __getattr__(self, name):
+        # Only forward attribute access if not found on wrapper itself
+        if name in self.__dict__:
+            return self.__dict__[name]
+        try:
+            return super().__getattr__(name)
+        except AttributeError:
+            return getattr(self.base_model, name)
+
+
+
 def main(args):
     """
     Run sampling.
     """
     if args.cfg_scale > 1.0:
         assert args.dropout_ratio != 0.0, "cfg_scale > 1.0 requires dropout_ratio != 0.0"
+    
+    assert not (args.cfg_scale > 1.0 and args.guidance_control > 0), \
+    "Cannot use both CFG and DGFT at the same time."
         
     torch.backends.cuda.matmul.allow_tf32 = args.tf32  # True: fast but may lead to some small numerical differences
     assert torch.cuda.is_available(), "Sampling with DDP requires at least one GPU. sample.py supports CPU-only usage"
@@ -67,6 +122,11 @@ def main(args):
             class_dropout_prob=args.dropout_ratio,
         ).to(device)
         ckpt_path = args.ckpt or f"DiT-XL-2-{args.image_size}x{args.image_size}.pt"
+    
+    # guidance control
+    if args.guidance_control > 0:
+        model = GuidedWrapper(model).to(device)
+
     # Auto-download a pre-trained model or load a custom DiT checkpoint from train.py:
     state_dict = find_model(ckpt_path)
     model.load_state_dict(state_dict)
@@ -133,12 +193,21 @@ def main(args):
 
         # Setup classifier-free guidance:
         if using_cfg:
+            print("Using classifier-free guidance (CFG)")
             z = torch.cat([z, z], 0)
             y_null = torch.tensor([args.num_classes] * n, device=device)
             y = torch.cat([y, y_null], 0)
             model_kwargs = dict(y=y, cfg_scale=args.cfg_scale)
             model_fn = model.forward_with_cfg
+        elif args.guidance_control > 0:
+            # Use learnable guidance scale (w)
+            print("Using learnable guidance scale (w) in the model wrapper")
+            w = torch.full((n, 1), fill_value=args.w_dgft, device=device)
+            model_kwargs = dict(y=y, w=w)
+            model_fn = model.forward
         else:
+            # No guidance
+            print("Using no guidance")
             model_kwargs = dict(y=y)
             model_fn = model.forward
 
@@ -219,6 +288,10 @@ if __name__ == "__main__":
     group.add_argument("--loss-weight", type=none_or_str, default=None, choices=[None, "velocity", "likelihood"])
     group.add_argument("--sample-eps", type=float)
     group.add_argument("--train-eps", type=float)
+
+    # Added for guidance control
+    parser.add_argument("--guidance-control", type=float, default=0, help="Use learnable guidance scale (w) in the model wrapper")  # DOG
+    parser.add_argument("--w-dgft", type=float, default=1.0, help="Maximum guidance scale") # DOG
 
     group = parser.add_argument_group("ODE arguments")
     group.add_argument("--sampling-method", type=str, default="dopri5", help="blackbox ODE solver methods; for full list check https://github.com/rtqichen/torchdiffeq")

@@ -22,6 +22,11 @@ USE_GUIDANCE_CUTOFF=1
 MG_HIGH=1
 LATE_START=0
 
+GUIDANCE_CONTROL=0
+W_MAX=1.0
+W_MIN=1.0
+SAMPLE_GUIDANCE=1.5
+
 W_TRAIN_DOG=1.5
 DROPOUT_RATIO=0 # TODO Change this back to 0   
 
@@ -42,22 +47,25 @@ while [[ "$#" -gt 0 ]]; do
     --model_name) MODEL="$2"; shift ;;
     --guidance_control) GUIDANCE_CONTROL="$2"; shift ;;
     --w_max) W_MAX="$2"; shift ;;
+    --w_min) W_MIN="$2"; shift ;;
+    --sample_guidance) SAMPLE_GUIDANCE="$2"; shift ;;
 
     *) echo "Unknown parameter passed: $1"; exit 1 ;;
   esac
   shift
 done
 
-EXPERIMENT_NAME="$EXPERIMENT_PRENAME/dogfinetune_LATE_START_ITER${LATE_START}_MG${MG_HIGH}_W_TRAIN_DOG${W_TRAIN_DOG}"
+EXPERIMENT_NAME="$EXPERIMENT_PRENAME/dogfinetune_LATE_START_ITER${LATE_START}_MG${MG_HIGH}_W_TRAIN_DOG${W_TRAIN_DOG}_control${GUIDANCE_CONTROL}_W_MIN${W_MIN}_W_MAX${W_MAX}"
 
 resolve_server_paths
 resolve_dataset_config
 
+if (( $(echo "$GUIDANCE_CONTROL > 0" | bc -l) )); then
+  RESULTS_FILE="${RESULTS_FILE}_w_dgft${SAMPLE_GUIDANCE}"
+  GENERATED_DIR="${GENERATED_DIR}_w_dgft${SAMPLE_GUIDANCE}"
+fi
+
 # Define any additional specific parameters here
-
-    parser.add_argument("--guidance-control", action="store_true", help="Use learnable guidance scale (w) in the model wrapper")  # DOG
-    parser.add_argument("--w-max", type=float, default=4.0, help="Maximum guidance scale") # DOG
-
 
 train_model() {
     log_and_run "Training model..." \
@@ -79,7 +87,8 @@ train_model() {
         --dropout-ratio "$DROPOUT_RATIO" \
         --late-start-iter "$LATE_START" \
         --guidance-control "$GUIDANCE_CONTROL" \
-        --w-max "$W_MAX"
+        --w-max "$W_MAX" \
+        --w-min "$W_MIN"
 }
 
 run_sampling() {
@@ -95,7 +104,9 @@ run_sampling() {
         --num-classes "$NUM_CLASSES" \
         --cfg-scale "$CFG_SCALE" \
         --num-sampling-steps "$NUM_SAMPLE_STEPS" \
-        --dropout-ratio "$DROPOUT_RATIO" 
+        --dropout-ratio "$DROPOUT_RATIO" \
+        --guidance-control "$GUIDANCE_CONTROL" \
+        --w-dgft "$SAMPLE_GUIDANCE"
 }
 
 calculate_fid() {
