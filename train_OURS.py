@@ -245,7 +245,6 @@ def our_training_losses_transport(
 
         # Apply DoG
         initial_ut = ut.clone().detach()
-        guidance_cutoff = False
         if guidance_cutoff:
             w = torch.where(t < mg_high, w_dog - 1, 0.0).view(-1, *([1] * (ut.dim() - 1)))
             ut = ut + w * (ema_output.detach() - pretrained_output.detach())

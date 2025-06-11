@@ -18,15 +18,16 @@ declare -a TASKS=(
 "food-101_processed"
 "artbench-10_processed"
 "caltech-101_processed"
-"cub-200-2011_processed"
 "ffhq256"
 )
+
+# "cub-200-2011_processed"
 
 # ========== Define per-task (latestart, mghigh, experiment_prename) triples ==========
 declare -A PAIR_MAP
 
 # DINO:
-PAIR_MAP["stanford-cars_processed"]="0,1" # 8000
+PAIR_MAP["stanford-cars_processed"]="8000,1" # 8000
 PAIR_MAP["caltech-101_processed"]="8000,0.7"
 PAIR_MAP["food-101_processed"]="8000,1"
 PAIR_MAP["artbench-10_processed"]="8000,0.9"

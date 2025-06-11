@@ -2,7 +2,7 @@ import os
 import pandas as pd
 
 # === Config ===
-root_dir = "/export/datasets/public/diffusion_datasets/tmp_weights/"# "/home/ens/AT74470/results/DoG"
+root_dir = "/home/ens/AT74470/results/DoG" # "/export/datasets/public/diffusion_datasets/tmp_weights/"# 
 save_dir = "./scripts_results/tables"
 metric_to_extract = "fd"  # 'fd', 'precision', 'recall', etc.
 model_prefix = "fd_inception" # fd_dinov2 fd_inception

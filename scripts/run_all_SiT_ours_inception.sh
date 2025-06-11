@@ -9,11 +9,12 @@ EXPERIMENT_PRENAME="SiT_inception_ours"
 declare -a TASKS=(
   "stanford-cars_processed"
   "food-101_processed"
-  "artbench-10_processed"
   "caltech-101_processed"
   "cub-200-2011_processed"
   "ffhq256"
 )
+
+#   "artbench-10_processed"
 
 # ========== Define per-task (latestart, mghigh, experiment_prename) triples ==========
 declare -A PAIR_MAP
