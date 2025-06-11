@@ -70,6 +70,15 @@ def our_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, 
 
         terms = {}
 
+        ema_kwargs = dict(model_kwargs)
+        # guidance control
+        if model_kwargs.get("w", None) is not None:
+            # Extract guidance weight w from model_kwargs
+            w_dog = model_kwargs["w"]
+            ema_kwargs["w"] = torch.ones_like(w)  # w = 1
+        y = model_kwargs["y"]
+        pretrained_kwargs = {"y": torch.full_like(y, 1000)}
+
         if self.loss_type == LossType.KL or self.loss_type == LossType.RESCALED_KL:
             terms["loss"] = self._vb_terms_bpd(
                 model=model,
@@ -82,15 +91,25 @@ def our_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, 
             if self.loss_type == LossType.RESCALED_KL:
                 terms["loss"] *= self.num_timesteps
         elif self.loss_type == LossType.MSE or self.loss_type == LossType.RESCALED_MSE:
+            
+            # If guidance control is enabled, we need to ensure that w = 1 when guidance is not applied.
+            if "w" in model_kwargs:
+                w = model_kwargs["w"]
+                if pretrained_model is None or ema is None or counter <= late_start_iter:
+                    model_kwargs["w"] = torch.ones_like(model_kwargs["w"])  # w = 1
+                elif guidance_cutoff:
+                    t_norm = t.float() / (self.num_timesteps - 1)  # [B]
+                    mask = (t_norm < mg_high).float().view(-1, 1)  # [B,1]
+                    w_masked = mask * w + (1 - mask) * torch.ones_like(w)
+                    model_kwargs["w"] = w_masked
+                    
             model_output = model(x_t, t, **model_kwargs)
 
             if pretrained_model is not None and ema is not None and counter > late_start_iter:
+                # guidance DoG
                 with torch.no_grad():
-                    y = model_kwargs["y"]
-                    pretrained_kwargs = {"y": torch.full_like(y, 1000)}
                     pretrained_output = pretrained_model(x_t, t, **pretrained_kwargs)
-                    ema_output = ema(x_t, t, **model_kwargs)
-
+                    ema_output = ema(x_t, t, **ema_kwargs)
 
             if self.model_var_type in [
                 ModelVarType.LEARNED,
@@ -186,6 +205,8 @@ def our_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, 
                 save_image(norm_to_01(initial_noise_decoded),         f"{save_dir}/initial_noise_decoded.png",        nrow=8)
 
                 print(f"[DEBUG] Saved DoG debugging images to {save_dir}")
+                print(f"[DEBUG] w mean: {model_kwargs['w'].mean().item():.2f}, std: {model_kwargs['w'].std().item():.2f}")
+
             counter += 1
             
             assert model_output.shape == target.shape == x_start.shape
@@ -285,6 +306,47 @@ def our_training_losses_transport(
         print(f"[DEBUG] Saved DoG debug images to {save_dir}")
 
     return terms
+
+
+##################################################################################
+#                              Guidance control                                  #
+##################################################################################
+
+class GuidedWrapper(nn.Module):
+    """
+    Universal wrapper for DiT or SiT that injects a learnable guidance scale `w`.
+    This wrapper adds w_emb only if `w` is provided.
+    """
+    def __init__(self, base_model, w_dim=1, embed_dim=1152):
+        super().__init__()
+        self.base_model = base_model
+        self.embed_dim = embed_dim
+
+        self.w_embed = nn.Sequential(
+            nn.Linear(w_dim, embed_dim),
+            nn.SiLU(),
+            nn.Linear(embed_dim, embed_dim),
+        )
+
+    def forward(self, x, t, y, w=None):
+        # Embed timestep and label
+        t_emb = self.base_model.t_embedder(t)                 # (B, D)
+        y_emb = self.base_model.y_embedder(y, self.training)  # (B, D)
+
+        # Inject guidance if available
+        if w is not None:
+            w_emb = self.w_embed(w)                           # (B, D)
+            c = t_emb + y_emb + w_emb
+        else:
+            c = t_emb + y_emb
+
+        # Run through the backbone
+        x = self.base_model.x_embedder(x) + self.base_model.pos_embed  # (B, T, D)
+        for block in self.base_model.blocks:
+            x = block(x, c)                                   # (B, T, D)
+        x = self.base_model.final_layer(x, c)                 # (B, T, patch^2 * C)
+        return self.base_model.unpatchify(x)                  # (B, out_channels, H, W)
+
 
 #################################################################################
 #                             Training Helper Functions                         #
@@ -496,12 +558,19 @@ def main(args):
     requires_grad(pretrained_model, False)
     pretrained_model.eval()
     pretrained_model = pretrained_model.to(device)
-    # pretrained_model = DDP(pretrained_model.to(device), device_ids=[rank]) # No need for DDP here since we don't need to sync gradients in eval mode!
 
     # Note that parameter initialization is done within the DiT constructor
     ema = deepcopy(model).to(device)  # Create an EMA of the model for use after training
     requires_grad(ema, False)
-    model = DDP(model.to(device), device_ids=[rank])
+    
+    # Guidance control:
+    if args.guidance_control:
+        logger.info("[DoG] Using guided model wrapper with learnable guidance scale.")
+        guided_model = GuidedDiTWrapper(model).to(device)
+        model = DDP(guided_model, device_ids=[rank])
+    else:
+        logger.info("[DoG] Using standard model without guidance control.")
+        model = DDP(model, device_ids=[rank])
 
     if args.model in SiT_models:
         print("LOADING SIT MODEL!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
@@ -590,6 +659,11 @@ def main(args):
                 # Map input images to latent space + normalize latents:
                 x = vae.encode(x).latent_dist.sample().mul_(0.18215)
             model_kwargs = dict(y=y)
+
+            if args.guidance_control:
+                # Sample w from Uniform[1.0, args.w_max]
+                w = torch.empty(x.shape[0], 1, device=device).uniform_(1.0, args.w_max)
+                model_kwargs["w"] = w
 
             #If doing profiling:
             # profiling = True
@@ -827,6 +901,8 @@ if __name__ == "__main__":
     parser.add_argument("--mg-high", type=float, default=0.75, help="Cutoff for domain guidance") # DOG
     parser.add_argument("--late-start-iter", type=int, default=0, help="Late start iteration for domain guidance") # DOG
     parser.add_argument("--dropout-ratio", type=float, default=0.1, help="Have null labels or no") # DOG
+    parser.add_argument("--guidance-control", type=float, default=0, help="Use learnable guidance scale (w) in the model wrapper")  # DOG
+    parser.add_argument("--w-max", type=float, default=3.0, help="Maximum guidance scale") # DOG
     def none_or_str(value):
         if value == 'None':
             return None

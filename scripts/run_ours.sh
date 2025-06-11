@@ -40,6 +40,9 @@ while [[ "$#" -gt 0 ]]; do
     --mghigh) MG_HIGH="$2"; shift ;;
     --wtraindog) W_TRAIN_DOG="$2"; shift ;;
     --model_name) MODEL="$2"; shift ;;
+    --guidance_control) GUIDANCE_CONTROL="$2"; shift ;;
+    --w_max) W_MAX="$2"; shift ;;
+
     *) echo "Unknown parameter passed: $1"; exit 1 ;;
   esac
   shift
@@ -51,6 +54,10 @@ resolve_server_paths
 resolve_dataset_config
 
 # Define any additional specific parameters here
+
+    parser.add_argument("--guidance-control", action="store_true", help="Use learnable guidance scale (w) in the model wrapper")  # DOG
+    parser.add_argument("--w-max", type=float, default=4.0, help="Maximum guidance scale") # DOG
+
 
 train_model() {
     log_and_run "Training model..." \
@@ -70,7 +77,9 @@ train_model() {
         --guidance-cutoff "$USE_GUIDANCE_CUTOFF" \
         --mg-high "$MG_HIGH" \
         --dropout-ratio "$DROPOUT_RATIO" \
-        --late-start-iter "$LATE_START"
+        --late-start-iter "$LATE_START" \
+        --guidance-control "$GUIDANCE_CONTROL" \
+        --w-max "$W_MAX"
 }
 
 run_sampling() {
