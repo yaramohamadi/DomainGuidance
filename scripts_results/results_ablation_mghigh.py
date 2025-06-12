@@ -3,14 +3,14 @@ import pandas as pd
 import re
 
 # === Config ===
-root_dir = "/home/ens/AT74470/results/DoG/"
+root_dir =  "/home/ymbahram/scratch/results/DoG/" # "/home/ens/AT74470/results/DoG/"
 # root_dir = "/export/datasets/public/diffusion_datasets/tmp_weights/"
 metric_to_extract = "recall"         # Options: 'fd', 'precision', 'recall', 'density', 'coverage'
 model_type = "inception"            # Options: 'dinov2' or 'inception'
 output_dir = "./tables"
 os.makedirs(output_dir, exist_ok=True)
 output_csv_path = os.path.join(
-    output_dir, f"ablation_mghigh_{metric_to_extract}_{model_type}.csv"
+    output_dir, f"ablation_best_latestart_mg{metric_to_extract}_{model_type}.csv"
 )
 
 # === Helper ===
@@ -29,7 +29,7 @@ table_data = {}
 
 for dataset_folder in sorted(os.listdir(root_dir)):
     dataset_path = os.path.join(root_dir, dataset_folder)
-    ablation_path = os.path.join(dataset_path, "ablation_mghigh")
+    ablation_path = os.path.join(dataset_path, "ablation_best_latestart_mg")
     if not os.path.isdir(ablation_path):
         continue
 

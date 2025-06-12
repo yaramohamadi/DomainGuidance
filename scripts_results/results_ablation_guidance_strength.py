@@ -2,8 +2,11 @@ import os
 import re
 import pandas as pd
 
+
+
+ # artbench-10_processed
 # Define the base path
-base_path = "/home/ymbahram/scratch/results/DoG/artbench-10_processed/ablation_guidance_strengths"
+base_path = "/home/ymbahram/scratch/results/DoG/caltech-101_processed/ablation_guidance_strengths"
 
 # Initialize a dictionary to hold results
 results = {
@@ -31,7 +34,7 @@ for root, dirs, files in os.walk(base_path):
             relative_path = os.path.relpath(full_path, base_path)
             
             # Identify the method and guidance strength
-            if "dogfinetune_LATE_START_ITER12000_MG" in relative_path:
+            if "dogfinetune_LATE_START_ITER6000_MG" in relative_path:
                 match = re.search(r"MG([\d.]+)_W_TRAIN_DOG([\d.]+)", relative_path)
                 if match:
                     method = "DGF"

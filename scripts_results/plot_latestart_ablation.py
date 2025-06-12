@@ -5,14 +5,6 @@ from scipy.ndimage import gaussian_filter1d
 import numpy as np
 
 
-plt.rcParams.update({
-    'font.size': 13,             # base font size
-    'axes.titlesize': 15,        # title font size for each subplot
-    'axes.labelsize': 13,        # x/y axis label font size
-    'xtick.labelsize': 12,       # x tick label font size
-    'ytick.labelsize': 12,       # y tick label font size
-    'legend.fontsize': 11,       # legend font size
-})
 
 
 # === Data ===
@@ -20,7 +12,7 @@ plt.rcParams.update({
 # FID
 fid_data = {
     "Iteration": [0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 10000, 12000, 14000, 16000, 18000, 20000, 22000],
-    "Artbench-1": [22.08, 21.22, 19.90, 19.26, 18.69, 18.15, 17.33, 17.34, 17.31, 16.86, 16.32, 16.79, 17.18, 17.26, 18.66, 20.07],
+    "Artbench-10": [22.08, 21.22, 19.90, 19.26, 18.69, 18.15, 17.33, 17.34, 17.31, 16.86, 16.32, 16.79, 17.18, 17.26, 18.66, 20.07],
     "Caltech-101": [22.56, 22.33, 22.16, 21.92, 21.85, 21.81, 21.68, 21.68, 21.73, 21.76, 21.80, 21.82, 21.86, 22.52, 23.32, 25.24],
     "Cub-200-2011": [3.85, 3.86, 3.82, 3.82, 3.77, 3.80, 3.72, 3.69, 3.72, 3.69, 3.65, 3.75, 4.14, 4.34, 5.33, 6.98],
     "Ffhq256": [12.72, 12.16, 12.16, 12.16, 11.29, 11.29, 10.81, 10.81, 10.49, 10.73, 10.67, 10.52, 10.90, 11.44, 11.54, 13.64],
@@ -58,7 +50,7 @@ fig, axs = plt.subplots(1, 3, figsize=(14, 4), sharex=True)
 xticks = [0, 5000, 10000, 15000, 20000]
 xtick_labels = ['0', '5', '10', '15', '20']
 
-highlight_start = 8000
+highlight_start = 6000
 highlight_end = 12000
 
 # Plotting helper function
@@ -77,16 +69,17 @@ def plot_panel(ax, df, title, ylabel=None, smooth=False):
             smoothed = gaussian_filter1d(y, sigma=1)
             ax.plot(x, smoothed, label=col)
     ax.axvspan(highlight_start, highlight_end, color='gray', alpha=0.2)
-    ax.set_title(title)
+    
+    # ax.set_title(title)
     ax.set_xticks(xticks)
     ax.grid(True, linestyle='-', alpha=0.5)
     ax.set_xticklabels(xtick_labels)
     if ylabel:
         ax.set_ylabel(ylabel)
 
-plot_panel(axs[0], fid_df, "FID (↓)", "FID", smooth=False)
-plot_panel(axs[1], precision_df, "Precision (↑)", "Precision", smooth=True)
-plot_panel(axs[2], recall_df, "Recall (↑)", "Recall", smooth=True)
+plot_panel(axs[0], fid_df, "FID (↓)", "FID (↓)", smooth=False)
+plot_panel(axs[1], precision_df, "Precision (↑)", "Precision (↑)", smooth=True)
+plot_panel(axs[2], recall_df, "Recall (↑)", "Recall (↑)", smooth=True)
 
 
 for ax in axs:
@@ -96,5 +89,5 @@ for ax in axs:
 handles, labels = axs[0].get_legend_handles_labels()
 fig.legend(handles, labels, loc='lower center', bbox_to_anchor=(0.5, -0.01), ncol=6)
 plt.tight_layout(rect=[0, 0.05, 1, 1])
-plt.savefig("latestart_ablation_results_highlighted.png", bbox_inches='tight', dpi=300)
+plt.savefig("tables/latestart_ablation_results_highlighted.png", bbox_inches='tight', dpi=300)
 plt.show()
