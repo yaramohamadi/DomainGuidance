@@ -35,6 +35,33 @@ from transport import create_transport, Sampler
 
 from diffusers.models import AutoencoderKL
 
+
+##################################################################################
+#                            DiffFit                                             #
+##################################################################################
+
+# Diffit Freezing:
+def apply_diffit_freezing(model):
+    for name, param in model.named_parameters():
+        param.requires_grad = False
+        if any(k in name for k in ["bias", "norm", "y_embed", "gamma"]):
+            param.requires_grad = True
+
+def add_gamma_to_block(block, hidden_size):
+    block.gamma1 = torch.nn.Parameter(torch.ones(hidden_size).to(block.norm1.weight.device))
+    block.gamma2 = torch.nn.Parameter(torch.ones(hidden_size).to(block.norm2.weight.device))
+
+    original_forward = block.forward
+
+    def patched_forward(x, c):
+        shift_msa, scale_msa, gate_msa, shift_mlp, scale_mlp, gate_mlp = block.adaLN_modulation(c).chunk(6, dim=1)
+        x = x + block.gamma1 * (gate_msa.unsqueeze(1) * block.attn(modulate(block.norm1(x), shift_msa, scale_msa)))
+        x = x + block.gamma2 * (gate_mlp.unsqueeze(1) * block.mlp(modulate(block.norm2(x), shift_mlp, scale_mlp)))
+        return x
+
+    block.forward = patched_forward
+    return block
+
 #################################################################################
 #                             Training Helper Functions                         #
 #################################################################################
@@ -205,6 +232,19 @@ def main(args):
     # Load pre-trained weights if provided:
     model = load_pretrained_model(model, args.pretrained_ckpt, args.image_size)
 
+    if args.difffit:
+        print("Applying Diffit Freezing...")
+        # Diffit Freezing:
+        for i, block in enumerate(model.blocks if not isinstance(model, DDP) else model.module.blocks):
+            if i < 14:
+                add_gamma_to_block(block, hidden_size=1152)  # Pass 1152 for DiT-XL/2
+        apply_diffit_freezing(model)
+        if rank == 0:
+            print("Trainable Parameters for DiffFit:")
+            for name, param in model.named_parameters():
+                if param.requires_grad:
+                    print("  ", name)
+
     # Note that parameter initialization is done within the DiT constructor
     ema = deepcopy(model).to(device)  # Create an EMA of the model for use after training
     requires_grad(ema, False)
@@ -230,7 +270,12 @@ def main(args):
         vae = AutoencoderKL.from_pretrained(vae_path).to(device)
 
     # Setup optimizer (we used default Adam betas=(0.9, 0.999) and a constant learning rate of 1e-4 in our paper):
-    opt = torch.optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0)
+    # diffFit uses a higher learning rate:
+    if args.difffit:
+        print("Using DiffFit with AdamW optimizer and learning rate 1e-3")
+        opt = torch.optim.AdamW(filter(lambda p: p.requires_grad, model.parameters()), lr=1e-3, weight_decay=0) # DiffFit (learning rate is x10)
+    else:
+        opt = torch.optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0)
 
     # Setup data:
     transform = transforms.Compose([
@@ -407,6 +452,9 @@ if __name__ == "__main__":
     parser.add_argument("--pretrained-ckpt", type=str, default=None,
                         help="Optional path to a DiT checkpoint (default: auto-download a pre-trained DiT-XL/2 model).")
     parser.add_argument("--dropout-ratio", type=float, default=0.1, help="Have null labels or no") # DOG    
+
+    parser.add_argument("--difffit", type=float, default=0.0,
+                        help="If > 0, applies DiffFit freezing to the model (default: 0.0, no freezing).")
 
     def none_or_str(value):
         if value == 'None':

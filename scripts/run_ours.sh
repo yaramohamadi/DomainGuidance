@@ -24,6 +24,7 @@ LATE_START=0
 
 W_TRAIN_DOG=1.5
 DROPOUT_RATIO=0 # TODO Change this back to 0   
+DIFFFIT=0
 
 # Load all logic
 source scripts/config.sh
@@ -40,6 +41,7 @@ while [[ "$#" -gt 0 ]]; do
     --mghigh) MG_HIGH="$2"; shift ;;
     --wtraindog) W_TRAIN_DOG="$2"; shift ;;
     --model_name) MODEL="$2"; shift ;;
+    --difffit) DIFFFIT="$2"; shift ;;
     *) echo "Unknown parameter passed: $1"; exit 1 ;;
   esac
   shift
@@ -70,7 +72,8 @@ train_model() {
         --guidance-cutoff "$USE_GUIDANCE_CUTOFF" \
         --mg-high "$MG_HIGH" \
         --dropout-ratio "$DROPOUT_RATIO" \
-        --late-start-iter "$LATE_START"
+        --late-start-iter "$LATE_START" \
+        --difffit "$DIFFFIT"
 }
 
 run_sampling() {
