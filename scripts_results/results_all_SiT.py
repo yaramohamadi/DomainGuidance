@@ -5,18 +5,19 @@ import pandas as pd
 root_dir = "/home/ens/AT74470/results/DoG"
 save_dir = "./scripts_results/tables"
 metric_to_extract = "fd"  # 'fd', 'precision', 'recall', etc.
-model_prefix = "fd_dinov2" # fd_dinov2
+model_prefix = "fd_inception" # fd_dinov2 fd_inception
 
 os.makedirs(save_dir, exist_ok=True)
 
 # === Internal-to-clean mapping ===
 method_name_map = {
-    "baseline_mgfinetune": "MG",
+    "baseline_mgfinetune_wtraincfg1.5": "MG",
     "dogfinetune_nodropout": "Ours",
-    "baselines_finetune/results_cg1": "Finetune",
-    "baselines_finetune/results_cg1_5": "CFG",
-    "baselines_finetune/results_dog1_5": "DoG",
+    "baselines_finetune_W_CFG1.5/results_cg1": "Finetune",
+    "baselines_finetune_W_CFG1.5/results_cg1_5": "CFG",
+    "baselines_finetune_W_CFG1.5/results_dog1_5": "DoG",
 }
+
 
 # === Pretty display names for LaTeX ===
 custom_method_names = {
@@ -64,11 +65,11 @@ for dataset_name in sorted(os.listdir(root_dir)):
     dataset_names_cleaned.append(clean_dataset_name)
 
     raw_method_paths = {
-        "baselines_finetune/results_cg1": os.path.join(dataset_path, "All_0", "baselines_finetune", "results_cg1"),
-        "baselines_finetune/results_cg1_5": os.path.join(dataset_path, "All_0", "baselines_finetune", "results_cg1_5"),
-        "baselines_finetune/results_dog1_5": os.path.join(dataset_path, "All_0", "baselines_finetune", "results_dog1_5"),
-        "baseline_mgfinetune": os.path.join(dataset_path, "All_0", "baseline_mgfinetune", "results"),
-        "dogfinetune_nodropout": os.path.join(dataset_path, "All_0", "dogfinetune_nodropout", "results"),
+        "baselines_finetune_W_CFG1.5/results_cg1": os.path.join(dataset_path, "All_SiT", "baselines_finetune_W_CFG1.5", "results_cg1"),
+        "baselines_finetune_W_CFG1.5/results_cg1_5": os.path.join(dataset_path, "All_SiT", "baselines_finetune_W_CFG1.5", "results_cg1_5"),
+        "baselines_finetune_W_CFG1.5/results_dog1_5": os.path.join(dataset_path, "All_SiT", "baselines_finetune_W_CFG1.5", "results_dog1_5"),
+        "baseline_mgfinetune_wtraincfg1.5": os.path.join(dataset_path, "All_SiT", "baseline_mgfinetune_wtraincfg1.5", "results"),
+        "dogfinetune_nodropout": os.path.join(dataset_path, "All_SiT", "dogfinetune_nodropout", "results"),
     }
 
     for raw_method, path in raw_method_paths.items():
@@ -97,6 +98,8 @@ df[avg_col_name] = df.mean(axis=1, skipna=True)
 csv_path = os.path.join(save_dir, f"{model_prefix}_{metric_to_extract}_table.csv")
 df.to_csv(csv_path)
 print(f"✅ Saved table with average to {csv_path}")
+
+print(df)
 
 # === Format for LaTeX with highlighting ===
 def highlight_best(df, higher_is_better=True):

@@ -136,7 +136,7 @@ def mg_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, w
                 else:
                     target = target + (w_cg - 1) * (ema_cond_output.detach() - ema_uncond_output.detach())
 
-            if counter % 1000 == 0:
+            if counter % 100 == 0:
                 # Debugging functions
                 def norm_to_01(x):
                     """Normalize to [0,1] for visualization."""
@@ -210,7 +210,6 @@ def mg_training_losses_transport(
     t, x0, x1 = self.sample(x1)
     t, xt, ut = self.path_sampler.plan(t, x0, x1)
     model_output = model(xt, t, **model_kwargs)
-
     B, *_, C = xt.shape
     assert model_output.size() == (B, *xt.size()[1:-1], C)
 
@@ -222,9 +221,8 @@ def mg_training_losses_transport(
         ema_uncond_output = ema(xt, t, **uncond_kwargs)
 
         if guidance_cutoff:
-            t_norm = t.float() / (self.num_steps - 1)
             mg_high = 0.75
-            w = torch.where(t_norm < mg_high, w_cg - 1, 0.0).view(-1, *([1] * (model_output.dim() - 1)))
+            w = torch.where(t < mg_high, w_cg - 1, 0.0).view(-1, *([1] * (model_output.dim() - 1)))
             ut = ut + w * (ema_cond_output.detach() - ema_uncond_output.detach())
         else:
             ut = ut + (w_cg - 1) * (ema_cond_output.detach() - ema_uncond_output.detach())
@@ -233,7 +231,7 @@ def mg_training_losses_transport(
     terms["loss"] = mean_flat(((model_output - ut) ** 2))
 
     # === Debugging and Visualization ===
-    if ema is not None and counter % 1000 == 0:
+    if ema is not None and counter % 100 == 0:
         def norm_to_01(x):
             return (x.clamp(-1, 1) + 1) / 2
 
@@ -245,7 +243,7 @@ def mg_training_losses_transport(
         x0_diff = (x0_model - x0_uncond).abs()
 
         # Decode and save
-        save_dir = f"CG_debug/{counter:06d}"
+        save_dir = f"MG_debug/{counter:06d}"
         os.makedirs(save_dir, exist_ok=True)
 
         with torch.no_grad():
@@ -574,10 +572,10 @@ def main(args):
 # # # # 
             #         prof.step()
 # # 
-            print(prof.key_averages().table(sort_by="self_cuda_time_total", row_limit=30))
-            print("Total FLOPs:", sum([e.flops for e in prof.key_averages() if e.flops is not None]))
-            dist.barrier()
-            exit()
+            #print(prof.key_averages().table(sort_by="self_cuda_time_total", row_limit=30))
+            #print("Total FLOPs:", sum([e.flops for e in prof.key_averages() if e.flops is not None]))
+            #dist.barrier()
+            #exit()
 
             if args.model in SiT_models:
                 loss_dict = transport.training_losses(

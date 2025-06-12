@@ -2,20 +2,26 @@ import os
 import pandas as pd
 
 # === Config ===
-root_dir = "/home/ens/AT74470/results/DoG"
+root_dir = "/home/ens/AT74470/results/DoG" # "/export/datasets/public/diffusion_datasets/tmp_weights/"# "/home/ens/AT74470/results/DoG"
 save_dir = "./scripts_results/tables"
 metric_to_extract = "fd"  # 'fd', 'precision', 'recall', etc.
-model_prefix = "fd_dinov2" # fd_dinov2
+model_prefix = "fd_dinov2" # fd_dinov2 fd_inception
 
 os.makedirs(save_dir, exist_ok=True)
 
 # === Internal-to-clean mapping ===
 method_name_map = {
-    "baseline_mgfinetune": "MG",
     "dogfinetune_nodropout": "Ours",
-    "baselines_finetune/results_cg1": "Finetune",
-    "baselines_finetune/results_cg1_5": "CFG",
-    "baselines_finetune/results_dog1_5": "DoG",
+}
+
+# === Dataset-specific parameters for Inception ===
+PAIR_MAP = {
+    "stanford-cars_processed": "8000,1",
+    "caltech-101_processed": "8000,0.7",
+    "food-101_processed": "8000,1",
+    "artbench-10_processed": "8000,0.9",
+    "cub-200-2011_processed": "6000,1",
+    "ffhq256": "10000,0.6"
 }
 
 # === Pretty display names for LaTeX ===
@@ -63,12 +69,21 @@ for dataset_name in sorted(os.listdir(root_dir)):
     clean_dataset_name = dataset_name.replace("_processed", "").replace("_", "-").capitalize()
     dataset_names_cleaned.append(clean_dataset_name)
 
+    # Get params for this dataset
+    params_str = PAIR_MAP.get(dataset_name.lower())
+    if not params_str:
+        print(f"⚠️ Skipping {dataset_name}: No ITER/MG parameters found in PAIR_MAP.")
+        continue
+
+    iter_val, mg_val = params_str.split(",")
+
     raw_method_paths = {
-        "baselines_finetune/results_cg1": os.path.join(dataset_path, "All_0", "baselines_finetune", "results_cg1"),
-        "baselines_finetune/results_cg1_5": os.path.join(dataset_path, "All_0", "baselines_finetune", "results_cg1_5"),
-        "baselines_finetune/results_dog1_5": os.path.join(dataset_path, "All_0", "baselines_finetune", "results_dog1_5"),
-        "baseline_mgfinetune": os.path.join(dataset_path, "All_0", "baseline_mgfinetune", "results"),
-        "dogfinetune_nodropout": os.path.join(dataset_path, "All_0", "dogfinetune_nodropout", "results"),
+        "dogfinetune_nodropout": os.path.join(
+            dataset_path,
+            "SiT_dino_ours",
+            f"dogfinetune_LATE_START_ITER{iter_val}_MG{mg_val}_W_TRAIN_DOG1.5",
+            "results"
+        ),
     }
 
     for raw_method, path in raw_method_paths.items():
@@ -97,6 +112,8 @@ df[avg_col_name] = df.mean(axis=1, skipna=True)
 csv_path = os.path.join(save_dir, f"{model_prefix}_{metric_to_extract}_table.csv")
 df.to_csv(csv_path)
 print(f"✅ Saved table with average to {csv_path}")
+
+print(df)
 
 # === Format for LaTeX with highlighting ===
 def highlight_best(df, higher_is_better=True):

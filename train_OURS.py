@@ -33,7 +33,6 @@ from models import DiT_models, SiT_models
 from diffusion import create_diffusion
 from diffusion import create_diffusion
 from diffusion.gaussian_diffusion import LossType, ModelMeanType, ModelVarType, mean_flat
-from torchvision.utils import save_image
 from transport import create_transport, Sampler, ModelType, path
 
 from diffusers.models import AutoencoderKL
@@ -141,7 +140,7 @@ def our_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, 
                 else:
                     target = target + (w_dog - 1) * (ema_output.detach() - pretrained_output.detach())
 
-            if counter % 1000 == 0 and pretrained_model is not None and ema is not None and counter > late_start_iter and dist.get_rank() == 0:
+            if pretrained_model is not None and ema is not None and dist.get_rank() == 0 and counter > late_start_iter and counter % 100 == 0:
                 # Debugging functions
                 def norm_to_01(x):
                     """Normalize to [0,1] for visualization."""
@@ -200,6 +199,17 @@ def our_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, 
 
         return terms
 
+# This is borrowed from path.py in the transport package.
+def expand_t_like_x(t, x):
+    """Function to reshape time t to broadcastable dimension of x
+    Args:
+      t: [batch_dim,], time vector
+      x: [batch_dim,...], data point
+    """
+    dims = [1] * (len(x.size()) - 1)
+    t = t.view(t.size(0), *dims)
+    return t
+
 def our_training_losses_transport(
     self,
     model,
@@ -223,7 +233,6 @@ def our_training_losses_transport(
     t, x0, x1 = self.sample(x1)
     t, xt, ut = self.path_sampler.plan(t, x0, x1)
     model_output = model(xt, t, **model_kwargs)
-
     B, *_, C = xt.shape
     assert model_output.size() == (B, *xt.size()[1:-1], C)
 
@@ -237,8 +246,7 @@ def our_training_losses_transport(
         # Apply DoG
         initial_ut = ut.clone().detach()
         if guidance_cutoff:
-            t_norm = t.float() / (self.num_steps - 1)
-            w = torch.where(t_norm < mg_high, w_dog - 1, 0.0).view(-1, *([1] * (ut.dim() - 1)))
+            w = torch.where(t < mg_high, w_dog - 1, 0.0).view(-1, *([1] * (ut.dim() - 1)))
             ut = ut + w * (ema_output.detach() - pretrained_output.detach())
         else:
             ut = ut + (w_dog - 1) * (ema_output.detach() - pretrained_output.detach())
@@ -246,12 +254,11 @@ def our_training_losses_transport(
     terms = {"pred": model_output}
     terms["loss"] = mean_flat((model_output - ut) ** 2)
 
-    if pretrained_model is not None and ema is not None and counter > late_start_iter and dist.get_rank() == 0 and counter % 1000 == 0:
+    if pretrained_model is not None and ema is not None and counter > late_start_iter and dist.get_rank() == 0 and counter % 100 == 0:
         def norm_to_01(x): return (x.clamp(-1, 1) + 1) / 2
 
-        alpha_t, _ = self.path_sampler.compute_alpha_t(self.path_sampler.expand_t_like_x(t, xt))
-        sigma_t, _ = self.path_sampler.compute_sigma_t(self.path_sampler.expand_t_like_x(t, xt))
-
+        alpha_t, _ = self.path_sampler.compute_alpha_t(expand_t_like_x(t, xt))
+        sigma_t, _ = self.path_sampler.compute_sigma_t(expand_t_like_x(t, xt))
         x0_model = xt - sigma_t * model_output
         x0_pretrained = xt - sigma_t * pretrained_output
         x0_diff = (x0_model - x0_pretrained).abs()
@@ -278,9 +285,35 @@ def our_training_losses_transport(
 
     return terms
 
-#################################################################################
-#                             Training Helper Functions                         #
-#################################################################################
+##################################################################################
+#                            DiffFit                                             #
+##################################################################################
+
+# Diffit Freezing:
+def apply_diffit_freezing(model):
+    for name, param in model.named_parameters():
+        param.requires_grad = False
+        if any(k in name for k in ["bias", "norm", "y_embed", "gamma"]):
+            param.requires_grad = True
+
+def add_gamma_to_block(block, hidden_size):
+    block.gamma1 = torch.nn.Parameter(torch.ones(hidden_size).to(block.norm1.weight.device))
+    block.gamma2 = torch.nn.Parameter(torch.ones(hidden_size).to(block.norm2.weight.device))
+
+    original_forward = block.forward
+
+    def patched_forward(x, c):
+        shift_msa, scale_msa, gate_msa, shift_mlp, scale_mlp, gate_mlp = block.adaLN_modulation(c).chunk(6, dim=1)
+        x = x + block.gamma1 * (gate_msa.unsqueeze(1) * block.attn(modulate(block.norm1(x), shift_msa, scale_msa)))
+        x = x + block.gamma2 * (gate_mlp.unsqueeze(1) * block.mlp(modulate(block.norm2(x), shift_mlp, scale_mlp)))
+        return x
+
+    block.forward = patched_forward
+    return block
+
+##################################################################################
+#                             Training Helper Functions                          #
+##################################################################################
 
 def load_pretrained_model(model, pretrained_ckpt_path, image_size, tmp_dir="tmp"):
     """
@@ -345,7 +378,10 @@ def load_exact_pretrained_model(model, pretrained_ckpt_path, image_size, tmp_dir
     dist.barrier()
 
     if dist.get_rank() == 0:
-        ckpt_path = pretrained_ckpt_path or f"DiT-XL-2-{image_size}x{image_size}.pt"
+        if args.model.startswith("DiT-XL/2"):
+            ckpt_path = pretrained_ckpt_path or f"DiT-XL-2-{image_size}x{image_size}.pt"
+        elif args.model.startswith("SiT-XL/2"):
+            ckpt_path = pretrained_ckpt_path or f"SiT-XL-2-{image_size}x{image_size}.pt"
         state_dict = find_model(ckpt_path)
         torch.save(state_dict, os.path.join(tmp_dir, "local_pretrained_ckpt.pt"))
     dist.barrier()
@@ -467,24 +503,38 @@ def main(args):
         input_size=latent_size,
         num_classes=args.num_classes,
         class_dropout_prob=args.dropout_ratio,  # Domain Guidance dropout ratio
-    )
+        )
+        pretrained_model = SiT_models[args.model](input_size=latent_size, num_classes=1000)
     elif args.model in DiT_models:
         model = DiT_models[args.model](
             input_size=latent_size,
             num_classes=args.num_classes,
             class_dropout_prob=args.dropout_ratio,  # Domain Guidance dropout ratio
-    )
+        )
+        pretrained_model = DiT_models[args.model](input_size=latent_size, num_classes=1000)
     # Load pre-trained weights if provided:
     model = load_pretrained_model(model, args.pretrained_ckpt, args.image_size)
 
     # DoG
     # Load a pre-trained model for domain guidance
-    pretrained_model = DiT_models[args.model](input_size=latent_size, num_classes=1000)
     pretrained_model = load_exact_pretrained_model(pretrained_model, args.pretrained_ckpt, args.image_size)  
     requires_grad(pretrained_model, False)
     pretrained_model.eval()
     pretrained_model = pretrained_model.to(device)
     # pretrained_model = DDP(pretrained_model.to(device), device_ids=[rank]) # No need for DDP here since we don't need to sync gradients in eval mode!
+
+    if args.difffit:
+        print("Applying Diffit Freezing...")
+        # Diffit Freezing:
+        for i, block in enumerate(model.blocks if not isinstance(model, DDP) else model.module.blocks):
+            if i < 14:
+                add_gamma_to_block(block, hidden_size=1152)  # Pass 1152 for DiT-XL/2
+        apply_diffit_freezing(model)
+        if rank == 0:
+            print("Trainable Parameters for DiffFit:")
+            for name, param in model.named_parameters():
+                if param.requires_grad:
+                    print("  ", name)
 
     # Note that parameter initialization is done within the DiT constructor
     ema = deepcopy(model).to(device)  # Create an EMA of the model for use after training
@@ -492,6 +542,7 @@ def main(args):
     model = DDP(model.to(device), device_ids=[rank])
 
     if args.model in SiT_models:
+        print("LOADING SIT MODEL!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         transport = create_transport(
             args.path_type,
             args.prediction,
@@ -503,7 +554,8 @@ def main(args):
         logger.info(f"SiT Parameters: {sum(p.numel() for p in model.parameters()):,}")
         transport.training_losses = MethodType(our_training_losses_transport, transport)  # MG
     elif args.model in DiT_models:
-        logger.info(f"SiT Parameters: {sum(p.numel() for p in model.parameters()):,}")
+        print("LOADING DIT MODEL!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        logger.info(f"DiT Parameters: {sum(p.numel() for p in model.parameters()):,}")
         diffusion = create_diffusion(timestep_respacing="")  # default: 1000 steps, linear noise schedule
         diffusion.training_losses = MethodType(our_training_losses, diffusion) # CG
     vae_path = f"pretrained_models/sd-vae-ft-{args.vae}"
@@ -514,7 +566,12 @@ def main(args):
     logger.info("[DoG] Patched diffusion training loss with Domain Guidance (w_DoG={})".format(args.w_dog))
 
     # Setup optimizer (we used default Adam betas=(0.9, 0.999) and a constant learning rate of 1e-4 in our paper):
-    opt = torch.optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0)
+    # diffFit uses a higher learning rate:
+    if args.difffit:
+        print("Using DiffFit with AdamW optimizer and learning rate 1e-3")
+        opt = torch.optim.AdamW(filter(lambda p: p.requires_grad, model.parameters()), lr=1e-3, weight_decay=0) # DiffFit (learning rate is x10)
+    else:
+        opt = torch.optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0)
 
     # Setup data:
     transform = transforms.Compose([
@@ -570,7 +627,6 @@ def main(args):
                 print(f"Batch y shape: {y.shape}, dtype: {y.dtype}, unique labels: {torch.unique(y)}")
                 print("=" * 20)
                 # Optionally visualize a few images
-                from torchvision.utils import save_image
                 save_image(x[:8] * 0.5 + 0.5, f"tmp/sample_batch.png", nrow=4)
 
             with torch.no_grad():
@@ -579,7 +635,7 @@ def main(args):
             model_kwargs = dict(y=y)
 
             #If doing profiling:
-            profiling = True
+            # profiling = True
             #if profiling:
             #    from torch.profiler import profile, record_function, ProfilerActivity
 # # # #
@@ -662,6 +718,38 @@ def main(args):
                     late_start_iter=args.late_start_iter,
                     counter=train_steps,
             )
+
+                # sample_fn = transport_sampler.sample_ode(
+                #             sampling_method="dopri5",
+                #             num_steps=50,
+                #             atol=1e-6,
+                #             rtol=1e-3,
+                #             reverse=False,
+                #         )
+# 
+                # if dist.get_rank() == 0:
+                #     # 1) noise in latent space
+                #     z = torch.randn_like(x)            # [B,C,H,W] same shape as your batch
+                #     y = torch.randint(0, 1000, (z.shape[0],), device=device)
+# 
+                #     # 2) run your ODE sampler through the pretrained SiT
+                #     with torch.no_grad():
+                #         xs = sample_fn(z, pretrained_model, y=y)
+                #     z0 = xs[-1]
+# 
+                #     # 3) decode via VAE and normalize
+                #     with torch.no_grad():
+                #         img = vae.decode(z0 / 0.18215).sample
+                #         img = (img.clamp(-1,1) + 1) * 0.5
+# 
+                #     # 4) save a small grid
+                #     os.makedirs("debug_samples", exist_ok=True)
+                #     save_image(img, f"debug_samples/step_{train_steps:07d}.png", nrow=4)
+                #     print(f"✅ [SiT] dumped samples to debug_samples/step_{train_steps:07d}.png")
+ 
+             # … rest of your loop …
+
+
             elif args.model in DiT_models:
                 t = torch.randint(0, diffusion.num_timesteps, (x.shape[0],), device=device)
                 # MG
@@ -680,6 +768,32 @@ def main(args):
                     late_start_iter=args.late_start_iter,
                     counter=train_steps,
                 )   
+
+                # # assume x has shape [B, C, H, W]
+                # B, C, H, W = x.shape
+                # z = torch.randn(B, C, H, W, device=device)
+                # y = torch.randint(0, args.num_classes, (B,), device=device)
+# 
+                # model_kwargs = dict(y=y)
+                # model_fn = diffusion._wrap_model(pretrained_model)
+# 
+                # samples = diffusion.p_sample_loop(
+                #     model_fn,
+                #     z.shape,
+                #     z,
+                #     clip_denoised=False,
+                #     model_kwargs=model_kwargs,
+                #     progress=False,
+                #     device=device
+                # )
+# 
+                # with torch.no_grad():
+                #     dec = vae.decode(samples / 0.18215).sample
+                #     img = (dec.clamp(-1,1) + 1) * 0.5  # [0,1] range
+                # os.makedirs("debug_samples", exist_ok=True)
+                # save_image(img, f"debug_samples/dit_step_{train_steps:07d}.png", nrow=4)
+                # print(f"✅ [DiT] dumped samples to debug_samples/dit_step_{train_steps:07d}.png")
+
 
             loss = loss_dict["loss"].mean()
             opt.zero_grad()
@@ -756,6 +870,9 @@ if __name__ == "__main__":
     parser.add_argument("--mg-high", type=float, default=0.75, help="Cutoff for domain guidance") # DOG
     parser.add_argument("--late-start-iter", type=int, default=0, help="Late start iteration for domain guidance") # DOG
     parser.add_argument("--dropout-ratio", type=float, default=0.1, help="Have null labels or no") # DOG
+    parser.add_argument("--difffit", type=float, default=0.0,
+                        help="If > 0, applies DiffFit freezing to the model (default: 0.0, no freezing).")
+    
     def none_or_str(value):
         if value == 'None':
             return None

@@ -150,6 +150,11 @@ prepare_dataset
 
 if [[ "$DATASET" == "ffhq256" ]]; then
     DROPOUT_RATIO=0
+
+    # TMP
+    sample_DoG1_5
+    fid_DoG1_5
+    exit 0
 fi
 
 train_model
@@ -161,8 +166,12 @@ for ((i=0; i<=TOTAL_STEPS; i+=CKPT_EVERY)); do
     printf -v PADDED_CKPT "%07d.pt" "$i"
 
     printf -v PADDED_STEP "%07d_cg1" "$i"
-    # sample_CG1
-    # fid_CG1
+    sample_CG1
+    fid_CG1
+
+    printf -v PADDED_STEP "%07d_dog1_5" "$i"
+    sample_DoG1_5
+    fid_DoG1_5
 
     if [[ "$DATASET" == "ffhq256" ]]; then
         continue
@@ -172,9 +181,7 @@ for ((i=0; i<=TOTAL_STEPS; i+=CKPT_EVERY)); do
     sample_CG1_5
     fid_CG1_5
 
-    printf -v PADDED_STEP "%07d_dog1_5" "$i"
-    sample_DoG1_5
-    fid_DoG1_5
+    
 done
 
 cleanup_dataset

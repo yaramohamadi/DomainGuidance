@@ -41,9 +41,13 @@ for dataset_folder in sorted(os.listdir(root_dir)):
             continue
 
         # Extract MG value (e.g., from MG0.6)
-        match = re.search(r"MG([0-9.]+)", mg_folder, re.IGNORECASE)
+        match = re.search(r"MG([0-9.]+)(?:_|$)", mg_folder, re.IGNORECASE)
+
+        
         if not match:
             continue
+
+        print(mg_folder)
         mg_value = float(match.group(1))
 
         # Go to results folder and find metric file
