@@ -15,12 +15,13 @@ EXPERIMENT_PRENAME="SiT_dino_ours"
 # "stanford-cars_processed"
 
 declare -a TASKS=(
-"food-101_processed"
-"artbench-10_processed"
-"caltech-101_processed"
-"ffhq256"
+"stanford-cars_processed"
 )
 
+# "food-101_processed"
+# "artbench-10_processed"
+# "caltech-101_processed"
+# "ffhq256"
 # "cub-200-2011_processed"
 
 # ========== Define per-task (latestart, mghigh, experiment_prename) triples ==========
