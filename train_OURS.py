@@ -82,6 +82,9 @@ def our_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, 
         y = model_kwargs["y"]
         pretrained_kwargs = {"y": torch.full_like(y, 1000)}
 
+        guidance_cutoff = 0
+        late_start_iter = 0
+
 
         if self.loss_type == LossType.KL or self.loss_type == LossType.RESCALED_KL:
             terms["loss"] = self._vb_terms_bpd(
@@ -155,17 +158,22 @@ def our_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, 
 
                 # Guidance Cut Off
                 initial_target = target.clone().detach()
-                if guidance_cutoff:
-                    t_norm = t.float() / (self.num_timesteps - 1)
-                    mg_high = mg_high
-                    mask = (t_norm < mg_high).float().view(-1, 1)  # [16, 1]
-                    w = w - 1
-                    w = mask * w  # now w remains [16, 1]
-                    target = target + w.view(-1, 1, 1, 1) * (ema_output.detach() - pretrained_output.detach())
-                else:
-                    target = target + (w - 1) * (ema_output.detach() - pretrained_output.detach())
+                # if guidance_cutoff:
+                #     t_norm = t.float() / (self.num_timesteps - 1)
+                #     mg_high = mg_high
+                #     mask = (t_norm < mg_high).float().view(-1, 1)  # [16, 1]
+                #     w = w - 1
+                #     w = mask * w  # now w remains [16, 1]
+                #     target = target + w.view(-1, 1, 1, 1) * (ema_output.detach() - pretrained_output.detach())
+                # else:
+                #     target = target + (w - 1) * (ema_output.detach() - pretrained_output.detach())
 
             if pretrained_model is not None and ema is not None and dist.get_rank() == 0 and counter > late_start_iter and counter % 100 == 0:
+
+                print(f"[DEBUG]: w value: {w}")
+                print(f"[DEBUG]: Model w: {model_kwargs["w"]}")
+                print(f"[DEBUG]: ema w: {ema_kwargs["w"]}")
+
                 # Debugging functions
                 def norm_to_01(x):
                     """Normalize to [0,1] for visualization."""
@@ -281,7 +289,7 @@ def our_training_losses_transport(
     terms = {"pred": model_output}
     terms["loss"] = mean_flat((model_output - ut) ** 2)
 
-    if pretrained_model is not None and ema is not None and counter > late_start_iter and dist.get_rank() == 0 and counter % 100 == 0:
+    if pretrained_model is not None and ema is not None and counter > late_start_iter and dist.get_rank() == 0 and counter % 1000 == 0:
         def norm_to_01(x): return (x.clamp(-1, 1) + 1) / 2
 
         alpha_t, _ = self.path_sampler.compute_alpha_t(expand_t_like_x(t, xt))

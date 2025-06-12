@@ -193,7 +193,6 @@ def main(args):
 
         # Setup classifier-free guidance:
         if using_cfg:
-            print("Using classifier-free guidance (CFG)")
             z = torch.cat([z, z], 0)
             y_null = torch.tensor([args.num_classes] * n, device=device)
             y = torch.cat([y, y_null], 0)
@@ -201,7 +200,6 @@ def main(args):
             model_fn = model.forward_with_cfg
         elif args.guidance_control > 0:
             # Use learnable guidance scale (w)
-            print("Using learnable guidance scale (w) in the model wrapper")
             w = torch.full((n, 1), fill_value=args.w_dgft, device=device)
             model_kwargs = dict(y=y, w=w)
             model_fn = model.forward
