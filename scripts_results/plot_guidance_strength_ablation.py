@@ -24,13 +24,13 @@ guidance = np.array([
 ])
 
 art_dog = np.array([
-    23.36, 20.64271112, 19.10490305, 18.42764452, 17.68276682, 17.2610323,
+    23.36, 20.64271112, 19.10490305, 18.42764452, 17.68276682, 17.30,
     17.45292, 17.6912202, 18.71477625, 18.4938064, 19.39596725, 20.11708508,
     20.62347763, 21.73222594, 22.83895795, 24.2526, 25.46244773, 26.5477468,
     27.70409488, 28.74102158, 30.85407232
 ])
 art_dgf = np.array([
-    23.36, 20.70983197, 18.74597628, 18.01384357, 16.84800355, 16.73247574,
+    23.36, 20.70983197, 18.74597628, 18.01384357, 16.84800355, 16.32,
     16.83501738, 17.81226611, 18.55197749, 20.17300358, 21.77990726,
     24.65308996, 26.23709141, 30.22777633, 31.22678358, 34.8767639,
     40.58203858, 40.41980935, 51.08742026, 51.36849519, 59.06135442
@@ -49,6 +49,20 @@ food_dgf = np.array([
     23.87244796, 26.11097034, 28.88691718, 31.4009277, 35.24407647
 ])
 
+caltech_dog = np.array([
+    30.02, 26.135, 24.37478351, 23.52519689, 23.36513665, 23.75991317,
+    24.22094463, 25.25014003, 25.88625879, 27.0135, 27.72592181,
+    28.58161819, 29.18514136, 30.10563803, 30.84467286, 31.37813472,
+    32.17813015, 33.02309484, 33.67905435, 34.06638606, 34.3
+])
+
+caltech_dgf = np.array([
+    30.02, 26.1365, 24.2626, 23.74040761, 22.38095029, 21.85126063,
+    21.785, 21.77084536, 22.765, 22.98, 23.13429764,
+    23.362, 23.47134367, 24.12794623, 25.26, 26.07326019,
+    27.53940272, 28.84827149, 31.1977364, 33.58202637, 36.75655609
+])
+
 # Define smoothing
 def smooth(x, y, num=1000):
     spline = make_interp_spline(x, y, k=3)
@@ -61,6 +75,8 @@ x_art_dog, y_art_dog = smooth(guidance, art_dog)
 x_art_dgf, y_art_dgf = smooth(guidance, art_dgf)
 x_food_dog, y_food_dog = smooth(guidance, food_dog)
 x_food_dgf, y_food_dgf = smooth(guidance, food_dgf)
+x_caltech_dog, y_caltech_dog = smooth(guidance, caltech_dog)
+x_caltech_dgf, y_caltech_dgf = smooth(guidance, caltech_dgf)
 
 # Setup plot
 plt.figure(figsize=(7, 4.5))
@@ -69,18 +85,16 @@ plt.figure(figsize=(7, 4.5))
 art_color = "#1f77b4"  # blue
 #food_color = "#2ca02c"  # green
 food_color = "#d62728"  # rich red
+caltech_color = "#9467bd"  # purple
 
-# Plot lines
-plt.plot(x_art_dog, y_art_dog, label="Artbench-10 (DoG)", color=art_color, alpha=0.4, linewidth=2)
-plt.plot(x_art_dgf, y_art_dgf, label=r"Artbench-10 (DGF)", color=art_color, alpha=1.0, linewidth=2)
-plt.plot(x_food_dog, y_food_dog, label="Food-101 (DoG)", color=food_color, alpha=0.4, linewidth=2)
-plt.plot(x_food_dgf, y_food_dgf, label=r"Food-101 (DGF)", color=food_color, alpha=1.0, linewidth=2)
 
 # Minima
 min_art_dog = np.argmin(art_dog)
 min_art_dgf = np.argmin(art_dgf)
 min_food_dog = np.argmin(food_dog)
 min_food_dgf = np.argmin(food_dgf)
+min_caltech_dog = np.argmin(caltech_dog)
+min_caltech_dgf = np.argmin(caltech_dgf)
 
 def annotate_min(x, y, label, color, offset=0, alpha=1, bold=False):
     plt.plot(x, y, "o", color=color, alpha=alpha)
@@ -93,31 +107,35 @@ def annotate_min(x, y, label, color, offset=0, alpha=1, bold=False):
     )
 
 
-annotate_min(guidance[min_art_dog], art_dog[min_art_dog], "Artbench-10 (DoG)", art_color, offset=3.5, alpha=0.6)
-annotate_min(guidance[min_art_dgf], art_dgf[min_art_dgf], "Artbench-10 (DGF)", art_color, offset=1, bold=True)
-annotate_min(guidance[min_food_dog], food_dog[min_food_dog], "Food-101 (DoG)", food_color, offset=3.5, alpha=0.6)
-annotate_min(guidance[min_food_dgf], food_dgf[min_food_dgf], "Food-101 (DGF)", food_color, offset=1, bold=True)
+annotate_min(guidance[min_art_dog], art_dog[min_art_dog], "Artbench (DoG)", art_color, offset=2, alpha=0.6)
+annotate_min(guidance[min_art_dgf], art_dgf[min_art_dgf], "Artbench (DGF)", art_color, offset=1, bold=True)
+annotate_min(guidance[min_food_dog], food_dog[min_food_dog], "Food (DoG)", food_color, offset=3, alpha=0.6)
+annotate_min(guidance[min_food_dgf], food_dgf[min_food_dgf], "Food (DGF)", food_color, offset=1, bold=True)
+annotate_min(guidance[min_caltech_dog], caltech_dog[min_caltech_dog], "Caltech (DoG)", caltech_color, offset=1, alpha=0.6)
+annotate_min(guidance[min_caltech_dgf], caltech_dgf[min_caltech_dgf], "Caltech (DGF)", caltech_color, offset=1, bold=True)
+
 
 # Labels and legend
 plt.xlabel(r"$\omega$")
 plt.ylabel("FID (↓)")
 plt.ylim([8, 35])
 
-line_art_dog, = plt.plot(x_art_dog, y_art_dog, label="ArtBench DoG", color=art_color, alpha=0.4, linewidth=2)
+line_art_dog, = plt.plot(x_art_dog, y_art_dog, label="ArtBench DoG", color=art_color, alpha=0.4, linewidth=2, linestyle="--")
 line_art_dgf, = plt.plot(x_art_dgf, y_art_dgf, label="ArtBench DGF (Ours)", color=art_color, alpha=1.0, linewidth=2)
-line_food_dog, = plt.plot(x_food_dog, y_food_dog, label="Food DoG", color=food_color, alpha=0.4, linewidth=2)
+line_food_dog, = plt.plot(x_food_dog, y_food_dog, label="Food DoG", color=food_color, alpha=0.4, linewidth=2, linestyle="--")
 line_food_dgf, = plt.plot(x_food_dgf, y_food_dgf, label="Food DGF (Ours)", color=food_color, alpha=1.0, linewidth=2)
-
+line_caltech_dog, = plt.plot(x_caltech_dog, y_caltech_dog, label="Caltech DoG", color=caltech_color, alpha=0.4, linewidth=2, linestyle="--")
+line_caltech_dgf, = plt.plot(x_caltech_dgf, y_caltech_dgf, label="Caltech DGF (Ours)", color=caltech_color, alpha=1.0, linewidth=2)
 
 # Add legend outside plot at the bottom with two rows
-handles = [line_art_dgf, line_food_dgf, line_art_dog, line_food_dog]
+handles = [line_art_dgf, line_food_dgf, line_caltech_dgf, line_art_dog, line_food_dog, line_caltech_dog]
 labels = [h.get_label() for h in handles]
 
 legend = plt.legend(
     handles=handles,
     labels=labels,
     loc='lower center',
-    bbox_to_anchor=(0.5, -0.45),  # increase negative value
+    bbox_to_anchor=(0.5, -0.65),  # increase negative value
     ncol=2,
     frameon=True,
     handletextpad=0.6,

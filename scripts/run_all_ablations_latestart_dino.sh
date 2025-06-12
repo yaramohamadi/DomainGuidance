@@ -9,16 +9,20 @@ SCRIPT="run_ours.sh"
 declare -a TASKS=(
   "stanford-cars_processed"
   "ffhq256"
+  "cub-200-2011_processed"
+  "food-101_processed"
+  "artbench-10_processed"
+  "caltech-101_processed"
 )
 
 # ========== Define per-task (latestart, mghigh, experiment_prename) triples ==========
 declare -A PAIR_MAP
-PAIR_MAP["cub-200-2011_processed"]="2000,1,mega_ablation_latestart 4000,1,mega_ablation_latestart 6000,1,mega_ablation_latestart 8000,1,mega_ablation_latestart 10000,1,mega_ablation_latestart 12000,1,mega_ablation_latestart 14000,1,mega_ablation_latestart 16000,1,mega_ablation_latestart 18000,1,mega_ablation_latestart 20000,1,mega_ablation_latestart 22000,1,mega_ablation_latestart"
-PAIR_MAP["stanford-cars_processed"]="2000,1,mega_ablation_latestart 4000,1,mega_ablation_latestart 6000,1,mega_ablation_latestart 8000,1,mega_ablation_latestart 10000,1,mega_ablation_latestart 12000,1,mega_ablation_latestart 14000,1,mega_ablation_latestart 16000,1,mega_ablation_latestart 18000,1,mega_ablation_latestart 20000,1,mega_ablation_latestart 22000,1,mega_ablation_latestart"
-PAIR_MAP["food-101_processed"]="2000,1,mega_ablation_latestart 4000,1,mega_ablation_latestart 6000,1,mega_ablation_latestart 8000,1,mega_ablation_latestart 10000,1,mega_ablation_latestart 12000,1,mega_ablation_latestart 14000,1,mega_ablation_latestart 16000,1,mega_ablation_latestart 18000,1,mega_ablation_latestart 20000,1,mega_ablation_latestart 22000,1,mega_ablation_latestart"
-PAIR_MAP["artbench-10_processed"]="2000,0.8,mega_ablation_latestart 4000,0.8,mega_ablation_latestart 6000,0.8,mega_ablation_latestart 8000,0.8,mega_ablation_latestart 10000,0.8,mega_ablation_latestart 12000,0.8,mega_ablation_latestart 14000,0.8,mega_ablation_latestart 16000,0.8,mega_ablation_latestart 18000,0.8,mega_ablation_latestart 20000,0.8,mega_ablation_latestart 22000,0.8,mega_ablation_latestart"
-PAIR_MAP["caltech-101_processed"]="2000,0.7,mega_ablation_latestart 4000,0.7,mega_ablation_latestart 6000,0.7,mega_ablation_latestart 8000,0.7,mega_ablation_latestart 10000,0.7,mega_ablation_latestart 12000,0.7,mega_ablation_latestart 14000,0.7,mega_ablation_latestart 16000,0.7,mega_ablation_latestart 18000,0.7,mega_ablation_latestart 20000,0.7,mega_ablation_latestart 22000,0.7,mega_ablation_latestart"
-PAIR_MAP["ffhq256"]="2000,0.6,mega_ablation_latestart 4000,0.6,mega_ablation_latestart 6000,0.6,mega_ablation_latestart 8000,0.6,mega_ablation_latestart 10000,0.6,mega_ablation_latestart 12000,0.6,mega_ablation_latestart 14000,0.6,mega_ablation_latestart 16000,0.6,mega_ablation_latestart 18000,0.6,mega_ablation_latestart 20000,0.6,mega_ablation_latestart 22000,0.6,mega_ablation_latestart"
+PAIR_MAP["cub-200-2011_processed"]="6000,1,mega_ablation_latestart 8000,1,mega_ablation_latestart 10000,1,mega_ablation_latestart 12000,1,mega_ablation_latestart"
+PAIR_MAP["stanford-cars_processed"]="6000,1,mega_ablation_latestart 8000,1,mega_ablation_latestart 10000,1,mega_ablation_latestart 12000,1,mega_ablation_latestart"
+PAIR_MAP["food-101_processed"]="6000,1,mega_ablation_latestart 8000,1,mega_ablation_latestart 10000,1,mega_ablation_latestart 12000,1,mega_ablation_latestart"
+PAIR_MAP["artbench-10_processed"]="6000,0.8,mega_ablation_latestart 8000,0.8,mega_ablation_latestart 10000,0.8,mega_ablation_latestart 12000,0.8,mega_ablation_latestart"
+PAIR_MAP["caltech-101_processed"]="6000,0.7,mega_ablation_latestart 8000,0.7,mega_ablation_latestart 10000,0.7,mega_ablation_latestart 12000,0.7,mega_ablation_latestart"
+PAIR_MAP["ffhq256"]="6000,0.6,mega_ablation_latestart 8000,0.6,mega_ablation_latestart 10000,0.6,mega_ablation_latestart 12000,0.6,mega_ablation_latestart"
 
 # ========== EXECUTION LOOP ==========
 for DATASET in "${TASKS[@]}"; do
@@ -37,13 +41,14 @@ for DATASET in "${TASKS[@]}"; do
       --cuda_devices \"$CUDA_DEVICES\" \
       --experiment_prename \"$EXPERIMENT_PRENAME\" \
       --latestart \"$LATESTART\" \
-      --mghigh \"$MGHIGH\""
+      --mghigh \"$MGHIGH\" \
+      --model_name \"SiT-XL/2\""
 
-    # if [[ "$SERVER" == "computecanada" ]]; then
-    #   eval "JOB_NAME=$EXPERIMENT_PRENAME sbatch $CMD"
-    # else
+    if [[ "$SERVER" == "computecanada" ]]; then
+      eval "JOB_NAME=$EXPERIMENT_PRENAME sbatch $CMD"
+    else
     eval "bash $CMD"
-    # fi
+    fi
 
     echo "✅ Finished $SCRIPT on $DATASET | latestart: $LATESTART | mghigh: $MGHIGH | prename: $EXPERIMENT_PRENAME"
     echo "=============================================="

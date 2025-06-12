@@ -3,7 +3,7 @@
 #SBATCH --job-name=${JOB_NAME:-Ours}  # Use $JOB_NAME if defined, else 'myjob'
 #SBATCH --output=logs/%x_%j.out
 #SBATCH --error=logs/%x_%j.err          
-#SBATCH --time=01:30:00
+#SBATCH --time=06:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=16
@@ -89,7 +89,8 @@ run_sampling() {
         --num-classes "$NUM_CLASSES" \
         --cfg-scale "$CFG_SCALE" \
         --num-sampling-steps "$NUM_SAMPLE_STEPS" \
-        --dropout-ratio "$DROPOUT_RATIO" 
+        --dropout-ratio "$DROPOUT_RATIO" \
+        --difffit "$DIFFFIT"
 }
 
 calculate_fid() {
