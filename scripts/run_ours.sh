@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --account=def-hadi87
+#SBATCH --account=rrg-josedolz
 #SBATCH --job-name=${JOB_NAME:-Ours}  # Use $JOB_NAME if defined, else 'myjob'
 #SBATCH --output=logs/%x_%j.out
 #SBATCH --error=logs/%x_%j.err          
@@ -12,6 +12,8 @@
 #SBATCH --mail-user=yara.mohammadi-bahram.1@ens.etsmtl.ca 
 #SBATCH --mail-type=ALL           
 
+
+# def-hadi87
 # ====================== DEFAULT CONFIGURATION ======================
 
 CUDA_DEVICES="0,1"
