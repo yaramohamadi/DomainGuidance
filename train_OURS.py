@@ -171,8 +171,8 @@ def our_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, 
             if pretrained_model is not None and ema is not None and dist.get_rank() == 0 and counter > late_start_iter and counter % 100 == 0:
 
                 print(f"[DEBUG]: w value: {w}")
-                print(f"[DEBUG]: Model w: {model_kwargs["w"]}")
-                print(f"[DEBUG]: ema w: {ema_kwargs["w"]}")
+                print(f"[DEBUG]: Model w: {model_kwargs['w']}")
+                print(f"[DEBUG]: ema w: {ema_kwargs['w']}")
 
                 # Debugging functions
                 def norm_to_01(x):
@@ -340,6 +340,9 @@ class GuidedWrapper(nn.Module):
             nn.SiLU(),
             nn.Linear(embed_dim, embed_dim),
         )
+
+        self.w_embed[-1].weight.data.zero_()
+        self.w_embed[-1].bias.data.zero_()
 
     def forward(self, x, t, y, w=None):
         # Embed timestep and label
