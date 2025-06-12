@@ -297,8 +297,8 @@ def apply_diffit_freezing(model):
             param.requires_grad = True
 
 def add_gamma_to_block(block, hidden_size):
-    block.gamma1 = torch.nn.Parameter(torch.ones(hidden_size).to(block.norm1.weight.device))
-    block.gamma2 = torch.nn.Parameter(torch.ones(hidden_size).to(block.norm2.weight.device))
+    block.gamma1 = torch.nn.Parameter(torch.ones(hidden_size).to("cuda"))
+    block.gamma2 = torch.nn.Parameter(torch.ones(hidden_size).to("cuda"))
 
     original_forward = block.forward
 
