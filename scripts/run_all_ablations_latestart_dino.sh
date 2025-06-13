@@ -47,7 +47,7 @@ for DATASET in "${TASKS[@]}"; do
     if [[ "$SERVER" == "computecanada" ]]; then
       eval "JOB_NAME=$EXPERIMENT_PRENAME sbatch $CMD"
     else
-    eval "bash $CMD"
+      eval "bash $CMD"
     fi
 
     echo "✅ Finished $SCRIPT on $DATASET | latestart: $LATESTART | mghigh: $MGHIGH | prename: $EXPERIMENT_PRENAME"
