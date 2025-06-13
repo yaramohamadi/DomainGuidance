@@ -72,13 +72,16 @@ def our_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, 
 
         terms = {}
 
-        
         ema_kwargs = dict(model_kwargs)
         # guidance control
         if model_kwargs.get("w", None) is not None:
             # Extract guidance weight w from model_kwargs
             w = model_kwargs["w"]
             ema_kwargs["w"] = torch.ones_like(w)  # w = 1
+        else:
+            w = w_dog
+            if not torch.is_tensor(w):
+                w = torch.tensor(w, dtype=torch.float32, device=x_t.device)
         y = model_kwargs["y"]
         pretrained_kwargs = {"y": torch.full_like(y, 1000)}
 
@@ -158,21 +161,23 @@ def our_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, 
 
                 # Guidance Cut Off
                 initial_target = target.clone().detach()
-                # if guidance_cutoff:
-                #     t_norm = t.float() / (self.num_timesteps - 1)
-                #     mg_high = mg_high
-                #     mask = (t_norm < mg_high).float().view(-1, 1)  # [16, 1]
-                #     w = w - 1
-                #     w = mask * w  # now w remains [16, 1]
-                #     target = target + w.view(-1, 1, 1, 1) * (ema_output.detach() - pretrained_output.detach())
-                # else:
-                #     target = target + (w - 1) * (ema_output.detach() - pretrained_output.detach())
+                if guidance_cutoff:
+                    print("cutting off")
+                    t_norm = t.float() / (self.num_timesteps - 1)
+                    mg_high = mg_high
+                    mask = (t_norm < mg_high).float().view(-1, 1)  # [16, 1]
+                    w = w - 1
+                    w = mask * w  # now w remains [16, 1]
+                    target = target + w.view(-1, 1, 1, 1) * (ema_output.detach() - pretrained_output.detach())
+                else:
+                    target = target + (w.view(-1, 1, 1, 1) - 1) * (ema_output.detach() - pretrained_output.detach())
+
 
             if pretrained_model is not None and ema is not None and dist.get_rank() == 0 and counter > late_start_iter and counter % 100 == 0:
 
-                print(f"[DEBUG]: w value: {w}")
-                print(f"[DEBUG]: Model w: {model_kwargs['w']}")
-                print(f"[DEBUG]: ema w: {ema_kwargs['w']}")
+                #print(f"[DEBUG]: w value: {w}")
+                #print(f"[DEBUG]: Model w: {model_kwargs['w']}")
+                #print(f"[DEBUG]: ema w: {ema_kwargs['w']}")
 
                 # Debugging functions
                 def norm_to_01(x):
@@ -209,7 +214,7 @@ def our_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, 
                     model_noise_decoded = vae.decode(model_output / 0.18215).sample
                     initial_noise_decoded = vae.decode(initial_target / 0.18215).sample
                     
-
+ 
                 # Save normalized images
                 save_image(norm_to_01(x_start_decoded),        f"{save_dir}/x_start.png",        nrow=8)
                 save_image(norm_to_01(x0_model_decoded),        f"{save_dir}/x0_model.png",       nrow=8)
@@ -219,7 +224,7 @@ def our_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, 
                 save_image(norm_to_01(initial_noise_decoded),         f"{save_dir}/initial_noise_decoded.png",        nrow=8)
 
                 print(f"[DEBUG] Saved DoG debugging images to {save_dir}")
-                print(f"[DEBUG] w mean: {model_kwargs['w'].mean().item():.2f}, std: {model_kwargs['w'].std().item():.2f}")
+                # print(f"[DEBUG] w mean: {model_kwargs['w'].mean().item():.2f}, std: {model_kwargs['w'].std().item():.2f}")
 
             counter += 1
             
@@ -339,10 +344,10 @@ class GuidedWrapper(nn.Module):
             nn.Linear(w_dim, embed_dim),
             nn.SiLU(),
             nn.Linear(embed_dim, embed_dim),
+            nn.LayerNorm(embed_dim),
         )
-
-        self.w_embed[-1].weight.data.zero_()
-        self.w_embed[-1].bias.data.zero_()
+        #self.w_embed[-1].weight.data.zero_()
+        #self.w_embed[-1].bias.data.zero_()
 
     def forward(self, x, t, y, w=None):
         # Embed timestep and label
@@ -351,8 +356,20 @@ class GuidedWrapper(nn.Module):
 
         # Inject guidance if available
         if w is not None:
-            w_emb = self.w_embed(w)                           # (B, D)
+            w_emb = self.w_embed(w-1)                           # (B, D)
+            cond_std = (t_emb + y_emb).std(dim=-1, keepdim=True).detach()  # (B, 1)
+            # 3. Apply manual scaling
+            w_emb = w_emb * cond_std * 0.5  # 0.5 is a tunable dampening factor
+            
+            # print("_____________________________________________________")
+            #print(f"[DEBUG] w_emb mean: {w_emb.mean().item():.4f}, std: {w_emb.std().item():.4f}")
+            
+            # print(w_emb)
+            # print(f"[DEBUG] w_emb mean: {w_emb.mean().item():.4f}, std: {w_emb.std().item():.4f}")
+            # print(f"[DEBUG] t_emb mean: {t_emb.mean().item():.4f}, std: {t_emb.std().item():.4f}")
+            # print(f"[DEBUG] y_emb mean: {y_emb.mean().item():.4f}, std: {y_emb.std().item():.4f}")
             c = t_emb + y_emb + w_emb
+
         else:
             c = t_emb + y_emb
 
@@ -594,7 +611,7 @@ def main(args):
     ema = deepcopy(model).to(device)  # Create an EMA of the model for use after training
     requires_grad(ema, False)
 
-    model = DDP(model, device_ids=[rank])
+    model = DDP(model.to(device), device_ids=[rank])
 
     if args.model in SiT_models:
         print("LOADING SIT MODEL!!!!!!!!!!!!!!!!!!!!!!!!!!!!")

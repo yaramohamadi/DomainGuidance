@@ -45,6 +45,7 @@ class GuidedWrapper(nn.Module):
             nn.Linear(w_dim, embed_dim),
             nn.SiLU(),
             nn.Linear(embed_dim, embed_dim),
+            nn.LayerNorm(embed_dim),
         )
 
     def forward(self, x, t, y, w=None):
@@ -54,8 +55,12 @@ class GuidedWrapper(nn.Module):
 
         # Inject guidance if available
         if w is not None:
-            w_emb = self.w_embed(w)                           # (B, D)
+            w_emb = self.w_embed(w-1)                           # (B, D)
+            cond_std = (t_emb + y_emb).std(dim=-1, keepdim=True).detach()  # (B, 1)
+            # 3. Apply manual scaling
+            w_emb = w_emb * cond_std * 0.5  # 0.5 is a tunable dampening factor
             c = t_emb + y_emb + w_emb
+
         else:
             c = t_emb + y_emb
 
@@ -65,7 +70,7 @@ class GuidedWrapper(nn.Module):
             x = block(x, c)                                   # (B, T, D)
         x = self.base_model.final_layer(x, c)                 # (B, T, patch^2 * C)
         return self.base_model.unpatchify(x)                  # (B, out_channels, H, W)
-        
+
     def __getattr__(self, name):
         # Only forward attribute access if not found on wrapper itself
         if name in self.__dict__:
@@ -74,6 +79,7 @@ class GuidedWrapper(nn.Module):
             return super().__getattr__(name)
         except AttributeError:
             return getattr(self.base_model, name)
+
 
 
 
