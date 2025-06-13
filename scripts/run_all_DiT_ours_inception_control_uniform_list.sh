@@ -2,9 +2,9 @@
 
 # ========== GLOBAL CONFIGURATION ==========
 SERVER="bool"
-CUDA_DEVICES="2,3"
+CUDA_DEVICES="1,2"
 SCRIPT="run_ours.sh"
-EXPERIMENT_PRENAME="DiT_inception_ours/control"
+EXPERIMENT_PRENAME="DiT_inception_ours/control_film"
 
 # "food-101_processed"
 # "artbench-10_processed"
@@ -19,8 +19,8 @@ declare -a TASKS=(
 # ========== Define per-task (latestart, mghigh, experiment_prename) triples ==========
 declare -A PAIR_MAP
 
-# Inception:
-PAIR_MAP["stanford-cars_processed"]="7000,1,1,3,0 7000,1,1,2.5,0 7000,1,1,2,0 7000,1,1,4,0" #  0,1,1,1.5 0,1,1,2 0,1,1,3 0,1,1,4" # "7000,0.6"
+# Inception: #  7000,1,1,2,0 7000,1,1,4,0
+PAIR_MAP["stanford-cars_processed"]="7000,1,1,3,0 7000,1,1,2.5,0" #  0,1,1,1.5 0,1,1,2 0,1,1,3 0,1,1,4" # "7000,0.6"
 
 # ========== EXECUTION LOOP ==========
 for DATASET in "${TASKS[@]}"; do
