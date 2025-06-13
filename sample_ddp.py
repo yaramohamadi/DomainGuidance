@@ -30,33 +30,42 @@ import torch.nn as nn
 ##################################################################################
 #                              Guidance control                                  #
 ##################################################################################
-
 import torch
 import torch.nn as nn
 
 class GuidedWrapper(nn.Module):
     """
-    Wrapper for DiT/SiT that applies FiLM-style *multiplicative-only* modulation to y_emb via guidance scale `w`.
+    Unified wrapper for DiT or SiT that optionally uses FiLM-style modulation on y_emb via guidance scale `w`.
+    If use_film=True, FiLM is applied. Otherwise, an additive embedding is added to t_emb + y_emb.
     """
-    def __init__(self, base_model, w_dim=1, embed_dim=1152, hidden_dim=128):
+    def __init__(self, base_model, w_dim=1, embed_dim=1152, hidden_dim=128, use_film=False):
         super().__init__()
         self.base_model = base_model
         self.embed_dim = embed_dim
+        self.use_film = use_film
 
-        # FiLM MLP: w -> gamma only (no beta)
-        self.film = nn.Sequential(
-            nn.Linear(w_dim, hidden_dim),
-            nn.SiLU(),
-            nn.Linear(hidden_dim, embed_dim)
-        )
-        self._init_film()
+        if self.use_film:
+            self.film = nn.Sequential(
+                nn.Linear(w_dim, hidden_dim),
+                nn.SiLU(),
+                nn.Linear(hidden_dim, 2 * embed_dim)
+            )
+            self._init_film()
+        else:
+            self.w_embed = nn.Sequential(
+                nn.Linear(w_dim, embed_dim),
+                nn.SiLU(),
+                nn.Linear(embed_dim, embed_dim),
+                nn.LayerNorm(embed_dim),
+            )
 
     def _init_film(self):
-        """ Initialize FiLM MLP so that gamma=1 at start. """
+        """ Initialize FiLM MLP so that gamma=1, beta=0 at start. """
         final_layer = self.film[-1]
         nn.init.zeros_(final_layer.weight)
         with torch.no_grad():
-            final_layer.bias.fill_(1.0)  # gamma starts as 1 (identity scaling)
+            final_layer.bias[:self.embed_dim].fill_(1.0)  # gamma
+            final_layer.bias[self.embed_dim:].zero_()     # beta
 
     def forward(self, x, t, y, w=None):
         # Embed timestep and class label
@@ -64,12 +73,20 @@ class GuidedWrapper(nn.Module):
         y_emb = self.base_model.y_embedder(y, self.training)  # (B, D)
 
         if w is not None:
-            w = w.view(-1, 1)                          # (B, 1)
-            gamma = self.film(w)                       # (B, D)
-            y_emb = gamma * y_emb                      # Only multiplicative FiLM
-        # else: y_emb remains unchanged
+            w = w.view(-1, 1)  # ensure shape (B, 1)
 
-        c = t_emb + y_emb
+            if self.use_film:
+                gamma_beta = self.film(w)                      # (B, 2*D)
+                gamma, beta = gamma_beta.chunk(2, dim=-1)      # (B, D), (B, D)
+                y_emb = gamma * y_emb + beta
+                c = t_emb + y_emb
+            else:
+                w_emb = self.w_embed(w - 1)                    # (B, D)
+                cond_std = (t_emb + y_emb).std(dim=-1, keepdim=True).detach()
+                w_emb = w_emb * cond_std * 0.5
+                c = t_emb + y_emb + w_emb
+        else:
+            c = t_emb + y_emb
 
         # Forward through base model
         x = self.base_model.x_embedder(x) + self.base_model.pos_embed
