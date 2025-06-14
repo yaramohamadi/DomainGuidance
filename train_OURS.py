@@ -289,6 +289,9 @@ def our_training_losses_transport(
 #                            DiffFit                                             #
 ##################################################################################
 
+def modulate(x, shift, scale):
+    return x * (1 + scale.unsqueeze(1)) + shift.unsqueeze(1)
+
 # Diffit Freezing:
 def apply_diffit_freezing(model):
     for name, param in model.named_parameters():
@@ -535,6 +538,12 @@ def main(args):
             for name, param in model.named_parameters():
                 if param.requires_grad:
                     print("  ", name)
+
+        if rank == 0:
+            total = sum(p.numel() for p in model.parameters())
+            trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
+            print(f"Trainable: {trainable:,} / {total:,} ({100 * trainable / total:.4f}%)")
+            
 
     # Note that parameter initialization is done within the DiT constructor
     ema = deepcopy(model).to(device)  # Create an EMA of the model for use after training

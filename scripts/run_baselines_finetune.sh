@@ -38,6 +38,7 @@ while [[ "$#" -gt 0 ]]; do
     --wdog) W_DOG="$2"; shift ;;
     --wcfg) W_CFG="$2"; shift ;;
     --model_name) MODEL="$2"; shift ;;
+    --difffit) DIFFFIT="$2"; shift ;;
     *) echo "Unknown parameter passed: $1"; exit 1 ;;
   esac
   shift
@@ -65,7 +66,8 @@ train_model() {
         --global-batch-size $BATCH_SIZE \
         --vae $VAE \
         --num-workers $NUM_WORKERS \
-        --dropout-ratio $DROPOUT_RATIO
+        --dropout-ratio $DROPOUT_RATIO \
+        --difffit $DIFFFIT
 }
 sample_CG1() {
     log_and_run "Sampling images for CG1..." \
@@ -76,7 +78,8 @@ sample_CG1() {
         --per-proc-batch-size "$BATCH_SIZE" --num-fid-samples "$NSAMPLE" \
         --image-size "$IMAGE_SIZE" --num-classes "$NUM_CLASSES" \
         --cfg-scale 1 --num-sampling-steps "$NUM_SAMPLE_STEPS" \
-        --dropout-ratio $DROPOUT_RATIO
+        --dropout-ratio $DROPOUT_RATIO \
+        --difffit $DIFFFIT
 }
 
 fid_CG1() {
@@ -100,7 +103,8 @@ sample_CG1_5() {
         --per-proc-batch-size "$BATCH_SIZE" --num-fid-samples "$NSAMPLE" \
         --image-size "$IMAGE_SIZE" --num-classes "$NUM_CLASSES" \
         --cfg-scale "$W_CFG" --num-sampling-steps "$NUM_SAMPLE_STEPS" \
-        --dropout-ratio $DROPOUT_RATIO
+        --dropout-ratio $DROPOUT_RATIO \
+        --difffit $DIFFFIT
 }
 
 fid_CG1_5() {
@@ -124,7 +128,8 @@ sample_DoG1_5() {
         --per-proc-batch-size "$BATCH_SIZE" --num-fid-samples "$NSAMPLE" \
         --image-size "$IMAGE_SIZE" --num-classes "$NUM_CLASSES" \
         --cfg-scale "$W_DOG" --num-sampling-steps "$NUM_SAMPLE_STEPS" \
-        --dropout-ratio $DROPOUT_RATIO
+        --dropout-ratio $DROPOUT_RATIO \
+        --difffit $DIFFFIT
 }
 
 fid_DoG1_5() {

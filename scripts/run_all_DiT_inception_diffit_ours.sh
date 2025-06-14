@@ -7,19 +7,11 @@ SCRIPT="run_ours.sh"
 EXPERIMENT_PRENAME="DiT_inception_ours_DiffFit"
 
 declare -a TASKS=(
-  "stanford-cars_processed"
   "food-101_processed"
-  "caltech-101_processed"
-  "cub-200-2011_processed"
-  "ffhq256"
 )
-
-#   "artbench-10_processed"
 
 # ========== Define per-task (latestart, mghigh, experiment_prename) triples ==========
 declare -A PAIR_MAP
-# Format: "latestart,mghigh latestart,mghigh ..."
-# 3000,0.8,ablation_best_latestart_mg cub-200-2011 -> Sampling is done but it NEEDS FID calculation!
 
 # Inception:
 PAIR_MAP["stanford-cars_processed"]="7000,0.6" # 7000 first one
