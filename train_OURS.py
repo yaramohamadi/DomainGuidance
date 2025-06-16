@@ -26,7 +26,7 @@ from time import time
 import argparse
 import logging
 import os
-
+import math
 import torch.nn as nn
 
 from download import find_model
@@ -403,6 +403,33 @@ class GuidedWrapper(nn.Module):
             return getattr(self.base_model, name)
 
 
+def sample_shifted_exp_custom(size, device, mode="95in1to3"):
+    """
+    Sample w ~ 1 + Exp(λ), where:
+    - mode == "95in1to3" → 95% of samples in [1, 3]
+    - mode == "50in1to2" → 50% of samples in [1, 2]
+    
+    Args:
+        size: shape of the sample (e.g., (batch_size, 1))
+        device: torch device
+        mode: "95in1to3" or "50in1to2"
+    
+    Returns:
+        torch.Tensor of sampled w values
+    """
+    if mode == "95in1to3":
+        p = 0.95
+        interval = 2.0  # from 1 to 3
+        lam = -math.log(1.0 - p) / interval  # ≈ 1.5
+    elif mode == "50in1to2":
+        lam = math.log(2.0)  # ≈ 0.693
+    else:
+        raise ValueError("Unsupported mode. Use '95in1to3' or '50in1to2'.")
+
+    z = torch.distributions.Exponential(lam).sample(size).to(device)
+    return 1.0 + z
+
+
 
 #################################################################################
 #                             Training Helper Functions                         #
@@ -718,7 +745,13 @@ def main(args):
 
             if args.guidance_control:
                 # Sample w from Uniform[1.0, args.w_max]
-                w = torch.empty(x.shape[0], 1, device=device).uniform_(args.w_min, args.w_max)
+                if args.control_distribution == "uniform":
+                    # print(f"Uniform guidance control from {args.w_min} to {args.w_max}")
+                    w = torch.empty(x.shape[0], 1, device=device).uniform_(args.w_min, args.w_max)
+                else:
+                    # print(f"Exponential {args.control_distribution} guidance control from {args.w_min} to {args.w_max}")
+                    w = sample_shifted_exp_custom((x.shape[0], 1), device, mode=args.control_distribution)
+                sample_shifted_exp_custom
                 model_kwargs["w"] = w
 
             #If doing profiling:
@@ -960,6 +993,7 @@ if __name__ == "__main__":
     parser.add_argument("--guidance-control", type=float, default=0, help="Use learnable guidance scale (w) in the model wrapper")  # DOG
     parser.add_argument("--w-max", type=float, default=1.0, help="Maximum guidance scale") # DOG
     parser.add_argument("--w-min", type=float, default=1.0, help="Maximum guidance scale") # DOG
+    parser.add_argument("--control-distribution", type=str, default="uniform") # DOG
     def none_or_str(value):
         if value == 'None':
             return None
