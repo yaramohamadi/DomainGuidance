@@ -25,6 +25,43 @@ import numpy as np
 import math
 import argparse
 
+
+
+
+##################################################################################
+#                            DiffFit                                             #
+##################################################################################
+
+def modulate(x, shift, scale):
+    return x * (1 + scale.unsqueeze(1)) + shift.unsqueeze(1)
+
+# Diffit Freezing:
+def apply_diffit_freezing(model):
+    for name, param in model.named_parameters():
+        param.requires_grad = False
+        if any(k in name for k in ["bias", "norm", "y_embed", "gamma"]):
+            param.requires_grad = True
+
+def add_gamma_to_block(block, hidden_size):
+    block.gamma1 = torch.nn.Parameter(torch.ones(hidden_size).to('cuda'))
+    block.gamma2 = torch.nn.Parameter(torch.ones(hidden_size).to('cuda'))
+
+    original_forward = block.forward
+
+    def patched_forward(x, c):
+        shift_msa, scale_msa, gate_msa, shift_mlp, scale_mlp, gate_mlp = block.adaLN_modulation(c).chunk(6, dim=1)
+        x = x + block.gamma1 * (gate_msa.unsqueeze(1) * block.attn(modulate(block.norm1(x), shift_msa, scale_msa)))
+        x = x + block.gamma2 * (gate_mlp.unsqueeze(1) * block.mlp(modulate(block.norm2(x), shift_mlp, scale_mlp)))
+        return x
+
+    block.forward = patched_forward
+    return block
+
+
+
+
+
+
 def build_cfg_fowrard_fn(cond_model, uncond_model):
     def cfg_forward_fn(x, t, y, cfg_scale):
         half = x[: len(x) // 2]
@@ -110,6 +147,17 @@ def main(args):
     # Auto-download a pre-trained model or load a custom DiT checkpoint from train.py:
     print(f"Loading model from {ckpt_path}")
     cond_state_dict = find_model(ckpt_path)
+
+
+    if args.difffit:
+        print("Applying Diffit gamma blocks...")
+        # Diffit:
+        for i, block in enumerate(model.blocks):
+            if i < 14:
+                add_gamma_to_block(block, hidden_size=1152)  # Pass 1152 for DiT-XL/2
+
+
+
     model.load_state_dict(cond_state_dict)
     model.eval()  # important!
 
@@ -265,6 +313,8 @@ if __name__ == "__main__":
                         help="Optional path to a unconditional DiT checkpoint (default: auto-download a pre-trained DiT-XL/2 model).")
     parser.add_argument("--uncond-model", type=str, choices=list(DiT_models.keys()), default="DiT-XL/2")
     parser.add_argument("--dropout-ratio", type=float, default=0.1)
+    parser.add_argument("--difffit", type=float, default=0.0,
+                            help="If > 0, applies DiffFit freezing to the model (default: 0.0, no freezing).")
 
     def none_or_str(value):
         if value == 'None':
