@@ -19,7 +19,7 @@ declare -a TASKS=(
 declare -A PAIR_MAP
 
 # Inception: #  7000,1,1,2,0 7000,1,1,4,0
-PAIR_MAP["stanford-cars_processed"]="7000,1,1,3,0,95in1to3 7000,1,1,3,0,50in1to2" 
+PAIR_MAP["stanford-cars_processed"]="7000,1,1,3,0,50in1to1.25 7000,1,1,3,0,50in1to1.75 7000,1,1,3,0,50in1to2 7000,1,1,3,0,50in1to1.5" 
 
 # ========== EXECUTION LOOP ==========
 for DATASET in "${TASKS[@]}"; do
@@ -32,7 +32,7 @@ for DATASET in "${TASKS[@]}"; do
     echo "Server: $SERVER | CUDA Devices: $CUDA_DEVICES"
     echo "----------------------------------------------"
 
-    EXPERIMENT_PRENAME="DiT_inception_ours/control_normalizing_exponential/$CONTROL_DISTRIBUTION"
+    EXPERIMENT_PRENAME="DiT_inception_ours/control_normalizing_exponential_cutofflatestart/$CONTROL_DISTRIBUTION"
 
     CMD="scripts/$SCRIPT \
       --dataset \"$DATASET\" \

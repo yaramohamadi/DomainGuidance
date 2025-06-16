@@ -85,10 +85,6 @@ def our_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, 
         y = model_kwargs["y"]
         pretrained_kwargs = {"y": torch.full_like(y, 1000)}
 
-        guidance_cutoff = 0
-        late_start_iter = 0
-
-
         if self.loss_type == LossType.KL or self.loss_type == LossType.RESCALED_KL:
             terms["loss"] = self._vb_terms_bpd(
                 model=model,
@@ -331,6 +327,8 @@ def our_training_losses_transport(
 ##################################################################################
 import torch
 import torch.nn as nn
+import math
+import re
 
 class GuidedWrapper(nn.Module):
     """
@@ -403,28 +401,35 @@ class GuidedWrapper(nn.Module):
             return getattr(self.base_model, name)
 
 
+
 def sample_shifted_exp_custom(size, device, mode="95in1to3"):
     """
-    Sample w ~ 1 + Exp(λ), where:
-    - mode == "95in1to3" → 95% of samples in [1, 3]
-    - mode == "50in1to2" → 50% of samples in [1, 2]
-    
+    Sample w ~ 1 + Exp(λ), where a specified percentage of samples lie in [1, num].
+
     Args:
         size: shape of the sample (e.g., (batch_size, 1))
         device: torch device
-        mode: "95in1to3" or "50in1to2"
-    
+        mode: string like "95in1to3" or "50in1to2.5"
+
     Returns:
         torch.Tensor of sampled w values
     """
-    if mode == "95in1to3":
-        p = 0.95
-        interval = 2.0  # from 1 to 3
-        lam = -math.log(1.0 - p) / interval  # ≈ 1.5
-    elif mode == "50in1to2":
-        lam = math.log(2.0)  # ≈ 0.693
-    else:
-        raise ValueError("Unsupported mode. Use '95in1to3' or '50in1to2'.")
+    match = re.match(r"(\d+)in1to([\d.]+)", mode)
+    if not match:
+        raise ValueError("Unsupported mode. Use format like '50in1to2' or '95in1to3.5'.")
+
+    percent = float(match.group(1))
+    upper = float(match.group(2))
+
+    if not (0 < percent < 100):
+        raise ValueError("Percentage must be between 0 and 100.")
+
+    p = percent / 100.0
+    interval = upper - 1.0
+    if interval <= 0:
+        raise ValueError("Upper bound must be greater than 1.")
+
+    lam = -math.log(1.0 - p) / interval
 
     z = torch.distributions.Exponential(lam).sample(size).to(device)
     return 1.0 + z
