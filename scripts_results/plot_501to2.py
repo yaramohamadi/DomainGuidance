@@ -1,25 +1,59 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
-# Desired upper bounds for 50 % mass, ordered from smallest to largest
-upper_bounds = [1.25, 1.5, 1.75, 2.0]
-lambdas = [np.log(2) / (u - 1.0) for u in upper_bounds]
+import matplotlib.pyplot as plt
+plt.rcParams.update({
+    "font.family": "serif",
+    "font.serif": ["Times New Roman"],  # This will map to the best available serif "Times"
+    "font.size": 15,             # Base font size
+    "axes.titlesize": 17,        # Title font size
+    "axes.labelsize": 15,        # Axis label size
+    "xtick.labelsize": 13,       # X tick label size
+    "ytick.labelsize": 13,       # Y tick label size
+    "legend.fontsize": 13,       # Legend font size
+})
 
-x = np.linspace(1, 4, 500)
 
-# Plot in reverse order for proper layering
-plt.figure()
-for idx, (upper, lam) in enumerate(zip(reversed(upper_bounds), reversed(lambdas))):
+# Upper bounds where 95 % of the mass should lie
+upper_bounds = [1.2, 1.5, 2.0, 3.0, 4.0]
+p = 0.95
+lambdas = [-np.log(1 - p) / (u - 1.0) for u in upper_bounds]
+
+x = np.linspace(1, 5, 800)
+
+# Create 3D plot
+fig = plt.figure(figsize=(10, 6))
+ax = fig.add_subplot(111, projection='3d')
+
+# Plot filled areas and add outline lines along each distribution
+for i, (upper, lam) in enumerate(zip(upper_bounds, lambdas)):
     pdf = lam * np.exp(-lam * (x - 1))
-    label = f"50 % in [1, {upper}] (λ≈{lam:.2f})"
-    alpha = 1.0 if upper == 2.0 else 0.3  # Full opacity only for [1, 2]
-    plt.plot(x, pdf, label=label, zorder=idx + 1)
-    plt.fill_between(x, 0, pdf, where=(x >= 1) & (x <= upper), alpha=alpha, zorder=idx + 1)
+    norm_const = 1 - np.exp(-lam * (upper - 1))
+    #pdf_norm = np.where(x <= upper, pdf / norm_const, 0.0)
+    pdf_norm = pdf / norm_const
+    y = np.full_like(x, i)
+    
+    # Filled surface
+    ax.plot_surface(np.vstack([x, x]), np.vstack([y, y]), np.vstack([np.zeros_like(pdf_norm), pdf_norm]),
+                    color=f"C{i}", alpha=0.9, rstride=1, cstride=1)
 
-plt.title("Shifted Exponential PDFs with 50 % Mass in [1, upper]")
-plt.xlabel("x")
-plt.ylabel("Probability Density")
-plt.legend()
-plt.grid(True)
-plt.tight_layout()
+    # Line along the top of each filled distribution
+    ax.plot(x, y, pdf_norm, color=f"C{i}",alpha=0.9, linewidth=0.8, label=f"95% in [1, {upper}]")
+
+    ax.text(x=1.25, y=4, z=i*2 + 5, s=f"95% in [1, {upper}]", color=f"C{i}")
+
+# Customize view and appearance
+ax.set_xlabel(r"$\omega$")
+ax.set_ylabel("")  # Hide label
+ax.set_zlabel("Probability Density")
+ax.set_zticks([0, 3,6,9,12])  # Remove y-axis ticks
+ax.set_xticks([1,2,3,4,5])
+ax.set_yticks([])
+
+# Proper orientation
+ax.set_xlim(1, 5)
+ax.view_init(elev=5, azim=-75)
+ax.grid(False)
+plt.savefig("./tables/plot_95mass.png")   # save if desired
 plt.show()
