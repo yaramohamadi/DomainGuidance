@@ -158,7 +158,6 @@ def our_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, 
                 # Guidance Cut Off
                 initial_target = target.clone().detach()
                 if guidance_cutoff:
-                    print("cutting off")
                     t_norm = t.float() / (self.num_timesteps - 1)
                     mg_high = mg_high
                     mask = (t_norm < mg_high).float().view(-1, 1)  # [16, 1]
