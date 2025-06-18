@@ -7,7 +7,9 @@ SCRIPT="run_ours.sh"
 EXPERIMENT_PRENAME="DiT_inception_ours_DiffFit"
 
 declare -a TASKS=(
-  "food-101_processed"
+ "cub-200-2011_processed run_baselines_finetune.sh"
+ "artbench-10_processed run_baselines_finetune.sh"
+ "ffhq256 run_baselines_finetune.sh"
 )
 
 # ========== Define per-task (latestart, mghigh, experiment_prename) triples ==========
