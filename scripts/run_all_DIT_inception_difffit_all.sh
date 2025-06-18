@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ========== GLOBAL CONFIGURATION ==========
-SERVER="taylor"
+SERVER="bool"
 CUDA_DEVICES="0,1"
 EXPERIMENT_PRENAME="DiT_inception_all_DiffFit"
 
@@ -9,7 +9,6 @@ EXPERIMENT_PRENAME="DiT_inception_all_DiffFit"
 # Format: dataset_name script_name
 
 declare -a TASKS=(
- "food-101_processed run_baselines_finetune.sh"
  "caltech-101_processed run_baselines_finetune.sh"
  "cub-200-2011_processed run_baselines_finetune.sh"
  "artbench-10_processed run_baselines_finetune.sh"
