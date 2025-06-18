@@ -4,8 +4,8 @@ from mpl_toolkits.mplot3d import Axes3D
 
 import matplotlib.pyplot as plt
 plt.rcParams.update({
-    "font.family": "serif",
-    "font.serif": ["Times New Roman"],  # This will map to the best available serif "Times"
+    'font.family': 'serif',
+    'font.serif': ['Times New Roman', 'Times', 'DejaVu Serif'],
     "font.size": 15,             # Base font size
     "axes.titlesize": 17,        # Title font size
     "axes.labelsize": 15,        # Axis label size
@@ -39,9 +39,9 @@ for i, (upper, lam) in enumerate(zip(upper_bounds, lambdas)):
                     color=f"C{i}", alpha=0.9, rstride=1, cstride=1)
 
     # Line along the top of each filled distribution
-    ax.plot(x, y, pdf_norm, color=f"C{i}",alpha=0.9, linewidth=0.8, label=f"95% in [1, {upper}]")
+    ax.plot(x, y, pdf_norm, color=f"C{i}",alpha=0.9, linewidth=0.8, label=f"95% ≤ {upper}")
 
-    ax.text(x=1.25, y=4, z=i*2 + 5, s=f"95% in [1, {upper}]", color=f"C{i}")
+    ax.text(x=1.25, y=4, z=i*2 + 5, s=f"95% ≤ {upper}", color=f"C{i}")
 
 # Customize view and appearance
 ax.set_xlabel(r"$\omega$")
