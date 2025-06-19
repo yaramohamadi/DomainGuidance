@@ -2,8 +2,9 @@
 
 # ========== GLOBAL CONFIGURATION ==========
 SERVER="bool"
-CUDA_DEVICES="1,2"
+CUDA_DEVICES="0,1"
 SCRIPT="run_ours.sh"
+EXPERIMENT_PRENAME="DiT_inception_ours/control_film_actual"
 
 # "food-101_processed"
 # "artbench-10_processed"
