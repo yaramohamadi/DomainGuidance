@@ -2,14 +2,13 @@
 
 # ========== GLOBAL CONFIGURATION ==========
 SERVER="bool"
-CUDA_DEVICES="0,1"
+CUDA_DEVICES="1,3"
 EXPERIMENT_PRENAME="DiT_inception_all_DiffFit"
 
 # ========== DATASET TO SCRIPT MAPPING ==========
 # Format: dataset_name script_name
-
+#  "caltech-101_processed run_baselines_finetune.sh"
 declare -a TASKS=(
- "caltech-101_processed run_baselines_finetune.sh"
  "cub-200-2011_processed run_baselines_finetune.sh"
  "artbench-10_processed run_baselines_finetune.sh"
  "ffhq256 run_baselines_finetune.sh"
