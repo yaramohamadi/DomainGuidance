@@ -19,7 +19,7 @@ declare -a TASKS=(
 declare -A PAIR_MAP
 
 # Inception: #  7000,1,1,2,0 7000,1,1,4,0
-PAIR_MAP["stanford-cars_processed"]="7000,1,1,3,0,50in1to1.125 7000,1,1,3,0,50in1to1.062" # 50in1to1.25 7000,1,1,3,0,50in1to1.75 7000,1,1,3,0,50in1to2 7000,1,1,3,0,50in1to1.5" 
+PAIR_MAP["stanford-cars_processed"]="7000,1,1,3,0,50in1to1.062" # 7000,1,1,3,0,50in1to1.125  # 50in1to1.25 7000,1,1,3,0,50in1to1.75 7000,1,1,3,0,50in1to2 7000,1,1,3,0,50in1to1.5" 
 
 # ========== EXECUTION LOOP ==========
 for DATASET in "${TASKS[@]}"; do
