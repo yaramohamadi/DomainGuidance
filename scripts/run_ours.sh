@@ -29,6 +29,7 @@ SAMPLE_GUIDANCE=1.5
 
 W_TRAIN_DOG=1.5
 DROPOUT_RATIO=0 # TODO Change this back to 0   
+CONTROL_DISTRIBUTION="uniform"
 
 # Load all logic
 source scripts/config.sh
@@ -49,6 +50,7 @@ while [[ "$#" -gt 0 ]]; do
     --w_max) W_MAX="$2"; shift ;;
     --w_min) W_MIN="$2"; shift ;;
     --sample_guidance) SAMPLE_GUIDANCE="$2"; shift ;;
+    --control_distribution) CONTROL_DISTRIBUTION="$2"; shift ;;
 
     *) echo "Unknown parameter passed: $1"; exit 1 ;;
   esac
@@ -83,7 +85,8 @@ train_model() {
         --late-start-iter "$LATE_START" \
         --guidance-control "$GUIDANCE_CONTROL" \
         --w-max "$W_MAX" \
-        --w-min "$W_MIN"
+        --w-min "$W_MIN" \
+        --control-distribution "$CONTROL_DISTRIBUTION"
 }
 
 run_sampling() {

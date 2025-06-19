@@ -26,7 +26,7 @@ from time import time
 import argparse
 import logging
 import os
-
+import math
 import torch.nn as nn
 
 from download import find_model
@@ -84,10 +84,6 @@ def our_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, 
                 w = torch.tensor(w, dtype=torch.float32, device=x_t.device)
         y = model_kwargs["y"]
         pretrained_kwargs = {"y": torch.full_like(y, 1000)}
-
-        guidance_cutoff = 0
-        late_start_iter = 0
-
 
         if self.loss_type == LossType.KL or self.loss_type == LossType.RESCALED_KL:
             terms["loss"] = self._vb_terms_bpd(
@@ -162,7 +158,6 @@ def our_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, 
                 # Guidance Cut Off
                 initial_target = target.clone().detach()
                 if guidance_cutoff:
-                    print("cutting off")
                     t_norm = t.float() / (self.num_timesteps - 1)
                     mg_high = mg_high
                     mask = (t_norm < mg_high).float().view(-1, 1)  # [16, 1]
@@ -331,6 +326,8 @@ def our_training_losses_transport(
 ##################################################################################
 import torch
 import torch.nn as nn
+import math
+import re
 
 class GuidedWrapper(nn.Module):
     """
@@ -401,6 +398,40 @@ class GuidedWrapper(nn.Module):
             return super().__getattr__(name)
         except AttributeError:
             return getattr(self.base_model, name)
+
+
+
+def sample_shifted_exp_custom(size, device, mode="95in1to3"):
+    """
+    Sample w ~ 1 + Exp(λ), where a specified percentage of samples lie in [1, num].
+
+    Args:
+        size: shape of the sample (e.g., (batch_size, 1))
+        device: torch device
+        mode: string like "95in1to3" or "50in1to2.5"
+
+    Returns:
+        torch.Tensor of sampled w values
+    """
+    match = re.match(r"(\d+)in1to([\d.]+)", mode)
+    if not match:
+        raise ValueError("Unsupported mode. Use format like '50in1to2' or '95in1to3.5'.")
+
+    percent = float(match.group(1))
+    upper = float(match.group(2))
+
+    if not (0 < percent < 100):
+        raise ValueError("Percentage must be between 0 and 100.")
+
+    p = percent / 100.0
+    interval = upper - 1.0
+    if interval <= 0:
+        raise ValueError("Upper bound must be greater than 1.")
+
+    lam = -math.log(1.0 - p) / interval
+
+    z = torch.distributions.Exponential(lam).sample(size).to(device)
+    return 1.0 + z
 
 
 
@@ -718,7 +749,13 @@ def main(args):
 
             if args.guidance_control:
                 # Sample w from Uniform[1.0, args.w_max]
-                w = torch.empty(x.shape[0], 1, device=device).uniform_(args.w_min, args.w_max)
+                if args.control_distribution == "uniform":
+                    # print(f"Uniform guidance control from {args.w_min} to {args.w_max}")
+                    w = torch.empty(x.shape[0], 1, device=device).uniform_(args.w_min, args.w_max)
+                else:
+                    # print(f"Exponential {args.control_distribution} guidance control from {args.w_min} to {args.w_max}")
+                    w = sample_shifted_exp_custom((x.shape[0], 1), device, mode=args.control_distribution)
+                sample_shifted_exp_custom
                 model_kwargs["w"] = w
 
             #If doing profiling:
@@ -960,6 +997,7 @@ if __name__ == "__main__":
     parser.add_argument("--guidance-control", type=float, default=0, help="Use learnable guidance scale (w) in the model wrapper")  # DOG
     parser.add_argument("--w-max", type=float, default=1.0, help="Maximum guidance scale") # DOG
     parser.add_argument("--w-min", type=float, default=1.0, help="Maximum guidance scale") # DOG
+    parser.add_argument("--control-distribution", type=str, default="uniform") # DOG
     def none_or_str(value):
         if value == 'None':
             return None
