@@ -33,6 +33,9 @@ import argparse
 #                            DiffFit                                             #
 ##################################################################################
 
+def modulate(x, shift, scale):
+    return x * (1 + scale.unsqueeze(1)) + shift.unsqueeze(1)
+
 # Diffit Freezing:
 def apply_diffit_freezing(model):
     for name, param in model.named_parameters():
@@ -107,7 +110,7 @@ def main(args):
     if args.difffit:
         print("Applying Diffit gamma blocks...")
         # Diffit:
-        for i, block in enumerate(model.blocks if not isinstance(model, DDP) else model.module.blocks):
+        for i, block in enumerate(model.blocks):
             if i < 14:
                 add_gamma_to_block(block, hidden_size=1152)  # Pass 1152 for DiT-XL/2
 
