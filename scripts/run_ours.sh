@@ -136,10 +136,11 @@ mkdir -p "$(dirname "$LOG_FILE")"
 
 create_environment
 prepare_dataset
-train_model
+# train_model
 
+# 1 1.5 
 
-GUIDANCE_VALUES=(1 1.5 2 3 4 5)
+GUIDANCE_VALUES=(2 3 4 5)
 
 for ((i=0; i<=TOTAL_STEPS; i+=CKPT_EVERY)); do
   if [[ $i -eq 0 && "$SKIP_FIRST_CKPT" -eq 1 ]]; then
@@ -156,6 +157,12 @@ for ((i=0; i<=TOTAL_STEPS; i+=CKPT_EVERY)); do
         GENERATED_DIR_ORIG="$GENERATED_DIR"
         RESULTS_FILE="${RESULTS_FILE_ORIG}_w_dgft${SAMPLE_GUIDANCE}"
         GENERATED_DIR="${GENERATED_DIR_ORIG}_w_dgft${SAMPLE_GUIDANCE}"
+
+        if [[ "$SG" -eq 2 ]]; then
+          echo "Skipping guidance value 2 sampling"
+          calculate_fid
+          continue
+        fi
         run_sampling
         calculate_fid
       done
