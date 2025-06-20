@@ -7,7 +7,7 @@ import pandas as pd
 # ----------------------------------------------------
 
 model = 'inception' # dinov2 inception
-mode = "control_normalizing_exponential_cutofflatestart/50in1to1.062" # "control_film_actual" control_normalizing_exponential/50in1to2 control_normalizing_exponential/95in1to3 control_normalizing
+mode = "control_normalizing_exponential_cutofflatestart/50in1to125" # "control_film_actual" control_normalizing_exponential/50in1to2 control_normalizing_exponential/95in1to3 control_normalizing
 ROOT_DIR = Path(f"/export/datasets/public/diffusion_datasets/tmp_weights/stanford-cars_processed/DiT_inception_ours/{mode}/")        # ← top-level directory
 METRIC     = "fd"                            # e.g. "fd", "precision", "recall", …
 OUT_CSV    = Path(f"./tables/control_normalizing_exponential95in1to3.csv") # where to write the table
