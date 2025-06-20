@@ -152,16 +152,6 @@ mkdir -p "$(dirname "$LOG_FILE")"
 
 create_environment
 prepare_dataset
-
-if [[ "$DATASET" == "ffhq256" ]]; then
-    DROPOUT_RATIO=0
-
-    # TMP
-    sample_DoG1_5
-    fid_DoG1_5
-    exit 0
-fi
-
 train_model
 
 for ((i=0; i<=TOTAL_STEPS; i+=CKPT_EVERY)); do
