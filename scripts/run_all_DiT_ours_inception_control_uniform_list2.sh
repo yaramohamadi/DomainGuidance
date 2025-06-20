@@ -12,8 +12,9 @@ SCRIPT="run_ours.sh"
 # "ffhq256"
 
 declare -a TASKS=(
- "food-101_processed"
- "artbench-10_processed"
+ "caltech-101_processed"
+ "cub-200-2011_processed"
+ "ffhq256"
 )
 
 # ========== Define per-task (latestart, mghigh, experiment_prename) triples ==========
