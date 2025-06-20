@@ -138,7 +138,7 @@ create_environment
 prepare_dataset
 train_model
 
-GUIDANCE_VALUES=(1 1.5 2 3 4 5)
+GUIDANCE_VALUES=(1.5)
 
 for ((i=0; i<=TOTAL_STEPS; i+=CKPT_EVERY)); do
   if [[ $i -eq 0 && "$SKIP_FIRST_CKPT" -eq 1 ]]; then
