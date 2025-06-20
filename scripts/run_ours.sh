@@ -136,7 +136,7 @@ mkdir -p "$(dirname "$LOG_FILE")"
 
 create_environment
 prepare_dataset
-# train_model
+train_model
 
 GUIDANCE_VALUES=(1 1.5 2 3 4 5)
 
