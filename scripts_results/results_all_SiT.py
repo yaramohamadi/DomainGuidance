@@ -65,11 +65,11 @@ for dataset_name in sorted(os.listdir(root_dir)):
     dataset_names_cleaned.append(clean_dataset_name)
 
     raw_method_paths = {
-        "baselines_finetune_W_CFG1.5/results_cg1": os.path.join(dataset_path, "All_SiT", "baselines_finetune_W_CFG1.5", "results_cg1"),
-        "baselines_finetune_W_CFG1.5/results_cg1_5": os.path.join(dataset_path, "All_SiT", "baselines_finetune_W_CFG1.5", "results_cg1_5"),
-        "baselines_finetune_W_CFG1.5/results_dog1_5": os.path.join(dataset_path, "All_SiT", "baselines_finetune_W_CFG1.5", "results_dog1_5"),
-        "baseline_mgfinetune_wtraincfg1.5": os.path.join(dataset_path, "All_SiT", "baseline_mgfinetune_wtraincfg1.5", "results"),
-        "dogfinetune_nodropout": os.path.join(dataset_path, "All_SiT", "dogfinetune_nodropout", "results"),
+        "baselines_finetune_W_CFG1.5/results_cg1": os.path.join(dataset_path, "All_SiT_2", "baselines_finetune_W_CFG1.5", "results_cg1"),
+        "baselines_finetune_W_CFG1.5/results_cg1_5": os.path.join(dataset_path, "All_SiT_2", "baselines_finetune_W_CFG1.5", "results_cg1_5"),
+        "baselines_finetune_W_CFG1.5/results_dog1_5": os.path.join(dataset_path, "All_SiT_2", "baselines_finetune_W_CFG1.5", "results_dog1_5"),
+        "baseline_mgfinetune_wtraincfg1.5": os.path.join(dataset_path, "All_SiT_2", "baseline_mgfinetune_wtraincfg1.5", "results"),
+        "dogfinetune_nodropout": os.path.join(dataset_path, "All_SiT_2", "dogfinetune_nodropout", "results"),
     }
 
     for raw_method, path in raw_method_paths.items():
