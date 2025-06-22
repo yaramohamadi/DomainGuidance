@@ -18,8 +18,8 @@ plt.rcParams.update({
 })
 
 # === CONFIGURATION ===
-ROOT_DIR = pathlib.Path("/export/datasets/public/diffusion_datasets/tmp_weights/stanford-cars_processed/DiT_inception_ours/control_normalizing_exponential_cutofflatestart/50in1to1.125/dogfinetune_LATE_START_ITER7000_MG1_W_TRAIN_DOG1.5_control1_W_MIN1_W_MAX3")
-OUT_FILE = pathlib.Path("./grids_wdgft.png")
+ROOT_DIR = pathlib.Path("/export/datasets/public/diffusion_datasets/tmp_weights/stanford-cars_processed/DiT_inception_ours/control_normalizing_exponential_cutofflatestart/50in1to1.5/dogfinetune_LATE_START_ITER7000_MG1_W_TRAIN_DOG1.5_control1_W_MIN1_W_MAX3")
+OUT_FILE = pathlib.Path("./grids_wdgft1.5.png")
 SEED = 3
 N_IMAGES = 16
 GRID_SIZE = (4, 4)
