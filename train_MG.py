@@ -298,7 +298,7 @@ def load_pretrained_model(model, pretrained_ckpt_path, image_size, tmp_dir="tmp"
 
     # All ranks load from local file
     local_ckpt_path = os.path.join(tmp_dir, "local_pretrained_ckpt.pt")
-    state_dict = torch.load(local_ckpt_path, map_location="cpu")
+    state_dict = torch.load(local_ckpt_path, map_location="cpu", weights_only=False)
 
     # Remove incompatible keys (e.g., different number of classes)
     if 'y_embedder.embedding_table.weight' in state_dict:
