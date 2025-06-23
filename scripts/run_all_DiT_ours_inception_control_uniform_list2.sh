@@ -2,7 +2,7 @@
 
 # ========== GLOBAL CONFIGURATION ==========
 SERVER="bool"
-CUDA_DEVICES="0,1"
+CUDA_DEVICES="2,3"
 SCRIPT="run_ours.sh"
 
 # "food-101_processed"
@@ -12,8 +12,6 @@ SCRIPT="run_ours.sh"
 # "ffhq256"
 
 declare -a TASKS=(
- "caltech-101_processed"
- "cub-200-2011_processed"
  "ffhq256"
 )
 
@@ -25,7 +23,7 @@ PAIR_MAP["caltech-101_processed"]="6000,0.4,1,3,0,50in1to1.125 6000,0.4,1,3,0,50
 PAIR_MAP["food-101_processed"]="7000,0.5,1,3,0,50in1to1.125 7000,0.5,1,3,0,50in1to1.062 7000,0.5,1,3,0,50in1to1.25"
 PAIR_MAP["artbench-10_processed"]="12000,1,1,3,0,50in1to1.125 12000,1,1,3,0,50in1to1.062 12000,1,1,3,0,50in1to1.25"
 PAIR_MAP["cub-200-2011_processed"]="6000,0.7,1,3,0,50in1to1.125 6000,0.7,1,3,0,50in1to1.062 6000,0.7,1,3,0,50in1to1.25"
-PAIR_MAP["ffhq256"]="8000,0.5,1,3,0,50in1to1.125 8000,0.5,1,3,0,50in1to1.062 8000,0.5,1,3,0,50in1to1.25"
+PAIR_MAP["ffhq256"]="8000,0.5,1,3,0,50in1to1.125 8000,0.5,1,3,0,50in1to1.25 8000,0.5,1,3,0,50in1to1.062"
 
 # ========== EXECUTION LOOP ==========
 for DATASET in "${TASKS[@]}"; do
