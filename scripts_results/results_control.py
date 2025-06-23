@@ -8,7 +8,7 @@ import pandas as pd
 # ─────────────────────────────────────────────────────────────────────
 model   = "dinov2"                 # "inception" or "dinov2"
 metric  = "fd"                        # "fd", "precision", "recall", …
-root    = Path("/export/datasets/public/diffusion_datasets/tmp_weights")
+root    = Path("/home/ens/AT74470/results/DoG") #  /export/datasets/public/diffusion_datasets/tmp_weights
 mode    = "control_normalizing_exponential_cutofflatestart"
 datasets = [
     "stanford-cars_processed",
@@ -29,7 +29,7 @@ re_val  = re.compile(rf"^{metric}\s*:\s*(?P<val>[0-9.]+)")
 
 def build_table(dataset: str) -> pd.DataFrame:
     """Return a (mode, w_max) × dgft DataFrame for one dataset."""
-    parent_dir = root / dataset / f"DiT_inception_ours" / mode
+    parent_dir = root / dataset / f"DiT_dino_ours" / mode
     if not parent_dir.is_dir():
         raise FileNotFoundError(f"{parent_dir} not found")
 
@@ -87,7 +87,7 @@ def build_table(dataset: str) -> pd.DataFrame:
     df.columns.name = "DGFT scale"
     return df
 
-
+print(datasets)
 # ─────────────────────────────────────────────────────────────────────
 # Main loop over datasets
 # ─────────────────────────────────────────────────────────────────────

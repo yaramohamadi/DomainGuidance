@@ -136,7 +136,15 @@ mkdir -p "$(dirname "$LOG_FILE")"
 
 create_environment
 prepare_dataset
-train_model
+
+    # Skip if dataset is stanford-cars_processed
+if [[ "$DATASET" != "stanford-cars_processed" ]]; then
+    train_model
+    echo ">>> Running training for $DATASET "
+else
+    echo ">>> Skipping training for $DATASET "
+fi
+
 
 GUIDANCE_VALUES=(1.5)
 
