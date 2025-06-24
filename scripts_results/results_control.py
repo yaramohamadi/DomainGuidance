@@ -6,7 +6,7 @@ import pandas as pd
 # ─────────────────────────────────────────────────────────────────────
 # CONFIG – edit if needed
 # ─────────────────────────────────────────────────────────────────────
-model   = "inception"                 # "inception" or "dinov2"
+model   = "dinov2"                 # "inception" or "dinov2"
 metric  = "recall"                        # "fd", "precision", "recall", …
 root    = Path("/home/ens/AT74470/results/DoG") #  /export/datasets/public/diffusion_datasets/tmp_weights
 mode    = "control_normalizing_exponential_cutofflatestart"
@@ -15,8 +15,8 @@ datasets = [
     "food-101_processed",
     "artbench-10_processed",
     "ffhq256",
-    "caltech-101_processed",
     "cub-200-2011_processed",
+        "caltech-101_processed",
 
 ]
 out_dir = Path("./tables")            # CSVs will be saved here
@@ -30,7 +30,7 @@ re_val  = re.compile(rf"^{metric}\s*:\s*(?P<val>[0-9.]+)")
 
 def build_table(dataset: str) -> pd.DataFrame:
     """Return a (mode, w_max) × dgft DataFrame for one dataset."""
-    parent_dir = root / dataset / f"DiT_inception_ours" / mode
+    parent_dir = root / dataset / f"DiT_dino_ours" / mode
     if not parent_dir.is_dir():
         raise FileNotFoundError(f"{parent_dir} not found")
 

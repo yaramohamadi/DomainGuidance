@@ -93,7 +93,11 @@ class GuidedWrapper(nn.Module):
         for block in self.base_model.blocks:
             x = block(x, c)
         x = self.base_model.final_layer(x, c)
-        return self.base_model.unpatchify(x)
+        x = self.base_model.unpatchify(x)
+        if self.base_model.__class__.__name__ == "SiT":
+            if self.base_model.learn_sigma:
+                x, _ = x.chunk(2, dim=1)
+        return x
 
     def __getattr__(self, name):
         if name in self.__dict__:
@@ -139,6 +143,7 @@ def main(args):
     # Load model:
     latent_size = args.image_size // 8
     if args.model.startswith("SiT"):
+        print("Loading SiT model...")
         model = SiT_models[args.model](
             input_size=latent_size,
             num_classes=args.num_classes,
@@ -146,6 +151,7 @@ def main(args):
         ).to(device)
         ckpt_path = args.ckpt or f"SiT-XL-2-{args.image_size}x{args.image_size}.pt"
     elif args.model.startswith("DiT"):
+        print("Loading DiT model...")
         model = DiT_models[args.model](
             input_size=latent_size,
             num_classes=args.num_classes,
@@ -155,6 +161,7 @@ def main(args):
     
     # guidance control
     if args.guidance_control > 0:
+        print("wrapping model with GuidedWrapper")
         model = GuidedWrapper(model).to(device)
 
     # Auto-download a pre-trained model or load a custom DiT checkpoint from train.py:

@@ -267,7 +267,19 @@ def our_training_losses_transport(
 
     t, x0, x1 = self.sample(x1)
     t, xt, ut = self.path_sampler.plan(t, x0, x1)
+
+    # handle guidance weight w
+    ema_kwargs = dict(model_kwargs)
+    if model_kwargs.get("w", None) is not None:
+        w = model_kwargs["w"]
+        ema_kwargs["w"] = torch.ones_like(w)
+    else:
+        w = w_dog
+        if not torch.is_tensor(w):
+            w = torch.tensor(w, dtype=torch.float32, device=xt.device)
+
     model_output = model(xt, t, **model_kwargs)
+
     B, *_, C = xt.shape
     assert model_output.size() == (B, *xt.size()[1:-1], C)
 
@@ -276,15 +288,18 @@ def our_training_losses_transport(
             y = model_kwargs["y"]
             pretrained_kwargs = {"y": torch.full_like(y, 1000)}
             pretrained_output = pretrained_model(xt, t, **pretrained_kwargs)
-            ema_output = ema(xt, t, **model_kwargs)
+            ema_output = ema(xt, t, **ema_kwargs)
 
-        # Apply DoG
         initial_ut = ut.clone().detach()
+
         if guidance_cutoff:
-            w = torch.where(t < mg_high, w_dog - 1, 0.0).view(-1, *([1] * (ut.dim() - 1)))
+            t_norm = t.float() / (self.num_timesteps - 1)
+            mask = (t_norm < mg_high).float().view(-1, *([1] * (ut.dim() - 1)))
+            w = w - 1
+            w = mask * w
             ut = ut + w * (ema_output.detach() - pretrained_output.detach())
         else:
-            ut = ut + (w_dog - 1) * (ema_output.detach() - pretrained_output.detach())
+            ut = ut + (w.view(-1, *([1] * (ut.dim() - 1))) - 1) * (ema_output.detach() - pretrained_output.detach())
 
     terms = {"pred": model_output}
     terms["loss"] = mean_flat((model_output - ut) ** 2)
@@ -319,6 +334,7 @@ def our_training_losses_transport(
         print(f"[DEBUG] Saved DoG debug images to {save_dir}")
 
     return terms
+
 
 
 ##################################################################################
@@ -389,7 +405,11 @@ class GuidedWrapper(nn.Module):
         for block in self.base_model.blocks:
             x = block(x, c)
         x = self.base_model.final_layer(x, c)
-        return self.base_model.unpatchify(x)
+        x = self.base_model.unpatchify(x)
+        if self.base_model.__class__.__name__ == "SiT":
+            if self.base_model.learn_sigma:
+                x, _ = x.chunk(2, dim=1)
+        return x
 
     def __getattr__(self, name):
         if name in self.__dict__:
