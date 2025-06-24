@@ -6,17 +6,18 @@ import pandas as pd
 # ─────────────────────────────────────────────────────────────────────
 # CONFIG – edit if needed
 # ─────────────────────────────────────────────────────────────────────
-model   = "dinov2"                 # "inception" or "dinov2"
-metric  = "fd"                        # "fd", "precision", "recall", …
+model   = "inception"                 # "inception" or "dinov2"
+metric  = "recall"                        # "fd", "precision", "recall", …
 root    = Path("/home/ens/AT74470/results/DoG") #  /export/datasets/public/diffusion_datasets/tmp_weights
 mode    = "control_normalizing_exponential_cutofflatestart"
 datasets = [
     "stanford-cars_processed",
     "food-101_processed",
     "artbench-10_processed",
+    "ffhq256",
     "caltech-101_processed",
     "cub-200-2011_processed",
-    "ffhq256",
+
 ]
 out_dir = Path("./tables")            # CSVs will be saved here
 out_dir.mkdir(exist_ok=True)
@@ -29,7 +30,7 @@ re_val  = re.compile(rf"^{metric}\s*:\s*(?P<val>[0-9.]+)")
 
 def build_table(dataset: str) -> pd.DataFrame:
     """Return a (mode, w_max) × dgft DataFrame for one dataset."""
-    parent_dir = root / dataset / f"DiT_dino_ours" / mode
+    parent_dir = root / dataset / f"DiT_inception_ours" / mode
     if not parent_dir.is_dir():
         raise FileNotFoundError(f"{parent_dir} not found")
 
@@ -39,7 +40,6 @@ def build_table(dataset: str) -> pd.DataFrame:
         if not mode_dir.is_dir():
             continue
         mode_name = mode_dir.name
-
         for root_dir in mode_dir.iterdir():  # W_MAX folders
             if not root_dir.is_dir():
                 continue
@@ -54,7 +54,7 @@ def build_table(dataset: str) -> pd.DataFrame:
                     continue
                 dgft = float(m_d.group("dgft"))
 
-                txt = next(sub.glob(f"{metric}_{model}_*.txt"), None)
+                txt = next(sub.glob(f"fd_{model}_*.txt"), None)
                 if txt is None:
                     raise FileNotFoundError(f"No metric file in {sub}")
 
@@ -102,5 +102,5 @@ for ds in datasets:
     df.to_csv(csv_path)
 
     print(f"\n=== {ds} ===")
-    print(df.to_string(float_format="%.4g"))
+    print(df.to_string(float_format="%.6g"))
     print(f"(saved to {csv_path})\n")

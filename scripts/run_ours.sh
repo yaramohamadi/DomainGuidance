@@ -138,7 +138,7 @@ create_environment
 prepare_dataset
 
     # Skip if dataset is stanford-cars_processed
-if [[ "$DATASET" != "stanford-cars_processed" ]]; then
+if [[ "$DATASET" != "cub-200-2011_processed" ]]; then
     train_model
     echo ">>> Running training for $DATASET "
 else
