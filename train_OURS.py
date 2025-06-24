@@ -168,7 +168,7 @@ def our_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, 
                     target = target + (w.view(-1, 1, 1, 1) - 1) * (ema_output.detach() - pretrained_output.detach())
 
 
-            if pretrained_model is not None and ema is not None and dist.get_rank() == 0 and counter > late_start_iter and counter % 100 == 0:
+            if pretrained_model is not None and ema is not None and dist.get_rank() == 0 and counter > late_start_iter and counter % 1000 == 0:
 
                 #print(f"[DEBUG]: w value: {w}")
                 #print(f"[DEBUG]: Model w: {model_kwargs['w']}")
@@ -289,7 +289,7 @@ def our_training_losses_transport(
     terms = {"pred": model_output}
     terms["loss"] = mean_flat((model_output - ut) ** 2)
 
-    if pretrained_model is not None and ema is not None and counter > late_start_iter and dist.get_rank() == 0 and counter % 1000 == 0:
+    if pretrained_model is not None and ema is not None and counter > late_start_iter and dist.get_rank() == 0 and counter % 6000 == 0:
         def norm_to_01(x): return (x.clamp(-1, 1) + 1) / 2
 
         alpha_t, _ = self.path_sampler.compute_alpha_t(expand_t_like_x(t, xt))

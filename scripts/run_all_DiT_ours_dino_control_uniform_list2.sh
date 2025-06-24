@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ========== GLOBAL CONFIGURATION ==========
-SERVER="taylor"
+SERVER="bool"
 CUDA_DEVICES="2,3"
 SCRIPT="run_ours.sh"
 
