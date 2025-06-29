@@ -293,9 +293,10 @@ def our_training_losses_transport(
         initial_ut = ut.clone().detach()
 
         if guidance_cutoff:
-            t_norm = t.float() / (self.num_timesteps - 1)
+            t_norm = t
             mask = (t_norm < mg_high).float().view(-1, *([1] * (ut.dim() - 1)))
             w = w - 1
+            w = w.view(-1, 1, 1, 1)
             w = mask * w
             ut = ut + w * (ema_output.detach() - pretrained_output.detach())
         else:
