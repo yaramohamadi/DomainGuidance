@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --account=def-hadi87
+#SBATCH --account=rrg-josedolz
 #SBATCH --job-name=${JOB_NAME:-Ours}  # Use $JOB_NAME if defined, else 'myjob'
 #SBATCH --output=logs/%x_%j.out
 #SBATCH --error=logs/%x_%j.err          
@@ -60,7 +60,6 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 echo "Zero norm variance is $ZERO_NORM_VARIANCE"
-
 
 EXPERIMENT_NAME="$EXPERIMENT_PRENAME/dogfinetune_LATE_START_ITER${LATE_START}_MG${MG_HIGH}_W_TRAIN_DOG${W_TRAIN_DOG}_control${GUIDANCE_CONTROL}_W_MIN${W_MIN}_W_MAX${W_MAX}"
 

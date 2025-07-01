@@ -793,6 +793,8 @@ def main(args):
                     # print(f"Exponential {args.control_distribution} guidance control from {args.w_min} to {args.w_max}")
                     w = sample_shifted_exp_custom((x.shape[0], 1), device, mode=args.control_distribution)
                 sample_shifted_exp_custom
+                print("[DoG] control distribution:", args.control_distribution)
+                print("[DoG] Sampled w values:", w.flatten().cpu().numpy())
                 model_kwargs["w"] = w
 
             #If doing profiling:
