@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # ========== GLOBAL CONFIGURATION ==========
-SERVER="bool"
-CUDA_DEVICES="0,1"
+SERVER="taylor"
+CUDA_DEVICES="2,3"
 SCRIPT="run_ours.sh"
 
 # "food-101_processed"
@@ -12,31 +12,29 @@ SCRIPT="run_ours.sh"
 # "ffhq256"
 
 declare -a TASKS=(
- "stanford-cars_processed"
+ "food-101_processed"
+ "artbench-10_processed"
 )
 
 # ========== Define per-task (latestart, mghigh, experiment_prename) triples ==========
 declare -A PAIR_MAP
 
-PAIR_MAP["stanford-cars_processed"]="7000,1,1,3,0,50in1to1.75 7000,1,1,3,0,50in1to2" 
-PAIR_MAP["caltech-101_processed"]="6000,0.4,1,3,0,50in1to1.125 6000,0.4,1,3,0,50in1to1.062 6000,0.4,1,3,0,50in1to1.25"
-PAIR_MAP["food-101_processed"]="7000,0.5,1,3,0,50in1to1.125 7000,0.5,1,3,0,50in1to1.062 7000,0.5,1,3,0,50in1to1.25"
-PAIR_MAP["artbench-10_processed"]="12000,1,1,3,0,50in1to1.125 12000,1,1,3,0,50in1to1.062 12000,1,1,3,0,50in1to1.25"
-PAIR_MAP["cub-200-2011_processed"]="6000,0.7,1,3,0,50in1to1.125 6000,0.7,1,3,0,50in1to1.062 6000,0.7,1,3,0,50in1to1.25"
-PAIR_MAP["ffhq256"]="8000,0.5,1,3,0,50in1to1.125 8000,0.5,1,3,0,50in1to1.062 8000,0.5,1,3,0,50in1to1.25"
+PAIR_MAP["stanford-cars_processed"]="7000,0.5,1,3,0,50in1to1.25,111 7000,0.5,1,3,0,50in1to1.25,110 7000,0.5,1,3,0,50in1to1.25,101 7000,0.5,1,3,0,50in1to1.25,011" 
+PAIR_MAP["food-101_processed"]="7000,0.5,1,3,0,50in1to1.25,111 7000,0.5,1,3,0,50in1to1.25,110 7000,0.5,1,3,0,50in1to1.25,101 7000,0.5,1,3,0,50in1to1.25,011" 
+PAIR_MAP["artbench-10_processed"]="12000,1,1,3,0,50in1to1.25,111 12000,1,1,3,0,50in1to1.25,110 12000,1,3,0,50in1to1.25,101 12000,1,3,0,50in1to1.25,011" 
 
 # ========== EXECUTION LOOP ==========
 for DATASET in "${TASKS[@]}"; do
   PAIRS=(${PAIR_MAP["$DATASET"]})
   for PAIR in "${PAIRS[@]}"; do
-    IFS=',' read -r LATESTART MGHIGH W_MIN W_MAX SAMPLE_GUIDANCE CONTROL_DISTRIBUTION <<< "$PAIR"
+    IFS=',' read -r LATESTART MGHIGH W_MIN W_MAX SAMPLE_GUIDANCE CONTROL_DISTRIBUTION ZERO_NORM_VARIANCE <<< "$PAIR"
 
     echo "=============================================="
-    echo "Running $SCRIPT on $DATASET | w_min: $W_MIN | w_max: $W_MAX | control_distribution: $CONTROL_DISTRIBUTION | sample_guidance $SAMPLE_GUIDANCE | latestart: $LATESTART | mghigh: $MGHIGH | prename: $EXPERIMENT_PRENAME"
+    echo "Running $SCRIPT on $DATASET | w_min: $W_MIN | w_max: $W_MAX | control_distribution: $CONTROL_DISTRIBUTION | zero_norm_variance: $ZERO_NORM_VARIANCE | sample_guidance $SAMPLE_GUIDANCE | latestart: $LATESTART | mghigh: $MGHIGH | prename: $EXPERIMENT_PRENAME"
     echo "Server: $SERVER | CUDA Devices: $CUDA_DEVICES"
     echo "----------------------------------------------"
 
-    EXPERIMENT_PRENAME="DiT_inception_ours/control_normalizing_exponential_cutofflatestart/$CONTROL_DISTRIBUTION"
+    EXPERIMENT_PRENAME="DiT_inception_ours/control_normalizing_exponential_cutofflatestart/${CONTROL_DISTRIBUTION}_zero_norm_variance_${ZERO_NORM_VARIANCE}/"
 
     CMD="scripts/$SCRIPT \
       --dataset \"$DATASET\" \
@@ -50,7 +48,8 @@ for DATASET in "${TASKS[@]}"; do
       --w_max \"$W_MAX\" \
       --w_min \"$W_MIN\" \
       --sample_guidance \"$SAMPLE_GUIDANCE\" \
-      --control_distribution \"$CONTROL_DISTRIBUTION\""
+      --control_distribution \"$CONTROL_DISTRIBUTION\" \
+      --zero_norm_variance \"$ZERO_NORM_VARIANCE\""
 
     if [[ "$SERVER" == "computecanada" ]]; then
       eval "JOB_NAME=$EXPERIMENT_PRENAME sbatch $CMD"

@@ -6,8 +6,8 @@ import pandas as pd
 # ─────────────────────────────────────────────────────────────────────
 # CONFIG – edit if needed
 # ─────────────────────────────────────────────────────────────────────
-model   = "dinov2"                 # "inception" or "dinov2"
-metric  = "recall"                        # "fd", "precision", "recall", …
+model   = "inception"                 # "inception" or "dinov2"
+metric  = "fd"                        # "fd", "precision", "recall", …
 root    = Path("/home/ens/AT74470/results/DoG") #  /export/datasets/public/diffusion_datasets/tmp_weights
 mode    = "control_normalizing_exponential_cutofflatestart"
 datasets = [
@@ -30,7 +30,7 @@ re_val  = re.compile(rf"^{metric}\s*:\s*(?P<val>[0-9.]+)")
 
 def build_table(dataset: str) -> pd.DataFrame:
     """Return a (mode, w_max) × dgft DataFrame for one dataset."""
-    parent_dir = root / dataset / f"DiT_dino_ours" / mode
+    parent_dir = root / dataset / f"SiT_{model}_ours" / mode
     if not parent_dir.is_dir():
         raise FileNotFoundError(f"{parent_dir} not found")
 
