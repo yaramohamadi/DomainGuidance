@@ -9,7 +9,6 @@ EXPERIMENT_PRENAME="DiT_inception_all_DiffFit"
 # Format: dataset_name script_name
 #  "caltech-101_processed run_baselines_finetune.sh"
 declare -a TASKS=(
- "cub-200-2011_processed run_baselines_finetune.sh"
  "artbench-10_processed run_baselines_finetune.sh"
  "ffhq256 run_baselines_finetune.sh"
  "caltech-101_processed run_baselines_finetune.sh"

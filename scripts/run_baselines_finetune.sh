@@ -22,6 +22,7 @@ DROPOUT_RATIO=0.1
 
 W_DOG=1.5
 W_CFG=1.5
+DIFFFIT=0
 
 # Load all logic
 source scripts/config.sh
@@ -152,7 +153,6 @@ mkdir -p "$(dirname "$LOG_FILE")"
 
 create_environment
 prepare_dataset
-
 train_model
 
 for ((i=0; i<=TOTAL_STEPS; i+=CKPT_EVERY)); do
