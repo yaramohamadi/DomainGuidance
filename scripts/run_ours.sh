@@ -30,6 +30,7 @@ SAMPLE_GUIDANCE=1.5
 W_TRAIN_DOG=1.5
 DROPOUT_RATIO=0 # TODO Change this back to 0   
 CONTROL_DISTRIBUTION="uniform"
+ZERO_NORM_VARIANCE="111"
 
 # Load all logic
 source scripts/config.sh
@@ -51,6 +52,7 @@ while [[ "$#" -gt 0 ]]; do
     --w_min) W_MIN="$2"; shift ;;
     --sample_guidance) SAMPLE_GUIDANCE="$2"; shift ;;
     --control_distribution) CONTROL_DISTRIBUTION="$2"; shift ;;
+    --zero_norm_variance) ZERO_NORM_VARIANCE="$2"; shift ;;
 
     *) echo "Unknown parameter passed: $1"; exit 1 ;;
   esac
@@ -86,7 +88,8 @@ train_model() {
         --guidance-control "$GUIDANCE_CONTROL" \
         --w-max "$W_MAX" \
         --w-min "$W_MIN" \
-        --control-distribution "$CONTROL_DISTRIBUTION"
+        --control-distribution "$CONTROL_DISTRIBUTION" \
+        --zero-norm-variance "$ZERO_NORM_VARIANCE" 
 }
 
 run_sampling() {
@@ -104,7 +107,8 @@ run_sampling() {
         --num-sampling-steps "$NUM_SAMPLE_STEPS" \
         --dropout-ratio "$DROPOUT_RATIO" \
         --guidance-control "$GUIDANCE_CONTROL" \
-        --w-dgft "$SAMPLE_GUIDANCE"
+        --w-dgft "$SAMPLE_GUIDANCE" \
+        --zero-norm-variance "$ZERO_NORM_VARIANCE" 
 }
 
 calculate_fid() {
@@ -137,13 +141,14 @@ mkdir -p "$(dirname "$LOG_FILE")"
 create_environment
 prepare_dataset
 
+train_model
     # Skip if dataset is stanford-cars_processed
-if [[ "$DATASET" != "cub-200-2011_processed" ]]; then
-    train_model
-    echo ">>> Running training for $DATASET "
-else
-    echo ">>> Skipping training for $DATASET "
-fi
+#if [[ "$DATASET" != "cub-200-2011_processed" ]]; then
+#    train_model
+#    echo ">>> Running training for $DATASET "
+#else
+#    echo ">>> Skipping training for $DATASET "
+#fi
 
 
 GUIDANCE_VALUES=(1.5)

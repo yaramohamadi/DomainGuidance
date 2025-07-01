@@ -267,7 +267,19 @@ def our_training_losses_transport(
 
     t, x0, x1 = self.sample(x1)
     t, xt, ut = self.path_sampler.plan(t, x0, x1)
+
+    # handle guidance weight w
+    ema_kwargs = dict(model_kwargs)
+    if model_kwargs.get("w", None) is not None:
+        w = model_kwargs["w"]
+        ema_kwargs["w"] = torch.ones_like(w)
+    else:
+        w = w_dog
+        if not torch.is_tensor(w):
+            w = torch.tensor(w, dtype=torch.float32, device=xt.device)
+
     model_output = model(xt, t, **model_kwargs)
+
     B, *_, C = xt.shape
     assert model_output.size() == (B, *xt.size()[1:-1], C)
 
@@ -276,15 +288,19 @@ def our_training_losses_transport(
             y = model_kwargs["y"]
             pretrained_kwargs = {"y": torch.full_like(y, 1000)}
             pretrained_output = pretrained_model(xt, t, **pretrained_kwargs)
-            ema_output = ema(xt, t, **model_kwargs)
+            ema_output = ema(xt, t, **ema_kwargs)
 
-        # Apply DoG
         initial_ut = ut.clone().detach()
+
         if guidance_cutoff:
-            w = torch.where(t < mg_high, w_dog - 1, 0.0).view(-1, *([1] * (ut.dim() - 1)))
+            t_norm = t
+            mask = (t_norm < mg_high).float().view(-1, *([1] * (ut.dim() - 1)))
+            w = w - 1
+            w = w.view(-1, 1, 1, 1)
+            w = mask * w
             ut = ut + w * (ema_output.detach() - pretrained_output.detach())
         else:
-            ut = ut + (w_dog - 1) * (ema_output.detach() - pretrained_output.detach())
+            ut = ut + (w.view(-1, *([1] * (ut.dim() - 1))) - 1) * (ema_output.detach() - pretrained_output.detach())
 
     terms = {"pred": model_output}
     terms["loss"] = mean_flat((model_output - ut) ** 2)
@@ -321,6 +337,7 @@ def our_training_losses_transport(
     return terms
 
 
+
 ##################################################################################
 #                              Guidance control                                  #
 ##################################################################################
@@ -328,68 +345,70 @@ import torch
 import torch.nn as nn
 import math
 import re
+import torch
+import torch.nn as nn
+
 
 class GuidedWrapper(nn.Module):
     """
-    Unified wrapper for DiT or SiT that optionally uses FiLM-style modulation on y_emb via guidance scale `w`.
-    If use_film=True, FiLM is applied. Otherwise, an additive embedding is added to t_emb + y_emb.
+    Wrapper for DiT or SiT that uses additive embedding guidance,
+    configurable via a 3-bit string: zero_init, layer_norm, variance_match.
     """
-    def __init__(self, base_model, w_dim=1, embed_dim=1152, hidden_dim=128, use_film=False):
+
+    def __init__(self, base_model, zero_norm_variance="111", w_dim=1, embed_dim=1152, hidden_dim=128):
         super().__init__()
         self.base_model = base_model
         self.embed_dim = embed_dim
-        self.use_film = use_film
 
-        if self.use_film:
-            self.film = nn.Sequential(
-                nn.Linear(w_dim, hidden_dim),
-                nn.SiLU(),
-                nn.Linear(hidden_dim, 2 * embed_dim)
-            )
-            self._init_film()
-        else:
-            self.w_embed = nn.Sequential(
-                nn.Linear(w_dim, embed_dim),
-                nn.SiLU(),
-                nn.Linear(embed_dim, embed_dim),
-                nn.LayerNorm(embed_dim),
-            )
+        # Parse boolean flags from zero_norm_variance string
+        assert len(zero_norm_variance) == 3, \
+            "zero_norm_variance must be a 3-bit string like '101'"
+        self.zero_init = zero_norm_variance[0] == "1"
+        self.use_layer_norm = zero_norm_variance[1] == "1"
+        self.variance_match = zero_norm_variance[2] == "1"
 
-    def _init_film(self):
-        """ Initialize FiLM MLP so that gamma=1, beta=0 at start. """
-        final_layer = self.film[-1]
-        nn.init.zeros_(final_layer.weight)
-        with torch.no_grad():
-            final_layer.bias[:self.embed_dim].fill_(1.0)  # gamma
-            final_layer.bias[self.embed_dim:].zero_()     # beta
+        # Create embedding MLP for guidance scalar
+        layers = [
+            nn.Linear(w_dim, embed_dim),
+            nn.SiLU(),
+            nn.Linear(embed_dim, embed_dim),
+        ]
+        if self.use_layer_norm:
+            layers.append(nn.LayerNorm(embed_dim))
+        self.w_embed = nn.Sequential(*layers)
+
+        # Optional zero init
+        if self.zero_init:
+            for m in self.w_embed.modules():
+                if isinstance(m, nn.Linear):
+                    nn.init.zeros_(m.weight)
+                    nn.init.zeros_(m.bias)
 
     def forward(self, x, t, y, w=None):
-        # Embed timestep and class label
-        t_emb = self.base_model.t_embedder(t)                 # (B, D)
-        y_emb = self.base_model.y_embedder(y, self.training)  # (B, D)
+        t_emb = self.base_model.t_embedder(t)                # (B, D)
+        y_emb = self.base_model.y_embedder(y, self.training) # (B, D)
 
         if w is not None:
-            w = w.view(-1, 1)  # ensure shape (B, 1)
+            w = w.view(-1, 1)  # (B, 1)
+            w_emb = self.w_embed(w - 1)  # (B, D)
 
-            if self.use_film:
-                gamma_beta = self.film(w)                      # (B, 2*D)
-                gamma, beta = gamma_beta.chunk(2, dim=-1)      # (B, D), (B, D)
-                y_emb = gamma * y_emb + beta
-                c = t_emb + y_emb
-            else:
-                w_emb = self.w_embed(w - 1)                    # (B, D)
+            if self.variance_match:
                 cond_std = (t_emb + y_emb).std(dim=-1, keepdim=True).detach()
-                w_emb = w_emb * cond_std * 0.5
-                c = t_emb + y_emb + w_emb
+                w_emb = w_emb * cond_std * 0.5  # Optional scale
+
+            c = t_emb + y_emb + w_emb
         else:
             c = t_emb + y_emb
 
-        # Forward through base model
         x = self.base_model.x_embedder(x) + self.base_model.pos_embed
         for block in self.base_model.blocks:
             x = block(x, c)
         x = self.base_model.final_layer(x, c)
-        return self.base_model.unpatchify(x)
+        x = self.base_model.unpatchify(x)
+
+        if self.base_model.__class__.__name__ == "SiT" and self.base_model.learn_sigma:
+            x, _ = x.chunk(2, dim=1)
+        return x
 
     def __getattr__(self, name):
         if name in self.__dict__:
@@ -472,7 +491,16 @@ def load_pretrained_model(model, pretrained_ckpt_path, image_size, tmp_dir="tmp"
 
     # All ranks load from local file
     local_ckpt_path = os.path.join(tmp_dir, "local_pretrained_ckpt.pt")
-    state_dict = torch.load(local_ckpt_path, map_location="cpu")
+    import time
+    for attempt in range(50):
+        try:
+            state_dict = torch.load(local_ckpt_path, map_location="cpu")
+            break
+        except RuntimeError as e:
+            print(f"Attempt {attempt + 1} failed: {e}")
+            time.sleep(5)
+    else:
+        raise RuntimeError("Failed to load checkpoint after 10 attempts.")
 
     # Remove incompatible keys (e.g., different number of classes)
     if 'y_embedder.embedding_table.weight' in state_dict:
@@ -511,7 +539,16 @@ def load_exact_pretrained_model(model, pretrained_ckpt_path, image_size, tmp_dir
     dist.barrier()
 
     local_ckpt_path = os.path.join(tmp_dir, "local_pretrained_ckpt.pt")
-    state_dict = torch.load(local_ckpt_path, map_location="cpu")
+    import time
+    for attempt in range(50):
+        try:
+            state_dict = torch.load(local_ckpt_path, map_location="cpu")
+            break
+        except RuntimeError as e:
+            print(f"Attempt {attempt + 1} failed: {e}")
+            time.sleep(5)
+    else:
+        raise RuntimeError("Failed to load checkpoint after 10 attempts.")
 
     missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=True)  # <-- strict!
 
@@ -649,7 +686,7 @@ def main(args):
     # Guidance control:
     if args.guidance_control:
         logger.info("[DoG] Using guided model wrapper with learnable guidance scale.")
-        model = GuidedWrapper(model).to(device)
+        model = GuidedWrapper(model, args.zero_norm_variance).to(device)
     else:
         logger.info("[DoG] Using standard model without guidance control.")
 
@@ -998,6 +1035,7 @@ if __name__ == "__main__":
     parser.add_argument("--w-max", type=float, default=1.0, help="Maximum guidance scale") # DOG
     parser.add_argument("--w-min", type=float, default=1.0, help="Maximum guidance scale") # DOG
     parser.add_argument("--control-distribution", type=str, default="uniform") # DOG
+    parser.add_argument("--zero-norm-variance", type=str, default="111") # DOG
     def none_or_str(value):
         if value == 'None':
             return None

@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # ========== GLOBAL CONFIGURATION ==========
-SERVER="bool"
-CUDA_DEVICES="0,1"
+SERVER="taylor"
+CUDA_DEVICES="2,3"
 SCRIPT="run_ours.sh"
 
 # "food-101_processed"
@@ -13,17 +13,22 @@ SCRIPT="run_ours.sh"
 
 declare -a TASKS=(
  "stanford-cars_processed"
+ "food-101_processed"
+ "artbench-10_processed"
+ "caltech-101_processed"
+ "cub-200-2011_processed"
+ "ffhq256"
 )
 
 # ========== Define per-task (latestart, mghigh, experiment_prename) triples ==========
 declare -A PAIR_MAP
 
-PAIR_MAP["stanford-cars_processed"]="7000,1,1,3,0,50in1to1.75 7000,1,1,3,0,50in1to2" 
-PAIR_MAP["caltech-101_processed"]="6000,0.4,1,3,0,50in1to1.125 6000,0.4,1,3,0,50in1to1.062 6000,0.4,1,3,0,50in1to1.25"
-PAIR_MAP["food-101_processed"]="7000,0.5,1,3,0,50in1to1.125 7000,0.5,1,3,0,50in1to1.062 7000,0.5,1,3,0,50in1to1.25"
-PAIR_MAP["artbench-10_processed"]="12000,1,1,3,0,50in1to1.125 12000,1,1,3,0,50in1to1.062 12000,1,1,3,0,50in1to1.25"
-PAIR_MAP["cub-200-2011_processed"]="6000,0.7,1,3,0,50in1to1.125 6000,0.7,1,3,0,50in1to1.062 6000,0.7,1,3,0,50in1to1.25"
-PAIR_MAP["ffhq256"]="8000,0.5,1,3,0,50in1to1.125 8000,0.5,1,3,0,50in1to1.062 8000,0.5,1,3,0,50in1to1.25"
+PAIR_MAP["stanford-cars_processed"]="6000,1,1,3,0,50in1to1.25" # 6000 1
+PAIR_MAP["caltech-101_processed"]="10000,0.9,1,3,0,50in1to1.25"
+PAIR_MAP["food-101_processed"]="6000,1,1,3,0,50in1to1.25"
+PAIR_MAP["artbench-10_processed"]="12000,0.9,1,3,0,50in1to1.25"
+PAIR_MAP["cub-200-2011_processed"]="6000,1,1,3,0,50in1to1.25"
+PAIR_MAP["ffhq256"]="12000,0.9,1,3,0,50in1to1.25"
 
 # ========== EXECUTION LOOP ==========
 for DATASET in "${TASKS[@]}"; do
@@ -36,7 +41,7 @@ for DATASET in "${TASKS[@]}"; do
     echo "Server: $SERVER | CUDA Devices: $CUDA_DEVICES"
     echo "----------------------------------------------"
 
-    EXPERIMENT_PRENAME="DiT_inception_ours/control_normalizing_exponential_cutofflatestart/$CONTROL_DISTRIBUTION"
+    EXPERIMENT_PRENAME="SiT_dino_ours/control_normalizing_exponential_cutofflatestart/$CONTROL_DISTRIBUTION"
 
     CMD="scripts/$SCRIPT \
       --dataset \"$DATASET\" \
@@ -45,7 +50,7 @@ for DATASET in "${TASKS[@]}"; do
       --experiment_prename \"$EXPERIMENT_PRENAME\" \
       --latestart \"$LATESTART\" \
       --mghigh \"$MGHIGH\" \
-      --model_name \"DiT-XL/2\" \
+      --model_name \"SiT-XL/2\" \
       --guidance_control \"1\" \
       --w_max \"$W_MAX\" \
       --w_min \"$W_MIN\" \

@@ -17,14 +17,13 @@ method_name_map = {
 
 # === Dataset-specific parameters for Inception ===
 PAIR_MAP = {
-    "stanford-cars_processed": "7000,0.6",
-    "caltech-101_processed": "6000,0.4",
-    "food-101_processed": "7000,0.5",
-    "artbench-10_processed": "12000,1",
-    "cub-200-2011_processed": "6000,0.7",
-    "ffhq256": "8000,0.5"
+    "stanford-cars_processed": "6000,1",
+    "caltech-101_processed": "10000,0.7",
+    "food-101_processed": "6000,1",
+    "artbench-10_processed": "12000,0.4",
+    "cub-200-2011_processed": "6000,1",
+    "ffhq256": "12000,1"
 }
-
 
 # === Pretty display names for LaTeX ===
 custom_method_names = {

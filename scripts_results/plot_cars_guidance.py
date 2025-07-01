@@ -37,8 +37,8 @@ def collect_paths(root: pathlib.Path):
     return dict(sorted(out.items()))
 
 folders = collect_paths(ROOT_DIR)
-folders = {k: v for k, v in folders.items() if 1 <= k <= 4}
-if len(folders) != 4:
+folders = {k: v for k, v in folders.items() if 1 <= k <= 5}
+if len(folders) != 5:
     raise RuntimeError(f"Expected 4 folders w_dgft1 to w_dgft4, got {len(folders)}")
 
 # === GET COMMON FILENAMES ===
