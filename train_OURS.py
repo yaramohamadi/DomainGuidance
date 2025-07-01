@@ -351,7 +351,18 @@ def load_pretrained_model(model, pretrained_ckpt_path, image_size, tmp_dir="tmp"
 
     # All ranks load from local file
     local_ckpt_path = os.path.join(tmp_dir, "local_pretrained_ckpt.pt")
-    state_dict = torch.load(local_ckpt_path, map_location="cpu")
+
+
+    import time
+    for attempt in range(50):
+        try:
+            state_dict = torch.load(local_ckpt_path, map_location="cpu")
+            break
+        except RuntimeError as e:
+            print(f"Attempt {attempt + 1} failed: {e}")
+            time.sleep(5)
+    else:
+        raise RuntimeError("Failed to load checkpoint after 10 attempts.")
 
     # Remove incompatible keys (e.g., different number of classes)
     if 'y_embedder.embedding_table.weight' in state_dict:
@@ -390,7 +401,17 @@ def load_exact_pretrained_model(model, pretrained_ckpt_path, image_size, tmp_dir
     dist.barrier()
 
     local_ckpt_path = os.path.join(tmp_dir, "local_pretrained_ckpt.pt")
-    state_dict = torch.load(local_ckpt_path, map_location="cpu")
+
+    import time
+    for attempt in range(50):
+        try:
+            state_dict = torch.load(local_ckpt_path, map_location="cpu")
+            break
+        except RuntimeError as e:
+            print(f"Attempt {attempt + 1} failed: {e}")
+            time.sleep(5)
+    else:
+        raise RuntimeError("Failed to load checkpoint after 10 attempts.")
 
     missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=True)  # <-- strict!
 
@@ -516,7 +537,6 @@ def main(args):
         )
         pretrained_model = DiT_models[args.model](input_size=latent_size, num_classes=1000)
     # Load pre-trained weights if provided:
-    model = load_pretrained_model(model, args.pretrained_ckpt, args.image_size)
 
     # DoG
     # Load a pre-trained model for domain guidance

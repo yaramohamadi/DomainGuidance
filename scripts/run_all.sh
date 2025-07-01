@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash         
 
 # ========== GLOBAL CONFIGURATION ==========
 SERVER="taylor"

@@ -1,15 +1,17 @@
 #!/bin/bash
 
 # ========== GLOBAL CONFIGURATION ==========
-SERVER="bool2"
+SERVER="computecanada"
 CUDA_DEVICES="0,1"
 SCRIPT="run_ours.sh"
 EXPERIMENT_PRENAME="DiT_inception_ours_DiffFit"
 
 declare -a TASKS=(
- "cub-200-2011_processed run_baselines_finetune.sh"
- "artbench-10_processed run_baselines_finetune.sh"
- "ffhq256 run_baselines_finetune.sh"
+ "stanford-cars_processed"
+ "food-101_processed"
+ "caltech-101_processed"
+ "ffhq256"
+ "cub-200-2011_processed"
 )
 
 # ========== Define per-task (latestart, mghigh, experiment_prename) triples ==========
@@ -44,7 +46,11 @@ for DATASET in "${TASKS[@]}"; do
       --model_name \"DiT-XL/2\" \
       --difffit \"1\""
 
-    eval "bash $CMD"
+    if [[ "$SERVER" == "computecanada" ]]; then
+      eval "JOB_NAME=$EXPERIMENT_PRENAME sbatch $CMD"
+    else
+      eval "bash $CMD"
+    fi
 
     echo "✅ Finished $SCRIPT on $DATASET | latestart: $LATESTART | mghigh: $MGHIGH | prename: $EXPERIMENT_PRENAME"
     echo "=============================================="

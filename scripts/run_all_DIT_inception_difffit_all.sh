@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # ========== GLOBAL CONFIGURATION ==========
-SERVER="bool"
-CUDA_DEVICES="1,3"
+SERVER="computecanada"
+CUDA_DEVICES="0,1"
 EXPERIMENT_PRENAME="DiT_inception_all_DiffFit"
 
 # ========== DATASET TO SCRIPT MAPPING ==========
@@ -12,6 +12,10 @@ declare -a TASKS=(
  "cub-200-2011_processed run_baselines_finetune.sh"
  "artbench-10_processed run_baselines_finetune.sh"
  "ffhq256 run_baselines_finetune.sh"
+ "caltech-101_processed run_baselines_finetune.sh"
+ "food-101_processed run_baselines_finetune.sh"
+ "stanford-cars_processed run_baselines_finetune.sh"
+
 )
 
 # ========== EXECUTION LOOP ==========
@@ -31,7 +35,11 @@ for TASK in "${TASKS[@]}"; do
     --model_name \"DiT-XL/2\" \
     --difffit \"1\""
 
-  eval "bash $CMD"
+  if [[ "$SERVER" == "computecanada" ]]; then
+      eval "JOB_NAME=$EXPERIMENT_PRENAME sbatch $CMD"
+  else
+    eval "bash $CMD"
+  fi
 
   echo "✅ Finished $SCRIPT on $DATASET"
   echo "=============================================="

@@ -1,16 +1,16 @@
 #!/bin/bash
-#SBATCH --account=def-hadi87
+#SBATCH --account=rrg-josedolz
 #SBATCH --job-name=${JOB_NAME:-Ours}  # Use $JOB_NAME if defined, else 'myjob'
 #SBATCH --output=logs/%x_%j.out
 #SBATCH --error=logs/%x_%j.err          
-#SBATCH --time=06:30:00
+#SBATCH --time=17:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=16
 #SBATCH --gres=gpu:a100:2              
 #SBATCH --mem=80G                        
 #SBATCH --mail-user=yara.mohammadi-bahram.1@ens.etsmtl.ca 
-#SBATCH --mail-type=ALL           
+#SBATCH --mail-type=ALL  
 
 # ====================== DEFAULT CONFIGURATION ======================
 
@@ -152,15 +152,6 @@ mkdir -p "$(dirname "$LOG_FILE")"
 
 create_environment
 prepare_dataset
-
-if [[ "$DATASET" == "ffhq256" ]]; then
-    DROPOUT_RATIO=0
-
-    # TMP
-    sample_DoG1_5
-    fid_DoG1_5
-    exit 0
-fi
 
 train_model
 
