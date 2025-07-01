@@ -13,11 +13,9 @@ plt.rcParams.update({
 })
 
 # 95 % cut-off values and lambdas
-upper_bounds = [1.0625, 1.125, 1.25, 1.5, 1.75, 2.0]
-p = 0.5
-lambdas = [-np.log(1 - p) / (u - 1.0) for u in upper_bounds]
+upper_bounds = [1.25, 1.5, 2, 3, 4, 5]
 p = 0.95
-upper_bounds = [1 - np.log(1 - p) / lam for lam in lambdas]
+lambdas = [-np.log(1 - p) / (u - 1.0) for u in upper_bounds]
 
 print(upper_bounds)
 
@@ -35,13 +33,13 @@ for upper, lam, color in zip(
     mask = x <= upper
 
     ax.plot(x[mask], cdf[mask], color=color, lw=2,
-            label=rf"$\lambda=${lam:.2f}")
+            label=rf"$\lambda=${lam:.1f}")
     ax.fill_between(x[mask], 0, cdf[mask], color=color, alpha=0.15)
 
 # Axis labels and legend
-ax.set_xlabel(r"Training-time $\omega$")
+ax.set_xlabel(r"Train-time $\omega$")
 ax.set_ylabel("CDF")
-ax.set_xlim(1, 5.6)
+ax.set_xlim(1, 5.1)
 ax.set_yticks([0,0.5,1])
 ax.set_ylim(0, 1.05)
 ax.legend(frameon=False, fontsize=16)

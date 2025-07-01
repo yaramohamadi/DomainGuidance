@@ -7,8 +7,8 @@ import pandas as pd
 # CONFIG – edit if needed
 # ─────────────────────────────────────────────────────────────────────
 model   = "inception"                 # "inception" or "dinov2"
-metric  = "recall"                        # "fd", "precision", "recall", …
-root    = Path("/home/ens/AT74470/results/DoG") #  /export/datasets/public/diffusion_datasets/tmp_weights
+metric  = "precision"                        # "fd", "precision", "recall", …
+root    = Path("/export/datasets/public/diffusion_datasets/tmp_weights") #    /home/ens/AT74470/results/DoG
 mode    = "control_normalizing_exponential_cutofflatestart"
 datasets = [
     "stanford-cars_processed",
