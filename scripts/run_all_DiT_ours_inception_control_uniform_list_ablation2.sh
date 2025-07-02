@@ -12,16 +12,18 @@ SCRIPT="run_ours.sh"
 # "ffhq256"
 
 declare -a TASKS=(
- "food-101_processed"
+#  "food-101_processed"
  "artbench-10_processed"
 )
 
 # ========== Define per-task (latestart, mghigh, experiment_prename) triples ==========
 declare -A PAIR_MAP
 
-PAIR_MAP["stanford-cars_processed"]="7000,0.5,1,3,0,50in1to1.25,000 7000,0.5,1,3,0,50in1to1.25,001 7000,0.5,1,3,0,50in1to1.25,010 7000,0.5,1,3,0,50in1to1.25,100" 
-PAIR_MAP["food-101_processed"]="7000,0.5,1,3,0,50in1to1.25,000 7000,0.5,1,3,0,50in1to1.25,001 7000,0.5,1,3,0,50in1to1.25,010 7000,0.5,1,3,0,50in1to1.25,100" 
-PAIR_MAP["artbench-10_processed"]="12000,1,1,3,0,50in1to1.25,000 12000,1,1,3,0,50in1to1.25,001 12000,1,3,0,50in1to1.25,010 12000,1,3,0,50in1to1.25,100" 
+# PAIR_MAP["stanford-cars_processed"]="7000,0.5,1,3,0,50in1to1.25,000 7000,0.5,1,3,0,50in1to1.25,001 7000,0.5,1,3,0,50in1to1.25,010 7000,0.5,1,3,0,50in1to1.25,100" 
+# PAIR_MAP["food-101_processed"]="7000,0.5,1,3,0,50in1to1.25,000 7000,0.5,1,3,0,50in1to1.25,001 7000,0.5,1,3,0,50in1to1.25,010 7000,0.5,1,3,0,50in1to1.25,100" 
+# PAIR_MAP["artbench-10_processed"]="12000,1,1,3,0,50in1to1.25,000 12000,1,1,3,0,50in1to1.25,001 12000,1,1,3,0,50in1to1.25,010 12000,1,1,3,0,50in1to1.25,100" 
+
+PAIR_MAP["artbench-10_processed"]="12000,1,1,3,0,50in1to1.25,001" 
 
 # ========== EXECUTION LOOP ==========
 for DATASET in "${TASKS[@]}"; do

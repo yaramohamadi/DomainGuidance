@@ -109,18 +109,18 @@ if len(handles) % target_cols != 0:
         handles.append(plt.Line2D([], [], linestyle=''))  # Invisible handle
         labels.append('')  # Empty label
 
-fig.legend(
-    handles, labels,
-    loc='lower center',
-    bbox_to_anchor=(0.5, -0.1),
-    ncol=3,  # or whatever number of columns you use
-    columnspacing=1.2,
-    handletextpad=0.5,
-    frameon=True,               # <-- enables the legend box
-    fancybox=True,             # <-- optional: rounded corners
-    edgecolor='gray',         # <-- box border color
-    facecolor='white',         # <-- background color
-)
+#fig.legend(
+#     handles, labels,
+#     loc='lower center',
+#     bbox_to_anchor=(0.5, -0.1),
+#     ncol=3,  # or whatever number of columns you use
+#     columnspacing=1.2,
+#     handletextpad=0.5,
+#     frameon=True,               # <-- enables the legend box
+#     fancybox=True,             # <-- optional: rounded corners
+#     edgecolor='gray',         # <-- box border color
+#     facecolor='white',         # <-- background color
+# )
 # Adjust layout
 plt.tight_layout(rect=[0, 0.05, 1, 1])
 plt.savefig("latestart_ablation_results_highlighted.png", bbox_inches='tight', dpi=300)
