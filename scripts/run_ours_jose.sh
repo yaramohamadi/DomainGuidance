@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --account=def-hadi87
+#SBATCH --account=rrg-josedolz
 #SBATCH --job-name=${JOB_NAME:-Ours}  # Use $JOB_NAME if defined, else 'myjob'
 #SBATCH --output=logs/%x_%j.out
 #SBATCH --error=logs/%x_%j.err          
@@ -55,7 +55,6 @@ resolve_server_paths
 resolve_dataset_config
 
 GENERATED_DIR="$SLURM_TMPDIR/samples" # TODO -> Change for qualitative experiments in which you need samples
-
 
 # Define any additional specific parameters here
 

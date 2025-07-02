@@ -401,7 +401,6 @@ def load_exact_pretrained_model(model, pretrained_ckpt_path, image_size, tmp_dir
     dist.barrier()
 
     local_ckpt_path = os.path.join(tmp_dir, "local_pretrained_ckpt.pt")
-<<<<<<< HEAD
 
     import time
     for attempt in range(50):
@@ -413,9 +412,6 @@ def load_exact_pretrained_model(model, pretrained_ckpt_path, image_size, tmp_dir
             time.sleep(5)
     else:
         raise RuntimeError("Failed to load checkpoint after 10 attempts.")
-=======
-    state_dict = torch.load(local_ckpt_path, map_location="cpu", weights_only=False)
->>>>>>> daaef203954131a7ae4cd51e330ecbdc6264cdb6
 
     missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=True)  # <-- strict!
 
