@@ -19,9 +19,14 @@ declare -a TASKS=(
 # ========== Define per-task (latestart, mghigh, experiment_prename) triples ==========
 declare -A PAIR_MAP
 
-PAIR_MAP["stanford-cars_processed"]="7000,0.5,1,3,0,50in1to1.25,111 7000,0.5,1,3,0,50in1to1.25,110 7000,0.5,1,3,0,50in1to1.25,101 7000,0.5,1,3,0,50in1to1.25,011" 
-PAIR_MAP["food-101_processed"]="7000,0.5,1,3,0,50in1to1.25,111 7000,0.5,1,3,0,50in1to1.25,110 7000,0.5,1,3,0,50in1to1.25,101 7000,0.5,1,3,0,50in1to1.25,011" 
-PAIR_MAP["artbench-10_processed"]="12000,1,1,3,0,50in1to1.25,111 12000,1,1,3,0,50in1to1.25,110 12000,1,3,0,50in1to1.25,101 12000,1,3,0,50in1to1.25,011" 
+# PAIR_MAP["stanford-cars_processed"]="7000,0.5,1,3,0,50in1to1.25,111 7000,0.5,1,3,0,50in1to1.25,110 7000,0.5,1,3,0,50in1to1.25,101 7000,0.5,1,3,0,50in1to1.25,011" 
+# PAIR_MAP["food-101_processed"]="7000,0.5,1,3,0,50in1to1.25,111 7000,0.5,1,3,0,50in1to1.25,110 7000,0.5,1,3,0,50in1to1.25,101 7000,0.5,1,3,0,50in1to1.25,011" 
+# PAIR_MAP["artbench-10_processed"]="12000,1,1,3,0,50in1to1.25,111 12000,1,1,3,0,50in1to1.25,110 12000,1,3,0,50in1to1.25,101 12000,1,3,0,50in1to1.25,011" 
+
+PAIR_MAP["food-101_processed"]="7000,0.5,1,3,0,50in1to1.25,001" 
+PAIR_MAP["artbench-10_processed"]="12000,1,1,3,0,50in1to1.25,110 12000,1,1,3,0,50in1to1.25,101 12000,1,1,3,0,50in1to1.25,011" 
+
+
 
 # ========== EXECUTION LOOP ==========
 for DATASET in "${TASKS[@]}"; do

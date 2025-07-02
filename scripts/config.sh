@@ -155,20 +155,19 @@ prepare_dataset() {
   # For other servers, proceed with normal extraction
   if [ -d "$REAL_DATA_DIR" ] && [ "$(ls -A "$REAL_DATA_DIR")" ]; then
     echo ">>> Dataset already exists at: $REAL_DATA_DIR. Skipping extraction."
+  else
+    echo ">>> Preparing dataset..."
+    mkdir -p "$DATA_TARGET_DIR"
+    unzip -qn "$DATA_DIR_ZIP" -d "$DATA_TARGET_DIR"
+    # Special case: ffhq256 needs images inside a dummy class folder
+    if [[ "$DATASET" == "ffhq256" ]]; then
+      echo ">>> Detected ffhq256: moving images to dummy class folder..."
+      mkdir -p "$REAL_DATA_DIR/dummy_class"
+      find "$REAL_DATA_DIR" -maxdepth 1 -type f -iname '*.png' -exec mv {} "$REAL_DATA_DIR/dummy_class/" \;
+    fi
   fi
-
-  echo ">>> Preparing dataset..."
-  mkdir -p "$DATA_TARGET_DIR"
-  unzip -qn "$DATA_DIR_ZIP" -d "$DATA_TARGET_DIR"
   find "$REAL_DATA_DIR" -name '._*' -delete
   echo ">>> Dataset prepared at: $REAL_DATA_DIR"
-
-  # Special case: ffhq256 needs images inside a dummy class folder
-  if [[ "$DATASET" == "ffhq256" ]]; then
-    echo ">>> Detected ffhq256: moving images to dummy class folder..."
-    mkdir -p "$REAL_DATA_DIR/dummy_class"
-    find "$REAL_DATA_DIR" -maxdepth 1 -type f -iname '*.png' -exec mv {} "$REAL_DATA_DIR/dummy_class/" \;
-  fi
 
 }
 

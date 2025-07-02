@@ -141,7 +141,7 @@ mkdir -p "$(dirname "$LOG_FILE")"
 create_environment
 prepare_dataset
 
-train_model
+# train_model
     # Skip if dataset is stanford-cars_processed
 #if [[ "$DATASET" != "cub-200-2011_processed" ]]; then
 #    train_model
@@ -169,17 +169,17 @@ for ((i=0; i<=TOTAL_STEPS; i+=CKPT_EVERY)); do
         RESULTS_FILE="${RESULTS_FILE_ORIG}_w_dgft${SAMPLE_GUIDANCE}"
         GENERATED_DIR="${GENERATED_DIR_ORIG}_w_dgft${SAMPLE_GUIDANCE}"
 
-        run_sampling
+        # run_sampling
         calculate_fid
       done
     else
       RESULTS_FILE="${RESULTS_FILE}_w_dgft${SAMPLE_GUIDANCE}"
       GENERATED_DIR="${GENERATED_DIR}_w_dgft${SAMPLE_GUIDANCE}"
-      run_sampling
+      # run_sampling
       calculate_fid
     fi
   else
-    run_sampling
+    # run_sampling
     calculate_fid
   fi
 done
