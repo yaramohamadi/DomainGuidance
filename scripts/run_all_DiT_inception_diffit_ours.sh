@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ========== GLOBAL CONFIGURATION ==========
-SERVER="computecanada"
+SERVER="taylor"
 CUDA_DEVICES="0,1"
 SCRIPT="run_ours.sh"
 EXPERIMENT_PRENAME="DiT_inception_ours_DiffFit"
@@ -18,7 +18,7 @@ declare -a TASKS=(
 declare -A PAIR_MAP
 
 # Inception:
-PAIR_MAP["stanford-cars_processed"]="7000,0.6" # 7000 first one
+PAIR_MAP["stanford-cars_processed"]="7000,0.6" # 7000 first one  
 PAIR_MAP["caltech-101_processed"]="6000,0.4"
 PAIR_MAP["food-101_processed"]="7000,0.5"
 PAIR_MAP["artbench-10_processed"]="12000,1"

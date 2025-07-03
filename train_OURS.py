@@ -562,8 +562,9 @@ def main(args):
         if rank == 0:
             total = sum(p.numel() for p in model.parameters())
             trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
+            print(f"Trainable: {trainable}")
+            print(f"Total: {total}")
             print(f"Trainable: {trainable:,} / {total:,} ({100 * trainable / total:.4f}%)")
-            
 
     # Note that parameter initialization is done within the DiT constructor
     ema = deepcopy(model).to(device)  # Create an EMA of the model for use after training
