@@ -536,7 +536,9 @@ def main(args):
             class_dropout_prob=args.dropout_ratio,  # Domain Guidance dropout ratio
         )
         pretrained_model = DiT_models[args.model](input_size=latent_size, num_classes=1000)
+    
     # Load pre-trained weights if provided:
+    model = load_pretrained_model(model, args.pretrained_ckpt, args.image_size)
 
     # DoG
     # Load a pre-trained model for domain guidance
@@ -590,8 +592,10 @@ def main(args):
         diffusion.training_losses = MethodType(our_training_losses, diffusion) # CG
     vae_path = f"pretrained_models/sd-vae-ft-{args.vae}"
     if not os.path.exists(vae_path):
+        print(f"[WARNING] VAE path {vae_path} does not exist. Downloading from HuggingFace...")
         vae = AutoencoderKL.from_pretrained(f"stabilityai/sd-vae-ft-{args.vae}").to(device)
     else:
+        print(f"[INFO] Loading VAE from local path: {vae_path}")
         vae = AutoencoderKL.from_pretrained(vae_path).to(device)
     logger.info("[DoG] Patched diffusion training loss with Domain Guidance (w_DoG={})".format(args.w_dog))
 
