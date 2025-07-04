@@ -18,8 +18,11 @@ plt.rcParams.update({
 })
 
 # === CONFIGURATION ===
-ROOT_DIR = pathlib.Path("/export/datasets/public/diffusion_datasets/tmp_weights/stanford-cars_processed/DiT_inception_ours/control_normalizing_exponential_cutofflatestart/50in1to1.5/dogfinetune_LATE_START_ITER7000_MG1_W_TRAIN_DOG1.5_control1_W_MIN1_W_MAX3")
-OUT_FILE = pathlib.Path("./grids_wdgft1.5.png")
+#"/export/datasets/public/diffusion_datasets/tmp_weights/stanford-cars_processed/DiT_inception_ours/control_normalizing_exponential_cutofflatestart/50in1to1.5/dogfinetune_LATE_START_ITER7000_MG1_W_TRAIN_DOG1.5_control1_W_MIN1_W_MAX3"
+# /home/ymbahram/scratch/results/DoG/artbench-10_processed/DiT_inception_ours/control_normalizing_exponential_cutofflatestart/50in1to1.5/dogfinetune_LATE_START_ITER12000_MG1_W_TRAIN_DOG1.5_control1_W_MIN1_W_MAX3/
+# /home/ymbahram/scratch/results/DoG/food-101_processed/DiT_inception_ours/control_normalizing_exponential_cutofflatestart/50in1to1.5/dogfinetune_LATE_START_ITER7000_MG0.5_W_TRAIN_DOG1.5_control1_W_MIN1_W_MAX3/
+ROOT_DIR = pathlib.Path("/home/ymbahram/scratch/results/DoG/artbench-10_processed/DiT_inception_ours/control_normalizing_exponential_cutofflatestart/50in1to1.5/dogfinetune_LATE_START_ITER12000_MG1_W_TRAIN_DOG1.5_control1_W_MIN1_W_MAX3/")
+OUT_FILE = pathlib.Path("./grids_wdgft1.5_food.png")
 SEED = 3
 N_IMAGES = 16
 GRID_SIZE = (4, 4)
@@ -37,21 +40,34 @@ def collect_paths(root: pathlib.Path):
     return dict(sorted(out.items()))
 
 folders = collect_paths(ROOT_DIR)
-folders = {k: v for k, v in folders.items() if 1 <= k <= 5}
-if len(folders) != 5:
+folders = {k: v for k, v in folders.items() if 1 <= k <= 4}
+if len(folders) != 4:
     raise RuntimeError(f"Expected 4 folders w_dgft1 to w_dgft4, got {len(folders)}")
 
-# === GET COMMON FILENAMES ===
-common_filenames = set.intersection(*[set(p.name for p in folder.iterdir() if p.is_file()) for folder in folders.values()])
-common_filenames = sorted(list(common_filenames))
-if len(common_filenames) < N_IMAGES:
-    raise ValueError("Not enough common images.")
+
+# Assume file naming is numeric like '0.png', '1.png', ..., and you want to randomly select from a known range
+ALL_INDICES = list(range(10000))  # Adjust based on your max image ID
 random.seed(SEED)
-picked = random.sample(common_filenames, N_IMAGES)
+
+# Try until you get N_IMAGES that exist in all folders
+picked = []
+for idx in random.sample(ALL_INDICES, len(ALL_INDICES)):
+    name = f"{idx:06d}.png"
+    print(name)
+    if all((folder / name).is_file() for folder in folders.values()):
+        print("picking")
+        picked.append(name)
+    if len(picked) == N_IMAGES:
+        break
+
+if len(picked) < N_IMAGES:
+    print(len(picked))
+    raise RuntimeError("Not enough images found across all folders.")
 
 # === PLOT ===
 fig, axes = plt.subplots(1, 4, figsize=(20, 5), gridspec_kw=dict(wspace=0.02))
 for col, (k, folder) in enumerate(folders.items()):
+    print(folders)
     axes[col].set_xticks([])
     axes[col].set_yticks([])
     axes[col].set_title(f"$\omega_{{\\text{{DGFT}}}}={k}$")
