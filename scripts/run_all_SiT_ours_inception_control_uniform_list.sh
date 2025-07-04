@@ -23,7 +23,7 @@ declare -a TASKS=(
 # ========== Define per-task (latestart, mghigh, experiment_prename) triples ==========
 declare -A PAIR_MAP
 
-PAIR_MAP["stanford-cars_processed"]="0,1,1,3,0,50in1to1.25"  # 6000
+PAIR_MAP["stanford-cars_processed"]="6000,1,1,3,0,50in1to1.25"  # 6000
 PAIR_MAP["caltech-101_processed"]="10000,0.7,1,3,0,50in1to1.25"
 PAIR_MAP["food-101_processed"]="6000,1,1,3,0,50in1to1.25"
 PAIR_MAP["artbench-10_processed"]="12000,0.4,1,3,0,50in1to1.25"
