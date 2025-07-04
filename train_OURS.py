@@ -404,7 +404,7 @@ def main(args):
     # Monkey-patch the loss function
     diffusion.training_losses = MethodType(our_training_losses, diffusion) # DoG
     
-    vae_path = f"/pretrained_models/sd-vae-ft-{args.vae}"
+    vae_path = f"pretrained_models/sd-vae-ft-{args.vae}"
     if not os.path.exists(vae_path):
         vae = AutoencoderKL.from_pretrained(f"stabilityai/sd-vae-ft-{args.vae}").to(device)
     else:
@@ -572,6 +572,6 @@ if __name__ == "__main__":
     parser.add_argument("--guidance-cutoff", type=float, default=0, help="Cutoff for domain guidance") # DOG
     parser.add_argument("--mg-high", type=float, default=0.75, help="Cutoff for domain guidance") # DOG
     parser.add_argument("--late-start-iter", type=int, default=0, help="Late start iteration for domain guidance") # DOG
-    parser.add_argument("--dropout-ratio", type=float, default=0.1, help="Have null labels or no") # DOG
+    parser.add_argument("--dropout-ratio", type=float, default=0, help="Have null labels or no") # DOG
     args = parser.parse_args()
     main(args)

@@ -140,6 +140,6 @@ if __name__ == "__main__":
                         help="By default, use TF32 matmuls. This massively accelerates sampling on Ampere GPUs.")
     parser.add_argument("--ckpt", type=str, default=None,
                         help="Optional path to a DiT checkpoint (default: auto-download a pre-trained DiT-XL/2 model).")
-    parser.add_argument("--dropout-ratio", type=float, default=0.1)
+    parser.add_argument("--dropout-ratio", type=float, default=0)
     args = parser.parse_args()
     main(args)
