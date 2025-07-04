@@ -54,7 +54,7 @@ EXPERIMENT_NAME="$EXPERIMENT_PRENAME/dogfinetune_LATE_START_ITER${LATE_START}_MG
 resolve_server_paths
 resolve_dataset_config
 
-# GENERATED_DIR="$SLURM_TMPDIR/samples" # TODO -> Change for qualitative experiments in which you need samples
+GENERATED_DIR="$SLURM_TMPDIR/samples" # TODO -> Change for qualitative experiments in which you need samples
 
 
 # Define any additional specific parameters here

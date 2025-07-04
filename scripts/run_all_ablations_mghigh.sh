@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ========== GLOBAL CONFIGURATION ==========
-SERVER="bool"
+SERVER="computecanada"
 CUDA_DEVICES="0,1"
 SCRIPT="run_ours.sh"
 
@@ -15,12 +15,12 @@ declare -a TASKS=(
 # ========== Define per-task (latestart, mghigh, experiment_prename) triples ==========
 declare -A PAIR_MAP
 # Format: "latestart,mghigh,prename latestart,mghigh,prename ..."
-PAIR_MAP["cub-200-2011_processed"]="0,0.1,ablation_mghigh 0,0.2,ablation_mghigh 0,0.3,ablation_mghigh 0,0.4,ablation_mghigh 0,0.5,ablation_mghigh 0,0.6,ablation_mghigh 0,0.7,ablation_mghigh 0,0.8,ablation_mghigh 0,0.9,ablation_mghigh 0,1.0,ablation_mghigh"
-PAIR_MAP["stanford-cars_processed"]="0,0.1,ablation_mghigh 0,0.2,ablation_mghigh 0,0.3,ablation_mghigh 0,0.4,ablation_mghigh 0,0.5,ablation_mghigh 0,0.6,ablation_mghigh 0,0.7,ablation_mghigh 0,0.8,ablation_mghigh 0,0.9,ablation_mghigh 0,1.0,ablation_mghigh"
-PAIR_MAP["artbench-10_processed"]="0,0.1,ablation_mghigh 0,0.2,ablation_mghigh 0,0.3,ablation_mghigh 0,0.4,ablation_mghigh 0,0.5,ablation_mghigh 0,0.6,ablation_mghigh 0,0.7,ablation_mghigh 0,0.8,ablation_mghigh 0,0.9,ablation_mghigh 0,1.0,ablation_mghigh"
-PAIR_MAP["food-101_processed"]="0,0.1,ablation_mghigh 0,0.2,ablation_mghigh 0,0.3,ablation_mghigh 0,0.4,ablation_mghigh 0,0.5,ablation_mghigh 0,0.6,ablation_mghigh 0,0.7,ablation_mghigh 0,0.8,ablation_mghigh 0,0.9,ablation_mghigh 0,1.0,ablation_mghigh"
-PAIR_MAP["caltech-101_processed"]="0,0.1,ablation_mghigh 0,0.2,ablation_mghigh 0,0.3,ablation_mghigh 0,0.4,ablation_mghigh 0,0.5,ablation_mghigh 0,0.6,ablation_mghigh 0,0.7,ablation_mghigh 0,0.8,ablation_mghigh 0,0.9,ablation_mghigh 0,1.0,ablation_mghigh"
-PAIR_MAP["ffhq256"]="0,0.1,ablation_mghigh 0,0.2,ablation_mghigh 0,0.3,ablation_mghigh 0,0.4,ablation_mghigh 0,0.5,ablation_mghigh 0,0.6,ablation_mghigh 0,0.7,ablation_mghigh 0,0.8,ablation_mghigh 0,0.9,ablation_mghigh 0,1.0,ablation_mghigh"
+PAIR_MAP["cub-200-2011_processed"]="0,0.2,ablation_mghigh 0,0.4,ablation_mghigh 0,0.6,ablation_mghigh 0,0.8,ablation_mghigh 0,1.0,ablation_mghigh"
+PAIR_MAP["stanford-cars_processed"]="0,0.2,ablation_mghigh 0,0.4,ablation_mghigh 0,0.6,ablation_mghigh 0,0.8,ablation_mghigh 0,1.0,ablation_mghigh"
+PAIR_MAP["artbench-10_processed"]="0,0.2,ablation_mghigh 0,0.4,ablation_mghigh 0,0.6,ablation_mghigh 0,0.8,ablation_mghigh 0,1.0,ablation_mghigh"
+PAIR_MAP["food-101_processed"]="0,0.2,ablation_mghigh 0,0.4,ablation_mghigh 0,0.6,ablation_mghigh 0,0.8,ablation_mghigh 0,1.0,ablation_mghigh"
+PAIR_MAP["caltech-101_processed"]="0,0.2,ablation_mghigh 0,0.4,ablation_mghigh 0,0.6,ablation_mghigh 0,0.8,ablation_mghigh 0,1.0,ablation_mghigh"
+PAIR_MAP["ffhq256"]="0,0.2,ablation_mghigh 0,0.4,ablation_mghigh 0,0.6,ablation_mghigh 0,0.8,ablation_mghigh 0,1.0,ablation_mghigh"
 
 # ========== EXECUTION LOOP ==========
 for DATASET in "${TASKS[@]}"; do
