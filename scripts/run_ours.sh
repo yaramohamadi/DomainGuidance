@@ -56,8 +56,8 @@ resolve_server_paths
 resolve_dataset_config
 
 # GENERATED_DIR="$SLURM_TMPDIR/samples" # TODO -> Change for qualitative experiments in which you need samples
-
-
+GENERATED_DIR=$GENERATED_DIR/$NUM_SAMPLE_STEPS 
+RESULTS_DIR=$RESULTS_DIR/$NUM_SAMPLE_STEPS 
 # Define any additional specific parameters here
 
 train_model() {
