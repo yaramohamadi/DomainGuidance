@@ -35,17 +35,21 @@ while [[ "$#" -gt 0 ]]; do
     --experiment_prename) EXPERIMENT_PRENAME="$2"; shift ;;
     --wtraincfg) W_TRAIN_CFG="$2"; shift ;;
     --model_name) MODEL="$2"; shift ;;
+    --num_sample_steps) NUM_SAMPLE_STEPS="$2"; shift ;;
     *) echo "Unknown parameter passed: $1"; exit 1 ;;
   esac
   shift
 done
 
-EXPERIMENT_NAME="$EXPERIMENT_PRENAME/baseline_mgfinetune_wtraincfg$W_TRAIN_CFG"
+EXPERIMENT_NAME=$EXPERIMENT_PRENAME # "$EXPERIMENT_PRENAME/baseline_mgfinetune_wtraincfg$W_TRAIN_CFG"
 
 # Load all logic
 resolve_server_paths
 resolve_dataset_config
 
+
+GENERATED_DIR=$GENERATED_DIR/$NUM_SAMPLE_STEPS 
+RESULTS_DIR=$RESULTS_DIR/$NUM_SAMPLE_STEPS 
 
 
 # Define any additional specific parameters here
@@ -84,15 +88,15 @@ run_sampling() {
 }
 
 calculate_fid() {
-    log_and_run "Calculating FID..." \
-    env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES python -m dgm_eval "$REAL_DATA_DIR" "$GENERATED_DIR/$PADDED_STEP" \
-        --model inception \
-        --device "$FID_DEVICE" \
-        --nsample $NSAMPLE \
-        --clean_resize \
-        --metrics fd prdc \
-        --save \
-        --output_dir $RESULTS_FILE
+    # log_and_run "Calculating FID..." \
+    # env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES python -m dgm_eval "$REAL_DATA_DIR" "$GENERATED_DIR/$PADDED_STEP" \
+    #     --model inception \
+    #     --device "$FID_DEVICE" \
+    #     --nsample $NSAMPLE \
+    #     --clean_resize \
+    #     --metrics fd prdc \
+    #     --save \
+    #     --output_dir $RESULTS_FILE
 
     log_and_run "Calculating FID DINO..." \
     env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES python -m dgm_eval "$REAL_DATA_DIR" "$GENERATED_DIR/$PADDED_STEP" \
@@ -112,7 +116,7 @@ mkdir -p "$(dirname "$LOG_FILE")"
 
 create_environment
 prepare_dataset
-train_model
+# train_model
 
 for ((i=0; i<=TOTAL_STEPS; i+=CKPT_EVERY)); do
   if [[ $i -eq 0 && "$SKIP_FIRST_CKPT" -eq 1 ]]; then
@@ -124,6 +128,6 @@ for ((i=0; i<=TOTAL_STEPS; i+=CKPT_EVERY)); do
   calculate_fid
 done
 
-cleanup_dataset
+# cleanup_dataset
 
 echo ">>> All tasks completed successfully!"

@@ -2,16 +2,16 @@
 
 # ========== GLOBAL CONFIGURATION ==========
 SERVER="bool"
-CUDA_DEVICES="0,1"
-EXPERIMENT_PRENAME="All_DiT_samplesteps"
+CUDA_DEVICES="2,3"
+EXPERIMENT_PRENAME="samplesteps_DiT_inception_MG"
 
 # ========== NUM SAMPLE STEPS ==========
-SAMPLE_STEPS_LIST=(10 25 100)
+SAMPLE_STEPS_LIST=(25 100)
 
 # ========== TASK DEFINITIONS ==========
 declare -a TASKS=(
- "food-101_processed run_baselines_finetune.sh"
- "artbench-10_processed run_baselines_finetune.sh"
+ "food-101_processed run_baseline_mg.sh"
+ "artbench-10_processed run_baseline_mg.sh"
 )
 
 # ========== EXECUTION LOOP ==========
