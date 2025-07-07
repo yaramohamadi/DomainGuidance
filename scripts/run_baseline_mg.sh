@@ -47,9 +47,8 @@ EXPERIMENT_NAME=$EXPERIMENT_PRENAME # "$EXPERIMENT_PRENAME/baseline_mgfinetune_w
 resolve_server_paths
 resolve_dataset_config
 
-
 GENERATED_DIR=$GENERATED_DIR/$NUM_SAMPLE_STEPS 
-RESULTS_DIR=$RESULTS_DIR/$NUM_SAMPLE_STEPS 
+RESULTS_FILE=$RESULTS_FILE/$NUM_SAMPLE_STEPS 
 
 
 # Define any additional specific parameters here
