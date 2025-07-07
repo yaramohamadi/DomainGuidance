@@ -7,11 +7,11 @@ SCRIPT="run_ours.sh"
 EXPERIMENT_PRENAME="samplesteps_DiT_inception_ours"
 
 # ========== SAMPLE STEPS ==========
-SAMPLE_STEPS_LIST=(100) # 25
+SAMPLE_STEPS_LIST=(25 100) # 
 
-#  "artbench-10_processed"
+#  
 declare -a TASKS=(
- "food-101_processed"
+ "artbench-10_processed"
 )
 
 # ========== Define per-task (latestart, mghigh) ==========

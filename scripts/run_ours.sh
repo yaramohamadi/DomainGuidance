@@ -57,7 +57,7 @@ resolve_dataset_config
 
 # GENERATED_DIR="$SLURM_TMPDIR/samples" # TODO -> Change for qualitative experiments in which you need samples
 GENERATED_DIR=$GENERATED_DIR/$NUM_SAMPLE_STEPS 
-RESULTS_DIR=$RESULTS_DIR/$NUM_SAMPLE_STEPS 
+RESULTS_FILE=$RESULTS_FILE/$NUM_SAMPLE_STEPS 
 # Define any additional specific parameters here
 
 train_model() {
@@ -127,7 +127,7 @@ rm -f "$LOG_FILE"
 mkdir -p "$(dirname "$LOG_FILE")" 
 
 create_environment
-# prepare_dataset
+prepare_dataset
 # train_model
 
 for ((i=0; i<=TOTAL_STEPS; i+=CKPT_EVERY)); do
