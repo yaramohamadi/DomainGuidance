@@ -2,7 +2,7 @@
 
 # ========== GLOBAL CONFIGURATION ==========
 SERVER="bool"
-CUDA_DEVICES="0,1"
+CUDA_DEVICES="2,3"
 SCRIPT="run_ours.sh"
 EXPERIMENT_PRENAME="samplesteps_DiT_inception_ours"
 

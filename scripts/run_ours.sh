@@ -55,7 +55,7 @@ EXPERIMENT_NAME="$EXPERIMENT_PRENAME/dogfinetune_LATE_START_ITER${LATE_START}_MG
 resolve_server_paths
 resolve_dataset_config
 
-GENERATED_DIR="$SLURM_TMPDIR/samples" # TODO -> Change for qualitative experiments in which you need samples
+# GENERATED_DIR="$SLURM_TMPDIR/samples" # TODO -> Change for qualitative experiments in which you need samples
 
 
 # Define any additional specific parameters here
@@ -100,15 +100,15 @@ run_sampling() {
 }
 
 calculate_fid() {
-    log_and_run "Calculating FID DINO..." \
-    env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES python -m dgm_eval "$REAL_DATA_DIR" "$GENERATED_DIR/$PADDED_STEP" \
-        --model dinov2 \
-        --device "$FID_DEVICE" \
-        --nsample "$NSAMPLE" \
-        --clean_resize \
-        --metrics fd prdc \
-        --save \
-        --output_dir "$RESULTS_FILE"
+    # log_and_run "Calculating FID DINO..." \
+    # env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES python -m dgm_eval "$REAL_DATA_DIR" "$GENERATED_DIR/$PADDED_STEP" \
+    #     --model dinov2 \
+    #     --device "$FID_DEVICE" \
+    #     --nsample "$NSAMPLE" \
+    #     --clean_resize \
+    #     --metrics fd prdc \
+    #     --save \
+    #     --output_dir "$RESULTS_FILE"
 
     log_and_run "Calculating FID..." \
     env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES python -m dgm_eval "$REAL_DATA_DIR" "$GENERATED_DIR/$PADDED_STEP" \
@@ -127,7 +127,7 @@ rm -f "$LOG_FILE"
 mkdir -p "$(dirname "$LOG_FILE")" 
 
 create_environment
-prepare_dataset
+# prepare_dataset
 # train_model
 
 for ((i=0; i<=TOTAL_STEPS; i+=CKPT_EVERY)); do
