@@ -87,25 +87,25 @@ run_sampling() {
 }
 
 calculate_fid() {
-    # log_and_run "Calculating FID..." \
-    # env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES python -m dgm_eval "$REAL_DATA_DIR" "$GENERATED_DIR/$PADDED_STEP" \
-    #     --model inception \
-    #     --device "$FID_DEVICE" \
-    #     --nsample $NSAMPLE \
-    #     --clean_resize \
-    #     --metrics fd prdc \
-    #     --save \
-    #     --output_dir $RESULTS_FILE
-
-    log_and_run "Calculating FID DINO..." \
+    log_and_run "Calculating FID..." \
     env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES python -m dgm_eval "$REAL_DATA_DIR" "$GENERATED_DIR/$PADDED_STEP" \
-        --model dinov2 \
+        --model inception \
         --device "$FID_DEVICE" \
         --nsample $NSAMPLE \
         --clean_resize \
         --metrics fd prdc \
         --save \
         --output_dir $RESULTS_FILE
+
+    # log_and_run "Calculating FID DINO..." \
+    # env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES python -m dgm_eval "$REAL_DATA_DIR" "$GENERATED_DIR/$PADDED_STEP" \
+    #     --model dinov2 \
+    #     --device "$FID_DEVICE" \
+    #     --nsample $NSAMPLE \
+    #     --clean_resize \
+    #     --metrics fd prdc \
+    #     --save \
+    #     --output_dir $RESULTS_FILE
 }
 
 # ====================== MAIN ======================
@@ -114,7 +114,7 @@ rm -f "$LOG_FILE"
 mkdir -p "$(dirname "$LOG_FILE")"
 
 create_environment
-prepare_dataset
+# prepare_dataset
 # train_model
 
 for ((i=0; i<=TOTAL_STEPS; i+=CKPT_EVERY)); do
