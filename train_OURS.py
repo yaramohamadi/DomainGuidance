@@ -40,6 +40,9 @@ from diffusers.models import AutoencoderKL
 from types import MethodType
 from torchvision.utils import save_image
 
+import random
+from torch.utils.data import Subset
+
 
 
 ##################################################################################
@@ -615,6 +618,16 @@ def main(args):
         transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True)
     ])
     dataset = ImageFolder(args.data_path, transform=transform)
+
+    # ---- Apply Random Subset ----
+    if args.use_subset:
+        total_len = len(dataset)
+        assert num_subset_samples <= total_len, "Subset size exceeds dataset size"
+        subset_indices = random.sample(range(total_len), num_subset_samples)
+        dataset = Subset(dataset, subset_indices)
+        print(f"[DoG]")
+        print(len(dataset))
+
     sampler = DistributedSampler(
         dataset,
         num_replicas=dist.get_world_size(),

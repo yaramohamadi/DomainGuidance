@@ -114,7 +114,7 @@ rm -f "$LOG_FILE"
 mkdir -p "$(dirname "$LOG_FILE")"
 
 create_environment
-# prepare_dataset
+prepare_dataset
 # train_model
 
 for ((i=0; i<=TOTAL_STEPS; i+=CKPT_EVERY)); do
