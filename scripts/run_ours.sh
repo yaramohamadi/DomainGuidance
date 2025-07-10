@@ -128,7 +128,7 @@ mkdir -p "$(dirname "$LOG_FILE")"
 
 create_environment
 prepare_dataset
-# train_model
+train_model
 
 for ((i=0; i<=TOTAL_STEPS; i+=CKPT_EVERY)); do
   if [[ $i -eq 0 && "$SKIP_FIRST_CKPT" -eq 1 ]]; then
@@ -140,6 +140,6 @@ for ((i=0; i<=TOTAL_STEPS; i+=CKPT_EVERY)); do
   calculate_fid
 done
 
-# cleanup_dataset
+cleanup_dataset
 
 echo ">>> All tasks completed successfully!"

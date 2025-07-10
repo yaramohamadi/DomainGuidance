@@ -15,7 +15,7 @@ declare -a TASKS=(
 # ========== Define per-task (latestart, mghigh, experiment_prename) triples ==========
 declare -A PAIR_MAP
 PAIR_MAP["cub-200-2011_processed"]="6000,0.4,mega_ablation_mg 6000,0.5,mega_ablation_mg 6000,0.6,mega_ablation_mg 6000,0.7,mega_ablation_mg 6000,0.8,mega_ablation_mg 6000,0.9,mega_ablation_mg"
-PAIR_MAP["stanford-cars_processed"]="6000,0.4,mega_ablation_mg 6000,0.5,mega_ablation_mg 6000,0.6,mega_ablation_mg 6000,0.7,mega_ablation_mg 6000,0.8,mega_ablation_mg 6000,0.9,mega_ablation_mg"
+PAIR_MAP["stanford-cars_processed"]="2000,0.5,tmp_test_SiT" # "6000,0.4,mega_ablation_mg 6000,0.5,mega_ablation_mg 6000,0.6,mega_ablation_mg 6000,0.7,mega_ablation_mg 6000,0.8,mega_ablation_mg 6000,0.9,mega_ablation_mg"
 PAIR_MAP["food-101_processed"]="6000,0.4,mega_ablation_mg 6000,0.5,mega_ablation_mg 6000,0.6,mega_ablation_mg 6000,0.7,mega_ablation_mg 6000,0.8,mega_ablation_mg 6000,0.9,mega_ablation_mg"
 PAIR_MAP["artbench-10_processed"]="12000,0.4,mega_ablation_mg 12000,0.5,mega_ablation_mg 12000,0.6,mega_ablation_mg 12000,0.7,mega_ablation_mg 12000,0.8,mega_ablation_mg 12000,0.9,mega_ablation_mg"
 PAIR_MAP["caltech-101_processed"]="10000,0.4,mega_ablation_mg 10000,0.5,mega_ablation_mg 10000,0.6,mega_ablation_mg 10000,0.7,mega_ablation_mg 10000,0.8,mega_ablation_mg 10000,0.9,mega_ablation_mg"
