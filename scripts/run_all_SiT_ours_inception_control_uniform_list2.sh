@@ -2,7 +2,7 @@
 
 # ========== GLOBAL CONFIGURATION ==========
 SERVER="taylor"
-CUDA_DEVICES="0,1"
+CUDA_DEVICES="2,3"
 SCRIPT="run_ours.sh"
 
 # "food-101_processed"
@@ -18,7 +18,7 @@ declare -a TASKS=(
 # ========== Define per-task (latestart, mghigh, experiment_prename) triples ==========
 declare -A PAIR_MAP
 
-PAIR_MAP["stanford-cars_processed"]="6000,1,1,3,0,50in1to1.25,0.01 6000,1,1,3,0,50in1to1.25,0.1" 
+PAIR_MAP["stanford-cars_processed"]="6000,1,1,3,0,50in1to1.25,0.05 6000,1,1,3,0,50in1to1.25,0.5" 
 PAIR_MAP["caltech-101_processed"]="10000,0.7,1,3,0,50in1to1.25"
 PAIR_MAP["food-101_processed"]="6000,1,1,3,0,50in1to1.25"
 PAIR_MAP["artbench-10_processed"]="12000,0.4,1,3,0,50in1to1.25"

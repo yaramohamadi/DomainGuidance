@@ -40,10 +40,11 @@ class GuidedWrapper(nn.Module):
     configurable via a 3-bit string: zero_init, layer_norm, variance_match.
     """
 
-    def __init__(self, base_model, zero_norm_variance="111", w_dim=1, embed_dim=1152, hidden_dim=128):
+    def __init__(self, base_model, zero_norm_variance="011", scale=0.5, w_dim=1, embed_dim=1152, hidden_dim=128):
         super().__init__()
         self.base_model = base_model
         self.embed_dim = embed_dim
+        self.scale = scale
 
         # Parse boolean flags from zero_norm_variance string
         assert len(zero_norm_variance) == 3, \
@@ -72,25 +73,34 @@ class GuidedWrapper(nn.Module):
     def forward(self, x, t, y, w=None):
         t_emb = self.base_model.t_embedder(t)                # (B, D)
         y_emb = self.base_model.y_embedder(y, self.training) # (B, D)
+#       
+        #with torch.no_grad():
+            #print(f"[DEBUG] t_emb: mean={t_emb.mean().item():.4f}, std={t_emb.std().item():.4f}")
+            #print(f"[DEBUG] y_emb: mean={y_emb.mean().item():.4f}, std={y_emb.std().item():.4f}")
 
         if w is not None:
             w = w.view(-1, 1)  # (B, 1)
             w_emb = self.w_embed(w - 1)  # (B, D)
 
+            #print(f"[DEBUG] w_emb: mean={w_emb.mean().item():.4f}, std={w_emb.std().item():.4f}")
+            #print(f"[DEBUG] w contribution: mean={(w_emb * 0).mean().item():.4f}, std={(w_emb * 0).std().item():.4f}")
+
             if self.variance_match:
                 cond_std = (t_emb + y_emb).std(dim=-1, keepdim=True).detach()
-                w_emb = w_emb * cond_std * 0.5  # Optional scale
+                w_emb = w_emb * cond_std * self.scale  # Optional scale
 
             c = t_emb + y_emb + w_emb
+
+
         else:
             c = t_emb + y_emb
-
+#
         x = self.base_model.x_embedder(x) + self.base_model.pos_embed
         for block in self.base_model.blocks:
             x = block(x, c)
         x = self.base_model.final_layer(x, c)
         x = self.base_model.unpatchify(x)
-
+#
         if self.base_model.__class__.__name__ == "SiT" and self.base_model.learn_sigma:
             x, _ = x.chunk(2, dim=1)
         return x
@@ -158,7 +168,7 @@ def main(args):
     # guidance control
     if args.guidance_control > 0:
         print("wrapping model with GuidedWrapper")
-        model = GuidedWrapper(model, args.zero_norm_variance).to(device)
+        model = GuidedWrapper(model, args.zero_norm_variance, scale=args.scale).to(device)
 
     # Auto-download a pre-trained model or load a custom DiT checkpoint from train.py:
     state_dict = find_model(ckpt_path)
@@ -307,6 +317,8 @@ if __name__ == "__main__":
     parser.add_argument("--ckpt", type=str, default=None,
                         help="Optional path to a DiT checkpoint (default: auto-download a pre-trained DiT-XL/2 model).")
     parser.add_argument("--dropout-ratio", type=float, default=0.1)
+    parser.add_argument("--scale", type=float, default=0.01)
+
 
     def none_or_str(value):
         if value == 'None':
@@ -323,7 +335,7 @@ if __name__ == "__main__":
     # Added for guidance control
     parser.add_argument("--guidance-control", type=float, default=0, help="Use learnable guidance scale (w) in the model wrapper")  # DOG
     parser.add_argument("--w-dgft", type=float, default=1.0, help="Maximum guidance scale") # DOG
-    parser.add_argument("--zero-norm-variance", type=str, default="111") # DOG
+    parser.add_argument("--zero-norm-variance", type=str, default="011") # DOG
 
     group = parser.add_argument_group("ODE arguments")
     group.add_argument("--sampling-method", type=str, default="dopri5", help="blackbox ODE solver methods; for full list check https://github.com/rtqichen/torchdiffeq")

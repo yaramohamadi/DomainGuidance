@@ -26,6 +26,7 @@ GUIDANCE_CONTROL=0
 W_MAX=1.0
 W_MIN=1.0
 SAMPLE_GUIDANCE=1.5
+SCALE=0.5
 
 W_TRAIN_DOG=1.5
 DROPOUT_RATIO=0 # TODO Change this back to 0   
@@ -36,6 +37,8 @@ ZERO_NORM_VARIANCE="011"
 source scripts/config.sh
 
 # ====================== ARGUMENT PARSING ======================
+
+
 
 while [[ "$#" -gt 0 ]]; do
   case $1 in
@@ -53,6 +56,7 @@ while [[ "$#" -gt 0 ]]; do
     --sample_guidance) SAMPLE_GUIDANCE="$2"; shift ;;
     --control_distribution) CONTROL_DISTRIBUTION="$2"; shift ;;
     --zero_norm_variance) ZERO_NORM_VARIANCE="$2"; shift ;;
+    --scale) SCALE="$2"; shift ;;
 
     *) echo "Unknown parameter passed: $1"; exit 1 ;;
   esac
@@ -62,7 +66,7 @@ done
 echo "Zero norm variance is $ZERO_NORM_VARIANCE"
 
 
-EXPERIMENT_NAME="$EXPERIMENT_PRENAME/dogfinetune_LATE_START_ITER${LATE_START}_MG${MG_HIGH}_W_TRAIN_DOG${W_TRAIN_DOG}_control${GUIDANCE_CONTROL}_W_MIN${W_MIN}_W_MAX${W_MAX}"
+EXPERIMENT_NAME="${EXPERIMENT_PRENAME}/dogfinetune_LATE_START_ITER${LATE_START}_MG${MG_HIGH}_W_TRAIN_DOG${W_TRAIN_DOG}_control${GUIDANCE_CONTROL}_W_MIN${W_MIN}_W_MAX${W_MAX}"
 
 resolve_server_paths
 resolve_dataset_config
@@ -92,7 +96,8 @@ train_model() {
         --w-max "$W_MAX" \
         --w-min "$W_MIN" \
         --control-distribution "$CONTROL_DISTRIBUTION" \
-        --zero-norm-variance "$ZERO_NORM_VARIANCE" 
+        --zero-norm-variance "$ZERO_NORM_VARIANCE" \
+        --scale "$SCALE" 
 }
 
 run_sampling() {
@@ -111,7 +116,8 @@ run_sampling() {
         --dropout-ratio "$DROPOUT_RATIO" \
         --guidance-control "$GUIDANCE_CONTROL" \
         --w-dgft "$SAMPLE_GUIDANCE" \
-        --zero-norm-variance "$ZERO_NORM_VARIANCE" 
+        --zero-norm-variance "$ZERO_NORM_VARIANCE" \
+        --scale "$SCALE" 
 }
 
 calculate_fid() {

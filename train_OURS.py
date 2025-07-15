@@ -282,6 +282,8 @@ def our_training_losses_transport(
 
     B, *_, C = xt.shape
     assert model_output.size() == (B, *xt.size()[1:-1], C)
+    pretrained_output = None
+    initial_ut = ut.clone().detach()
 
     if pretrained_model is not None and ema is not None and counter > late_start_iter:
         with torch.no_grad():
@@ -289,8 +291,6 @@ def our_training_losses_transport(
             pretrained_kwargs = {"y": torch.full_like(y, 1000)}
             pretrained_output = pretrained_model(xt, t, **pretrained_kwargs)
             ema_output = ema(xt, t, **ema_kwargs)
-
-        initial_ut = ut.clone().detach()
 
         if guidance_cutoff:
             t_norm = t
@@ -305,14 +305,15 @@ def our_training_losses_transport(
     terms = {"pred": model_output}
     terms["loss"] = mean_flat((model_output - ut) ** 2)
 
-    if pretrained_model is not None and ema is not None and counter > late_start_iter and dist.get_rank() == 0 and counter % 6000 == 0:
+    if pretrained_model is not None and ema is not None and dist.get_rank() == 0 and counter % 1000 == 0:
         def norm_to_01(x): return (x.clamp(-1, 1) + 1) / 2
 
         alpha_t, _ = self.path_sampler.compute_alpha_t(expand_t_like_x(t, xt))
         sigma_t, _ = self.path_sampler.compute_sigma_t(expand_t_like_x(t, xt))
         x0_model = xt - sigma_t * model_output
-        x0_pretrained = xt - sigma_t * pretrained_output
-        x0_diff = (x0_model - x0_pretrained).abs()
+        if pretrained_output is not None:
+            x0_pretrained = xt - sigma_t * pretrained_output
+            x0_diff = (x0_model - x0_pretrained).abs()
 
         save_dir = f"DoG_debug/{counter:06d}"
         os.makedirs(save_dir, exist_ok=True)
@@ -320,15 +321,17 @@ def our_training_losses_transport(
         with torch.no_grad():
             x1_dec = vae.decode(x1 / 0.18215).sample
             x0_model_dec = vae.decode(x0_model / 0.18215).sample
-            x0_pretrained_dec = vae.decode(x0_pretrained / 0.18215).sample
-            x0_diff_dec = (x0_model_dec - x0_pretrained_dec).abs()
+            if pretrained_output is not None:
+                x0_pretrained_dec = vae.decode(x0_pretrained / 0.18215).sample
+                x0_diff_dec = (x0_model_dec - x0_pretrained_dec).abs()
             model_noise_decoded = vae.decode(model_output / 0.18215).sample
             initial_noise_decoded = vae.decode(initial_ut / 0.18215).sample
 
         save_image(norm_to_01(x1_dec), f"{save_dir}/x_start.png", nrow=8)
         save_image(norm_to_01(x0_model_dec), f"{save_dir}/x0_model.png", nrow=8)
-        save_image(norm_to_01(x0_pretrained_dec), f"{save_dir}/x0_pretrained.png", nrow=8)
-        save_image(norm_to_01(x0_diff_dec), f"{save_dir}/x0_diff.png", nrow=8)
+        if pretrained_output is not None:
+            save_image(norm_to_01(x0_pretrained_dec), f"{save_dir}/x0_pretrained.png", nrow=8)
+            save_image(norm_to_01(x0_diff_dec), f"{save_dir}/x0_diff.png", nrow=8)
         save_image(norm_to_01(model_noise_decoded), f"{save_dir}/model_noise.png", nrow=8)
         save_image(norm_to_01(initial_noise_decoded), f"{save_dir}/initial_noise.png", nrow=8)
 
@@ -355,18 +358,19 @@ class GuidedWrapper(nn.Module):
     configurable via a 3-bit string: zero_init, layer_norm, variance_match.
     """
 
-    def __init__(self, base_model, zero_norm_variance="111", w_dim=1, embed_dim=1152, hidden_dim=128):
+    def __init__(self, base_model, zero_norm_variance="111", scale=0.5, w_dim=1, embed_dim=1152, hidden_dim=128):
         super().__init__()
         self.base_model = base_model
         self.embed_dim = embed_dim
-
+        self.scale = scale
+# 
         # Parse boolean flags from zero_norm_variance string
         assert len(zero_norm_variance) == 3, \
             "zero_norm_variance must be a 3-bit string like '101'"
         self.zero_init = zero_norm_variance[0] == "1"
         self.use_layer_norm = zero_norm_variance[1] == "1"
         self.variance_match = zero_norm_variance[2] == "1"
-
+# 
         # Create embedding MLP for guidance scalar
         layers = [
             nn.Linear(w_dim, embed_dim),
@@ -383,23 +387,32 @@ class GuidedWrapper(nn.Module):
                 if isinstance(m, nn.Linear):
                     nn.init.zeros_(m.weight)
                     nn.init.zeros_(m.bias)
+                    
 
     def forward(self, x, t, y, w=None):
         t_emb = self.base_model.t_embedder(t)                # (B, D)
         y_emb = self.base_model.y_embedder(y, self.training) # (B, D)
+        
+        #with torch.no_grad():
+        #    print(f"[DEBUG] t_emb: mean={t_emb.mean().item():.4f}, std={t_emb.std().item():.4f}")
+        #    print(f"[DEBUG] y_emb: mean={y_emb.mean().item():.4f}, std={y_emb.std().item():.4f}")
+
 
         if w is not None:
             w = w.view(-1, 1)  # (B, 1)
             w_emb = self.w_embed(w - 1)  # (B, D)
 
-            if self.variance_match:
-                cond_std = (t_emb + y_emb).std(dim=-1, keepdim=True).detach()
-                w_emb = w_emb * cond_std * 0.5  # Optional scale
+           # print(f"[DEBUG] w_emb: mean={w_emb.mean().item():.4f}, std={w_emb.std().item():.4f}")
+            #print(f"[DEBUG] w contribution: mean={(w_emb * 0).mean().item():.4f}, std={(w_emb * 0).std().item():.4f}")
 
-            c = t_emb + y_emb + w_emb
+            if self.variance_match:
+                cond_std = (y_emb).std(dim=-1, keepdim=True).detach()
+                w_emb = w_emb * cond_std * self.scale  # Optional scale
+
+            c = t_emb + y_emb + w_emb 
+
         else:
             c = t_emb + y_emb
-
         x = self.base_model.x_embedder(x) + self.base_model.pos_embed
         for block in self.base_model.blocks:
             x = block(x, c)
@@ -686,7 +699,7 @@ def main(args):
     # Guidance control:
     if args.guidance_control:
         logger.info("[DoG] Using guided model wrapper with learnable guidance scale.")
-        model = GuidedWrapper(model, args.zero_norm_variance).to(device)
+        model = GuidedWrapper(model, args.zero_norm_variance, scale=args.scale).to(device)
     else:
         logger.info("[DoG] Using standard model without guidance control.")
 
@@ -1038,6 +1051,7 @@ if __name__ == "__main__":
     parser.add_argument("--w-min", type=float, default=1.0, help="Maximum guidance scale") # DOG
     parser.add_argument("--control-distribution", type=str, default="uniform") # DOG
     parser.add_argument("--zero-norm-variance", type=str, default="111") # DOG
+    parser.add_argument("--scale", type=float, default=0.01)
     def none_or_str(value):
         if value == 'None':
             return None
