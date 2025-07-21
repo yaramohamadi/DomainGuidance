@@ -358,7 +358,7 @@ class GuidedWrapper(nn.Module):
     configurable via a 3-bit string: zero_init, layer_norm, variance_match.
     """
 
-    def __init__(self, base_model, zero_norm_variance="111", scale=0.5, w_dim=1, embed_dim=1152, hidden_dim=128):
+    def __init__(self, base_model, zero_norm_variance="011", scale=0.5, w_dim=1, embed_dim=1152, hidden_dim=128):
         super().__init__()
         self.base_model = base_model
         self.embed_dim = embed_dim
@@ -1050,7 +1050,7 @@ if __name__ == "__main__":
     parser.add_argument("--w-max", type=float, default=1.0, help="Maximum guidance scale") # DOG
     parser.add_argument("--w-min", type=float, default=1.0, help="Maximum guidance scale") # DOG
     parser.add_argument("--control-distribution", type=str, default="uniform") # DOG
-    parser.add_argument("--zero-norm-variance", type=str, default="111") # DOG
+    parser.add_argument("--zero-norm-variance", type=str, default="011") # DOG
     parser.add_argument("--scale", type=float, default=0.01)
     def none_or_str(value):
         if value == 'None':
