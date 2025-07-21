@@ -54,7 +54,7 @@ EXPERIMENT_NAME="$EXPERIMENT_PRENAME/dogfinetune_LATE_START_ITER${LATE_START}_MG
 resolve_server_paths
 resolve_dataset_config
 
-GENERATED_DIR="$SLURM_TMPDIR/samples" # TODO -> Change for qualitative experiments in which you need samples
+# GENERATED_DIR="$SLURM_TMPDIR/samples" # TODO -> Change for qualitative experiments in which you need samples
 
 # Define any additional specific parameters here
 
@@ -126,7 +126,7 @@ mkdir -p "$(dirname "$LOG_FILE")"
 
 create_environment
 prepare_dataset
-train_model
+# train_model
 
 for ((i=0; i<=TOTAL_STEPS; i+=CKPT_EVERY)); do
   if [[ $i -eq 0 && "$SKIP_FIRST_CKPT" -eq 1 ]]; then
@@ -135,7 +135,7 @@ for ((i=0; i<=TOTAL_STEPS; i+=CKPT_EVERY)); do
   printf -v PADDED_STEP "%07d" "$i"
   printf -v PADDED_CKPT "%07d.pt" "$i"
   run_sampling
-  calculate_fid
+  # calculate_fid
 done
 
 cleanup_dataset
