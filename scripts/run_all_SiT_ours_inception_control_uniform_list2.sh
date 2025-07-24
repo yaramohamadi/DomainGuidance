@@ -52,8 +52,7 @@ for DATASET in "${TASKS[@]}"; do
       --w_max \"$W_MAX\" \
       --w_min \"$W_MIN\" \
       --sample_guidance \"$SAMPLE_GUIDANCE\" \
-      --control_distribution \"$CONTROL_DISTRIBUTION\" \
-      --scale \"$SCALE\""
+      --control_distribution \"$CONTROL_DISTRIBUTION\""
 
     if [[ "$SERVER" == "computecanada" ]]; then
       eval "JOB_NAME=$EXPERIMENT_PRENAME sbatch $CMD"

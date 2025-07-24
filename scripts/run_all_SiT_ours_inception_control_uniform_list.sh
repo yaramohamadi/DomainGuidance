@@ -30,7 +30,7 @@ PAIR_MAP["ffhq256"]="12000,1,1,3,0,50in1to1.25"
 for DATASET in "${TASKS[@]}"; do
   PAIRS=(${PAIR_MAP["$DATASET"]})
   for PAIR in "${PAIRS[@]}"; do
-    IFS=',' read -r LATESTART MGHIGH W_MIN W_MAX SAMPLE_GUIDANCE CONTROL_DISTRIBUTION SCALE <<< "$PAIR"
+    IFS=',' read -r LATESTART MGHIGH W_MIN W_MAX SAMPLE_GUIDANCE CONTROL_DISTRIBUTION <<< "$PAIR"
 
     echo "=============================================="
     echo "Running $SCRIPT on $DATASET | w_min: $W_MIN | w_max: $W_MAX | control_distribution: $CONTROL_DISTRIBUTION | sample_guidance $SAMPLE_GUIDANCE | latestart: $LATESTART | mghigh: $MGHIGH | prename: $EXPERIMENT_PRENAME"
@@ -51,8 +51,7 @@ for DATASET in "${TASKS[@]}"; do
       --w_max \"$W_MAX\" \
       --w_min \"$W_MIN\" \
       --sample_guidance \"$SAMPLE_GUIDANCE\" \
-      --control_distribution \"$CONTROL_DISTRIBUTION\" \
-      --scale \"$SCALE\""
+      --control_distribution \"$CONTROL_DISTRIBUTION\""
 
     if [[ "$SERVER" == "computecanada" ]]; then
       eval "JOB_NAME=$EXPERIMENT_PRENAME sbatch $CMD"
