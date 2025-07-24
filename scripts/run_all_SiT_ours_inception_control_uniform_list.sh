@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # ========== GLOBAL CONFIGURATION ==========
-SERVER="taylor"
-CUDA_DEVICES="0,1"
+SERVER="bool"
+CUDA_DEVICES="2,3"
 SCRIPT="run_ours.sh"
 
 # "food-101_processed"
@@ -14,9 +14,6 @@ SCRIPT="run_ours.sh"
 declare -a TASKS=(
  "food-101_processed"
  "artbench-10_processed"
- "caltech-101_processed"
- "cub-200-2011_processed"
- "ffhq256"
 )
 
 # ========== Define per-task (latestart, mghigh, experiment_prename) triples ==========
@@ -40,7 +37,7 @@ for DATASET in "${TASKS[@]}"; do
     echo "Server: $SERVER | CUDA Devices: $CUDA_DEVICES"
     echo "----------------------------------------------"
 
-    EXPERIMENT_PRENAME="tmp_onlyinitial/" # "SiT_inception_ours/control_normalizing_exponential_cutofflatestart/$CONTROL_DISTRIBUTION"
+    EXPERIMENT_PRENAME="SiT_inception_ours/control_new_exponential_cutofflatestart/$CONTROL_DISTRIBUTION"
 
     CMD="scripts/$SCRIPT \
       --dataset \"$DATASET\" \

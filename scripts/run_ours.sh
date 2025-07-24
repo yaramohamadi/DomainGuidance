@@ -71,7 +71,7 @@ EXPERIMENT_NAME="${EXPERIMENT_PRENAME}/dogfinetune_LATE_START_ITER${LATE_START}_
 resolve_server_paths
 resolve_dataset_config
 
-GENERATED_DIR="$SLURM_TMPDIR/$GENERATED_DIR"
+# GENERATED_DIR="$SLURM_TMPDIR/$GENERATED_DIR"
 
 # Define any additional specific parameters here
 
