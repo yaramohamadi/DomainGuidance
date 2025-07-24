@@ -12,13 +12,17 @@ SCRIPT="run_ours.sh"
 # "ffhq256"
 
 declare -a TASKS=(
- "stanford-cars_processed"
+ "food-101_processed"
+ "artbench-10_processed"
+ "caltech-101_processed"
+ "cub-200-2011_processed"
+ "ffhq256"
 )
 
 # ========== Define per-task (latestart, mghigh, experiment_prename) triples ==========
 declare -A PAIR_MAP
 
-PAIR_MAP["stanford-cars_processed"]="6000,1,1,3,0,50in1to1.25,0.001" # 
+PAIR_MAP["stanford-cars_processed"]="6000,1,1,3,0,50in1to1.25" # 
 PAIR_MAP["caltech-101_processed"]="10000,0.7,1,3,0,50in1to1.25"
 PAIR_MAP["food-101_processed"]="6000,1,1,3,0,50in1to1.25"
 PAIR_MAP["artbench-10_processed"]="12000,0.4,1,3,0,50in1to1.25"
