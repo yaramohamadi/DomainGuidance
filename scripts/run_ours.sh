@@ -3,7 +3,7 @@
 #SBATCH --job-name=${JOB_NAME:-Ours}  # Use $JOB_NAME if defined, else 'myjob'
 #SBATCH --output=logs/%x_%j.out
 #SBATCH --error=logs/%x_%j.err          
-#SBATCH --time=9:00:00
+#SBATCH --time=10:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=16
@@ -70,6 +70,8 @@ EXPERIMENT_NAME="${EXPERIMENT_PRENAME}/dogfinetune_LATE_START_ITER${LATE_START}_
 
 resolve_server_paths
 resolve_dataset_config
+
+GENERATED_DIR="$SLURM_TMPDIR/$GENERATED_DIR"
 
 # Define any additional specific parameters here
 
