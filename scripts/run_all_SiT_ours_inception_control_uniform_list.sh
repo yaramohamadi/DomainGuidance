@@ -18,7 +18,7 @@ declare -a TASKS=(
 # ========== Define per-task (latestart, mghigh, experiment_prename) triples ==========
 declare -A PAIR_MAP
 
-PAIR_MAP["stanford-cars_processed"]="6000,1,1,3,0,50in1to1.25,0.001 6000,1,1,3,0,50in1to1.25,0.0001" 
+PAIR_MAP["stanford-cars_processed"]="6000,1,1,3,0,50in1to1.25,0.001" # 
 PAIR_MAP["caltech-101_processed"]="10000,0.7,1,3,0,50in1to1.25"
 PAIR_MAP["food-101_processed"]="6000,1,1,3,0,50in1to1.25"
 PAIR_MAP["artbench-10_processed"]="12000,0.4,1,3,0,50in1to1.25"
@@ -36,7 +36,7 @@ for DATASET in "${TASKS[@]}"; do
     echo "Server: $SERVER | CUDA Devices: $CUDA_DEVICES"
     echo "----------------------------------------------"
 
-    EXPERIMENT_PRENAME="tmp_SCALE${SCALE}/" # "SiT_inception_ours/control_normalizing_exponential_cutofflatestart/$CONTROL_DISTRIBUTION"
+    EXPERIMENT_PRENAME="tmp_onlyinitial/" # "SiT_inception_ours/control_normalizing_exponential_cutofflatestart/$CONTROL_DISTRIBUTION"
 
     CMD="scripts/$SCRIPT \
       --dataset \"$DATASET\" \

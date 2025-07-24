@@ -371,23 +371,24 @@ class GuidedWrapper(nn.Module):
         self.use_layer_norm = zero_norm_variance[1] == "1"
         self.variance_match = zero_norm_variance[2] == "1"
 # 
-        # Create embedding MLP for guidance scalar
-        layers = [
-            nn.Linear(w_dim, embed_dim),
-            nn.SiLU(),
-            nn.Linear(embed_dim, embed_dim),
-        ]
-        if self.use_layer_norm:
-            layers.append(nn.LayerNorm(embed_dim))
-        self.w_embed = nn.Sequential(*layers)
+        # MLP to embed scalar guidance w into a [0,1] scaling factor
+        # self.w_embed = nn.Sequential(
+        #     nn.Linear(w_dim, embed_dim),
+        #     nn.SiLU(),
+        #     nn.Linear(embed_dim, 1),
+        # )
 
-        # Optional zero init
-        if self.zero_init:
-            for m in self.w_embed.modules():
-                if isinstance(m, nn.Linear):
-                    nn.init.zeros_(m.weight)
-                    nn.init.zeros_(m.bias)
-                    
+        # nn.init.normal_(self.w_embed[2].weight, std=0.0002)
+        # nn.init.constant_(self.w_embed[2].bias, 0)
+
+        #if self.use_layer_norm:
+        #    layers.append(nn.LayerNorm(embed_dim))
+        # # Optional zero init
+        # if self.zero_init:
+        #     for m in self.w_embed.modules():
+        #         if isinstance(m, nn.Linear):
+        #             nn.init.zeros_(m.weight)
+        #             nn.init.zeros_(m.bias)
 
     def forward(self, x, t, y, w=None):
         t_emb = self.base_model.t_embedder(t)                # (B, D)
@@ -397,19 +398,22 @@ class GuidedWrapper(nn.Module):
         #    print(f"[DEBUG] t_emb: mean={t_emb.mean().item():.4f}, std={t_emb.std().item():.4f}")
         #    print(f"[DEBUG] y_emb: mean={y_emb.mean().item():.4f}, std={y_emb.std().item():.4f}")
 
-
         if w is not None:
-            w = w.view(-1, 1)  # (B, 1)
-            w_emb = self.w_embed(w - 1)  # (B, D)
+            w = w.view(-1, 1) - 1  # (B, 1)
+            # w_emb = self.w_embed(w - 1) * y_emb.detach() # (B, D)
 
            # print(f"[DEBUG] w_emb: mean={w_emb.mean().item():.4f}, std={w_emb.std().item():.4f}")
             #print(f"[DEBUG] w contribution: mean={(w_emb * 0).mean().item():.4f}, std={(w_emb * 0).std().item():.4f}")
 
-            if self.variance_match:
-                cond_std = (y_emb).std(dim=-1, keepdim=True).detach()
-                w_emb = w_emb * cond_std * self.scale  # Optional scale
+            #if self.variance_match:
+            #    cond_std = (y_emb).std(dim=-1, keepdim=True).detach()
+            #    w_emb = w_emb * cond_std * self.scale  # Optional scale
 
-            c = t_emb + y_emb + w_emb 
+            #print("t_emb:", t_emb.mean().item(), t_emb.std().item())
+            #print("y_emb:", y_emb.mean().item(), y_emb.std().item())
+            #print("w_emb:", w_emb.mean().item(), w_emb.std().item())
+
+            c = t_emb + y_emb + w * y_emb.detach() # (B, D) # w_emb 
 
         else:
             c = t_emb + y_emb
