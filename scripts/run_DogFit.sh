@@ -1,22 +1,10 @@
 #!/bin/bash
-#SBATCH --account=rrg-josedolz
-#SBATCH --job-name=${JOB_NAME:-Ours}  # Use $JOB_NAME if defined, else 'myjob'
-#SBATCH --output=logs/%x_%j.out
-#SBATCH --error=logs/%x_%j.err          
-#SBATCH --time=9:00:00
-#SBATCH --nodes=1
-#SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=16
-#SBATCH --gres=gpu:a100:2              
-#SBATCH --mem=80G                        
-#SBATCH --mail-user=yara.mohammadi-bahram.1@ens.etsmtl.ca 
-#SBATCH --mail-type=ALL           
 
 # ====================== DEFAULT CONFIGURATION ======================
 
 CUDA_DEVICES="0,1"
 DATASET="cub-200-2011_processed"
-SERVER="taylor"
+SERVER="bool"
 EXPERIMENT_PRENAME=""
 USE_GUIDANCE_CUTOFF=1
 MG_HIGH=1
@@ -28,7 +16,7 @@ W_MIN=1.0
 SAMPLE_GUIDANCE=1.5
 
 W_TRAIN_DOG=1.5
-DROPOUT_RATIO=0 # TODO Change this back to 0   
+DROPOUT_RATIO=0 
 CONTROL_DISTRIBUTION="uniform"
 ZERO_NORM_VARIANCE="011"
 
@@ -59,8 +47,6 @@ while [[ "$#" -gt 0 ]]; do
   shift
 done
 
-echo "Zero norm variance is $ZERO_NORM_VARIANCE"
-
 EXPERIMENT_NAME="$EXPERIMENT_PRENAME/dogfinetune_LATE_START_ITER${LATE_START}_MG${MG_HIGH}_W_TRAIN_DOG${W_TRAIN_DOG}_control${GUIDANCE_CONTROL}_W_MIN${W_MIN}_W_MAX${W_MAX}"
 
 resolve_server_paths
@@ -70,7 +56,7 @@ resolve_dataset_config
 
 train_model() {
     log_and_run "Training model..." \
-    env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES torchrun --master_port=$PORT --nproc_per_node=$NPROC_PER_NODE train_OURS.py \
+    env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES torchrun --master_port=$PORT --nproc_per_node=$NPROC_PER_NODE train_DogFit.py \
         --data-path "$REAL_DATA_DIR" \
         --results-dir "$RESULTS_DIR" \
         --model "$MODEL" \
@@ -96,7 +82,7 @@ train_model() {
 
 run_sampling() {
     log_and_run "Sampling images..." \
-    env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES torchrun --master_port=$PORT --nproc_per_node=$NPROC_PER_NODE sample_ddp.py \
+    env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES torchrun --master_port=$PORT --nproc_per_node=$NPROC_PER_NODE sample.py \
         --model "$MODEL" \
         --vae "$VAE" \
         --sample-dir "$GENERATED_DIR/$PADDED_STEP" \
@@ -145,8 +131,6 @@ prepare_dataset
 
 train_model
 
-GUIDANCE_VALUES=(1 1.5 2 3 4 5)
-
 for ((i=0; i<=TOTAL_STEPS; i+=CKPT_EVERY)); do
   if [[ $i -eq 0 && "$SKIP_FIRST_CKPT" -eq 1 ]]; then
     continue
@@ -156,6 +140,7 @@ for ((i=0; i<=TOTAL_STEPS; i+=CKPT_EVERY)); do
 
   if (( $(echo "$GUIDANCE_CONTROL > 0" | bc -l) )); then
     if (( $(echo "$SAMPLE_GUIDANCE == 0" | bc -l) )); then
+      GUIDANCE_VALUES=(1 1.5 2 3 4 5)
       for SG in "${GUIDANCE_VALUES[@]}"; do
         SAMPLE_GUIDANCE=$SG
         RESULTS_FILE_ORIG="$RESULTS_FILE"
@@ -177,7 +162,5 @@ for ((i=0; i<=TOTAL_STEPS; i+=CKPT_EVERY)); do
     calculate_fid
   fi
 done
-
-cleanup_dataset
 
 echo ">>> All tasks completed successfully!"

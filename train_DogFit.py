@@ -153,7 +153,6 @@ def our_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, 
 
             if pretrained_model is not None and ema is not None and counter > late_start_iter:
                 # Where the DoG Happens 
-                # target = target + (w - 1) * (target - pretrained_output)
 
                 # Guidance Cut Off
                 initial_target = target.clone().detach()
@@ -169,10 +168,6 @@ def our_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, 
 
 
             if pretrained_model is not None and ema is not None and dist.get_rank() == 0 and counter > late_start_iter and counter % 1000 == 0:
-
-                #print(f"[DEBUG]: w value: {w}")
-                #print(f"[DEBUG]: Model w: {model_kwargs['w']}")
-                #print(f"[DEBUG]: ema w: {ema_kwargs['w']}")
 
                 # Debugging functions
                 def norm_to_01(x):
@@ -219,8 +214,6 @@ def our_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, 
                 save_image(norm_to_01(initial_noise_decoded),         f"{save_dir}/initial_noise_decoded.png",        nrow=8)
 
                 print(f"[DEBUG] Saved DoG debugging images to {save_dir}")
-                # print(f"[DEBUG] w mean: {model_kwargs['w'].mean().item():.2f}, std: {model_kwargs['w'].std().item():.2f}")
-
             counter += 1
             
             assert model_output.shape == target.shape == x_start.shape
@@ -305,7 +298,7 @@ def our_training_losses_transport(
     terms = {"pred": model_output}
     terms["loss"] = mean_flat((model_output - ut) ** 2)
 
-    if pretrained_model is not None and ema is not None and counter > late_start_iter and dist.get_rank() == 0 and counter % 6000 == 0:
+    if pretrained_model is not None and ema is not None and counter > late_start_iter and dist.get_rank() == 0 and counter % 1000 == 0:
         def norm_to_01(x): return (x.clamp(-1, 1) + 1) / 2
 
         alpha_t, _ = self.path_sampler.compute_alpha_t(expand_t_like_x(t, xt))
@@ -697,7 +690,7 @@ def main(args):
     model = DDP(model.to(device), device_ids=[rank])
 
     if args.model in SiT_models:
-        print("LOADING SIT MODEL!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        print("LOADING SIT MODEL!")
         transport = create_transport(
             args.path_type,
             args.prediction,
@@ -709,7 +702,7 @@ def main(args):
         logger.info(f"SiT Parameters: {sum(p.numel() for p in model.parameters()):,}")
         transport.training_losses = MethodType(our_training_losses_transport, transport)  # MG
     elif args.model in DiT_models:
-        print("LOADING DIT MODEL!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        print("LOADING DIT MODEL!")
         logger.info(f"DiT Parameters: {sum(p.numel() for p in model.parameters()):,}")
         diffusion = create_diffusion(timestep_respacing="")  # default: 1000 steps, linear noise schedule
         diffusion.training_losses = MethodType(our_training_losses, diffusion) # CG
@@ -797,76 +790,6 @@ def main(args):
                 print("[DoG] Sampled w values:", w.flatten().cpu().numpy())
                 model_kwargs["w"] = w
 
-            #If doing profiling:
-            # profiling = True
-            #if profiling:
-            #    from torch.profiler import profile, record_function, ProfilerActivity
-# # # #
-            #    with profile(
-            #        activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA], 
-            #        record_shapes=True,
-            #        profile_memory=True,
-            #        with_stack=True,
-            #        with_flops=True
-            #    ) as prof:
-            #        # MG
-            #        # Patch the diffusion training loss to use Domain Guidance
-            #        # DoG
-            #        # Patch the diffusion training loss to use Domain Guidance
-            #        if args.model in SiT_models:
-            #            print("NO____________________________ SIT MODEL _________________________")
-            #            print("NO____________________________ SIT MODEL _________________________")
-            #            print("NO____________________________ SIT MODEL _________________________")
-            #            print("NO____________________________ SIT MODEL _________________________")
-            #            print("NO____________________________ SIT MODEL _________________________")
-            #            loss_dict = transport.training_losses(
-            #                model,
-            #                x,
-            #                model_kwargs,
-            #                pretrained_model=pretrained_model,
-            #                ema=ema,
-            #                vae=vae, # For debugging 
-            #                w_dog=args.w_dog,
-            #                guidance_cutoff=args.guidance_cutoff,
-            #                mg_high=args.mg_high, 
-            #                late_start_iter=args.late_start_iter,
-            #                counter=train_steps,
-            #        )
-            #        elif args.model in DiT_models:
-            #            print("YES____________________________ DIT MODEL _________________________")
-            #            print("YES____________________________ DIT MODEL _________________________")
-            #            print("YES____________________________ DIT MODEL _________________________")
-            #            print("YES____________________________ DIT MODEL _________________________")
-            #            print("YES____________________________ DIT MODEL _________________________")
-            #            print("YES____________________________ DIT MODEL _________________________")
-            #            t = torch.randint(0, diffusion.num_timesteps, (x.shape[0],), device=device)
-            #            # MG
-            #            # Patch the diffusion training loss to use Domain Guidance
-            #            loss_dict = diffusion.training_losses(
-            #                model,
-            #                x,
-            #                t,
-            #                model_kwargs,
-            #                ema=diffusion._wrap_model(ema),
-            #                vae=vae, # For debugging 
-            #                w_dog=args.w_dog,
-            #                guidance_cutoff=args.guidance_cutoff,
-            #                counter=train_steps,
-            #            )
-            #            loss_dict = diffusion.training_losses(model, x, t, model_kwargs)
-# # # #
-            #        loss = loss_dict["loss"].mean()
-            #        opt.zero_grad()
-            #        loss.backward()
-            #        opt.step()
-# # # #
-            #        prof.step()
-# # 
-            # print(prof.key_averages().table(sort_by="self_cuda_time_total", row_limit=30))
-            # print("Total FLOPs:", sum([e.flops for e in prof.key_averages() if e.flops is not None]))
-            # dist.barrier()
-            # exit()
-
             if args.model in SiT_models:
                 loss_dict = transport.training_losses(
                     model,
@@ -881,36 +804,6 @@ def main(args):
                     late_start_iter=args.late_start_iter,
                     counter=train_steps,
             )
-
-                # sample_fn = transport_sampler.sample_ode(
-                #             sampling_method="dopri5",
-                #             num_steps=50,
-                #             atol=1e-6,
-                #             rtol=1e-3,
-                #             reverse=False,
-                #         )
-# 
-                # if dist.get_rank() == 0:
-                #     # 1) noise in latent space
-                #     z = torch.randn_like(x)            # [B,C,H,W] same shape as your batch
-                #     y = torch.randint(0, 1000, (z.shape[0],), device=device)
-# 
-                #     # 2) run your ODE sampler through the pretrained SiT
-                #     with torch.no_grad():
-                #         xs = sample_fn(z, pretrained_model, y=y)
-                #     z0 = xs[-1]
-# 
-                #     # 3) decode via VAE and normalize
-                #     with torch.no_grad():
-                #         img = vae.decode(z0 / 0.18215).sample
-                #         img = (img.clamp(-1,1) + 1) * 0.5
-# 
-                #     # 4) save a small grid
-                #     os.makedirs("debug_samples", exist_ok=True)
-                #     save_image(img, f"debug_samples/step_{train_steps:07d}.png", nrow=4)
-                #     print(f"✅ [SiT] dumped samples to debug_samples/step_{train_steps:07d}.png")
- 
-             # … rest of your loop …
 
 
             elif args.model in DiT_models:
@@ -931,32 +824,6 @@ def main(args):
                     late_start_iter=args.late_start_iter,
                     counter=train_steps,
                 )   
-
-                # # assume x has shape [B, C, H, W]
-                # B, C, H, W = x.shape
-                # z = torch.randn(B, C, H, W, device=device)
-                # y = torch.randint(0, args.num_classes, (B,), device=device)
-# 
-                # model_kwargs = dict(y=y)
-                # model_fn = diffusion._wrap_model(pretrained_model)
-# 
-                # samples = diffusion.p_sample_loop(
-                #     model_fn,
-                #     z.shape,
-                #     z,
-                #     clip_denoised=False,
-                #     model_kwargs=model_kwargs,
-                #     progress=False,
-                #     device=device
-                # )
-# 
-                # with torch.no_grad():
-                #     dec = vae.decode(samples / 0.18215).sample
-                #     img = (dec.clamp(-1,1) + 1) * 0.5  # [0,1] range
-                # os.makedirs("debug_samples", exist_ok=True)
-                # save_image(img, f"debug_samples/dit_step_{train_steps:07d}.png", nrow=4)
-                # print(f"✅ [DiT] dumped samples to debug_samples/dit_step_{train_steps:07d}.png")
-
 
             loss = loss_dict["loss"].mean()
             opt.zero_grad()

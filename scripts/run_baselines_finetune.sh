@@ -69,7 +69,7 @@ train_model() {
 }
 sample_CG1() {
     log_and_run "Sampling images for CG1..." \
-    env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES torchrun --master_port=$PORT --nproc_per_node=$NPROC_PER_NODE sample_ddp.py \
+    env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES torchrun --master_port=$PORT --nproc_per_node=$NPROC_PER_NODE sample.py \
         --model "$MODEL" --vae "$VAE" \
         --sample-dir "$GENERATED_DIR/$PADDED_STEP" \
         --ckpt "$CHECKPOINT_DIR/$PADDED_CKPT" \
@@ -93,7 +93,7 @@ fid_CG1() {
 
 sample_CG1_5() {
     log_and_run "Sampling images for CG1.5..." \
-    env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES torchrun --master_port=$PORT --nproc_per_node=$NPROC_PER_NODE sample_ddp.py \
+    env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES torchrun --master_port=$PORT --nproc_per_node=$NPROC_PER_NODE sample.py \
         --model "$MODEL" --vae "$VAE" \
         --sample-dir "$GENERATED_DIR/$PADDED_STEP" \
         --ckpt "$CHECKPOINT_DIR/$PADDED_CKPT" \
@@ -117,7 +117,7 @@ fid_CG1_5() {
 
 sample_DoG1_5() {
     log_and_run "Sampling images for DoG1.5..." \
-    env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES torchrun --master_port=$PORT --nproc_per_node=$NPROC_PER_NODE sample_dog_ddp.py \
+    env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES torchrun --master_port=$PORT --nproc_per_node=$NPROC_PER_NODE sample_DoG.py \
         --model "$MODEL" --vae "$VAE" \
         --sample-dir "$GENERATED_DIR/$PADDED_STEP" \
         --ckpt "$CHECKPOINT_DIR/$PADDED_CKPT" \

@@ -70,7 +70,7 @@ train_model() {
 
 run_sampling() {
     log_and_run "Sampling images..." \
-    env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES torchrun --master_port=$PORT --nproc_per_node=$NPROC_PER_NODE sample_ddp.py \
+    env CUDA_VISIBLE_DEVICES=$CUDA_DEVICES torchrun --master_port=$PORT --nproc_per_node=$NPROC_PER_NODE sample.py \
         --model $MODEL \
         --vae $VAE \
         --sample-dir "$GENERATED_DIR/$PADDED_STEP" \
