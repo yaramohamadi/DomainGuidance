@@ -1,17 +1,4 @@
 #!/bin/bash
-#SBATCH --account=def-hadi87
-#SBATCH --job-name=${JOB_NAME:-Ours}  # Use $JOB_NAME if defined, else 'myjob'
-#SBATCH --output=logs/%x_%j.out
-#SBATCH --error=logs/%x_%j.err          
-#SBATCH --time=06:00:00
-#SBATCH --nodes=1
-#SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=16
-#SBATCH --gres=gpu:a100:2              
-#SBATCH --mem=80G                        
-#SBATCH --mail-user=yara.mohammadi-bahram.1@ens.etsmtl.ca 
-#SBATCH --mail-type=ALL           
-
 # ====================== CONFIGURATION ======================
 
 # Define CUDA devices here
@@ -40,13 +27,11 @@ while [[ "$#" -gt 0 ]]; do
   shift
 done
 
-EXPERIMENT_NAME="$EXPERIMENT_PRENAME/baseline_mgfinetune_wtraincfg$W_TRAIN_CFG"
+EXPERIMENT_NAME="$EXPERIMENT_PRENAME/baseline_mgfinetune_WTRAINCFG$W_TRAIN_CFG"
 
 # Load all logic
 resolve_server_paths
 resolve_dataset_config
-
-
 
 # Define any additional specific parameters here
 

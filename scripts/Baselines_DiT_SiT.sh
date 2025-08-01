@@ -3,7 +3,7 @@
 # ========== GLOBAL CONFIGURATION ==========
 SERVER="bool"
 CUDA_DEVICES="0,1"
-EXPERIMENT_PRENAME="publish"
+EXPERIMENT_PRENAME="Publish_Results_BASELINES"
 MODEL_NAME="DiT-XL/2" # or "SiT-XL/2" 
 
 # ========== DATASET TO SCRIPT MAPPING ==========

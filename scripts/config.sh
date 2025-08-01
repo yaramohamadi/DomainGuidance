@@ -33,10 +33,10 @@ echo "Using MASTER_PORT=$PORT"
 # Set paths and dataset details
 resolve_dataset_config() {
   case "$DATASET" in
-    food-101) NUM_CLASSES=101 ;;
+    food-101_processed) NUM_CLASSES=101 ;;
     *) echo "Unknown dataset: $DATASET"; exit 1 ;;
   esac
-  DATA_DIR_ZIP="$DATASETS_DIR/$DATASET.zip"
+  DATA_DIR_ZIP="$DATASETS_DIR/food-101.zip"
   REAL_DATA_DIR="$DATASETS_DIR/$DATASET"
   # Normal Generated Directory for Ours and MG
   RESULTS_DIR="$RESULTS_PRE_DIR/$DATASET/$EXPERIMENT_NAME/"
@@ -63,7 +63,7 @@ resolve_server_paths() {
             CODE_PRE_DIR="/projets/Ymohammadi/DomainGuidance"
             DATASETS_DIR="/projets/Ymohammadi/DomainGuidance/datasets"
             RESULTS_PRE_DIR="/export/datasets/public/diffusion_datasets/tmp_weights"
-            ENV_PATH="/projets/Ymohammadi/envs/DiT_publish4"
+            ENV_PATH="/projets/Ymohammadi/envs/DiT"
             ;;
         *)
             echo "Unknown server: $SERVER" >&2
@@ -100,7 +100,7 @@ create_environment() {
 
 prepare_dataset() {
 
-  if [ "$DATASET" == 'food-101' ]; then
+  if [ "$DATASET" == 'food-101_processed' ]; then
 
     if [ -d "$REAL_DATA_DIR" ] && [ "$(ls -A "$REAL_DATA_DIR")" ]; then
       echo ">>> Dataset already exists at: $REAL_DATA_DIR. Skipping extraction."
