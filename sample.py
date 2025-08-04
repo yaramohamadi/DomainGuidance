@@ -238,7 +238,6 @@ def main(args):
             model_fn = model.forward
         else:
             # No guidance
-            print("Using no guidance")
             model_kwargs = dict(y=y)
             model_fn = model.forward
 
