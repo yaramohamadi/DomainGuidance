@@ -18,12 +18,12 @@ pretrained_models = {
 
 def find_model(model_name):
     """
-    Finds a pre-trained DiT model, downloading it if necessary. Alternatively, loads a model from a local path.
+    Finds a pre-trained DiT/SiT model, downloading it if necessary. Alternatively, loads a model from a local path.
     """
     if model_name in pretrained_models:  # Find/download our pre-trained DiT checkpoints
         return download_model(model_name)
     else:  # Load a custom DiT checkpoint:
-        assert os.path.isfile(model_name), f'Could not find DiT checkpoint at {model_name}'
+        assert os.path.isfile(model_name), f'Could not find DiT/SiT checkpoint at {model_name}'
         checkpoint = torch.load(model_name, map_location=lambda storage, loc: storage, weights_only=False)
         if "ema" in checkpoint:  # supports checkpoints from train.py
             checkpoint = checkpoint["ema"]
