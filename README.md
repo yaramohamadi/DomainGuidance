@@ -45,7 +45,7 @@ bash scripts/run_DogFit.sh \
     --control_distribution "95in1to2"
 ```
 
-Choices: model: DiT-XL/2  SiT-XL/2
+Choices for model: DiT-XL/2  SiT-XL/2
 
 ## 📊 Results on Food-101 (DiT with Control)
 
@@ -61,7 +61,7 @@ Choices: model: DiT-XL/2  SiT-XL/2
 
 ## Guidance without Control
 
-This script applies DogFit on DiT without Control:
+This script applies DogFit on DiT without Control with a focus on optimizing FD_DINOV2:
 
 ```bash
 bash scripts/run_DogFit.sh \
@@ -74,32 +74,12 @@ bash scripts/run_DogFit.sh \
     --model_name "DiT-XL/2" \
 ```
 
-Choices: model: DiT-XL/2  SiT-XL/2
-
-
-## Guidance without Control
-
-This script applies DogFit on DiT without Control:
-
-> Example script provided in: `scripts/DogFit_DiT_SiT_noControl.sh`
-
-```bash
-bash scripts/run_DogFit.sh \
-    --dataset "food-101_processed" \
-    --server "bool" \
-    --cuda_devices "0,1" \
-    --experiment_prename "DiT-XL_FD_DINOV2_control/" \
-    --latestart "12000" \
-    --mghigh "1" \
-    --model_name "DiT-XL/2" \
-```
-
-Choices: model: DiT-XL/2  SiT-XL/2
-
+Choices for model: DiT-XL/2  SiT-XL/2
 
 ## Baselines
 
 > To run the baselines, refer to the example scripts provided in: `scripts/Baselines_DiT_SiT_noControl.sh`
+
 
 ## Repository Structure
 

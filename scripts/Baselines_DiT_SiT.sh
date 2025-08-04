@@ -8,9 +8,10 @@ MODEL_NAME="DiT-XL/2" # or "SiT-XL/2"
 
 # ========== DATASET TO SCRIPT MAPPING ==========
 declare -a TASKS=(
-  "food-101_processed run_baseline_MG.sh"
+  "food-101_processed run_baselines_finetune.sh"
 )
-#   "food-101_processed run_baselines_finetune.sh"
+
+# "food-101_processed run_baseline_MG.sh"
 
 # ========== EXECUTION LOOP ==========
 for TASK in "${TASKS[@]}"; do
