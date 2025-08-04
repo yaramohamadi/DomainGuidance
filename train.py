@@ -5,7 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 """
-A minimal training script for DiT and SiT using PyTorch DDP.
+A minimal fine-tuning script for DiT and SiT using PyTorch DDP. This is used as a baseline for our paper "Domain Guidance for Diffusion Models"
 """
 import torch
 # the first flag below was False when we tested this script but True makes A100 training a lot faster:
@@ -221,7 +221,7 @@ def main(args):
         transport_sampler = Sampler(transport)
         logger.info(f"SiT Parameters: {sum(p.numel() for p in model.parameters()):,}")
     elif args.model in DiT_models:
-        logger.info(f"SiT Parameters: {sum(p.numel() for p in model.parameters()):,}")
+        logger.info(f"DiT Parameters: {sum(p.numel() for p in model.parameters()):,}")
         diffusion = create_diffusion(timestep_respacing="")  # default: 1000 steps, linear noise schedule
     vae_path = f"pretrained_models/sd-vae-ft-{args.vae}"
     if not os.path.exists(vae_path):
@@ -325,7 +325,7 @@ def main(args):
                 log_steps = 0
                 start_time = time()
 
-            # Save DiT checkpoint:
+            # Save DiT/SiT checkpoint:
             if train_steps % args.ckpt_every == 0 and train_steps > 0:
                 if rank == 0:
                     checkpoint = {

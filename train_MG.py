@@ -5,7 +5,8 @@
 # LICENSE file in the root directory of this source tree.
 
 """
-A minimal training script for DiT and SiT using PyTorch DDP.
+A minimal script for fine-tuning DiT and SiT through Model Guidance (Diffusion Models without Classifier-free Guidance) using PyTorch DDP. 
+The code is adapted from "https://github.com/tzco/Diffusion-wo-CFG/tree/main"
 """
 import torch
 # the first flag below was False when we tested this script but True makes A100 training a lot faster:
@@ -21,25 +22,18 @@ import numpy as np
 from collections import OrderedDict
 from PIL import Image
 from copy import deepcopy
-from glob import glob
 from time import time
 import argparse
 import logging
 import os
-
 from download import find_model
-
 from models import DiT_models, SiT_models
-from diffusion import create_diffusion
 from diffusion import create_diffusion
 from diffusion.gaussian_diffusion import LossType, ModelMeanType, ModelVarType, mean_flat
 from torchvision.utils import save_image
 from transport import create_transport, Sampler, ModelType, path
-
 from diffusers.models import AutoencoderKL
-
 from types import MethodType
-from torchvision.utils import save_image
 
 ##################################################################################
 #                              Training loss                                     #
@@ -453,7 +447,7 @@ def main(args):
         vae = AutoencoderKL.from_pretrained(f"stabilityai/sd-vae-ft-{args.vae}").to(device)
     else:
         vae = AutoencoderKL.from_pretrained(vae_path).to(device)
-    logger.info("[MG CG] Patched diffusion training loss with Classifier Guidance (w_CG={})".format(args.w_cg))
+    logger.info("[MG CG] Patched diffusion training loss with Model Guidance (w_CG={})".format(args.w_cg))
 
     # Setup optimizer (we used default Adam betas=(0.9, 0.999) and a constant learning rate of 1e-4 in our paper):
     opt = torch.optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0)
@@ -617,7 +611,7 @@ if __name__ == "__main__":
     parser.add_argument("--ckpt-every", type=int, default=50_000)
     parser.add_argument("--pretrained-ckpt", type=str, default=None,
                         help="Optional path to a DiT checkpoint (default: auto-download a pre-trained DiT-XL/2 model).")
-    parser.add_argument("--w-cg",type=float,default=1.0,help="Classifier Guidance strength (w_cg).") # MG
+    parser.add_argument("--w-cg",type=float,default=1.0,help="Model Guidance strength (w_cg).") # MG
     parser.add_argument("--guidance-cutoff", type=float, default=0, help="Cutoff for classifier-free guidance. ") # MG
 
     def none_or_str(value):

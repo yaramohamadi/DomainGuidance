@@ -5,7 +5,8 @@
 # LICENSE file in the root directory of this source tree.
 
 """
-A minimal training script for DiT and SiT using PyTorch DDP.
+A minimal training script for fine-tuning DiT and SiT through DogFit (Domain Guided Fine-tuning for Transfer Learning of Diffusion Models) using PyTorch DDP. 
+The code includes all necessary components of fine-tuning via our method DogFit, including the training loss, guidance control, and training loop.
 """
 import torch
 # the first flag below was False when we tested this script but True makes A100 training a lot faster:
@@ -21,24 +22,18 @@ import numpy as np
 from collections import OrderedDict
 from PIL import Image
 from copy import deepcopy
-from glob import glob
 from time import time
 import argparse
 import logging
 import os
 import math
 import torch.nn as nn
-
 from download import find_model
-
 from models import DiT_models, SiT_models
-from diffusion import create_diffusion
 from diffusion import create_diffusion
 from diffusion.gaussian_diffusion import LossType, ModelMeanType, ModelVarType, mean_flat
 from transport import create_transport, Sampler, ModelType, path
-
 from diffusers.models import AutoencoderKL
-
 from types import MethodType
 from torchvision.utils import save_image
 
@@ -48,184 +43,188 @@ from torchvision.utils import save_image
 #                              Training loss                                     #
 ##################################################################################
 
+
+
 # DoG
 def our_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, pretrained_model=None, w_dog=1.0, ema=None, vae=None, guidance_cutoff=False, mg_high=0.75, late_start_iter=0, counter=0):
+    """
+    Compute training loss with Domain Guidance (DoG).
 
-        """
-        Compute training losses for a single timestep.
-        :param model: the model to evaluate loss on.
-        :param x_start: the [N x C x ...] tensor of inputs.
-        :param t: a batch of timestep indices.
-        :param model_kwargs: extra keyword arguments to pass to the model.
-        :param noise: specific Gaussian noise to try to remove (optional).
-        :param pretrained_model: if provided, apply Domain Guidance correction.
-        :param w_dog: Domain Guidance strength.
-        :param save_dir: if provided, save intermediate image grids for inspection.
-        :param counter: global training step counter (used for saving frequency).
-        :return: dictionary of loss terms.
-        """
-        if model_kwargs is None:
-            model_kwargs = {}
-        if noise is None:
-            noise = torch.randn_like(x_start)
-        x_t = self.q_sample(x_start, t, noise=noise)
+    Args:
+        model: The diffusion model being trained.
+        x_start: Input image tensor [N x C x H x W].
+        t: Timesteps for diffusion [N].
+        model_kwargs: Extra inputs like class labels or guidance weights.
+        noise: Optional Gaussian noise to apply.
+        pretrained_model: Source domain pretrained model for guidance.
+        w_dog: Guidance strength (scalar or tensor).
+        ema: EMA model for current domain.
+        vae: Decoder for debugging visualizations.
+        guidance_cutoff: If True, apply time-based masking on guidance.
+        mg_high: Cutoff threshold (normalized t) for masking.
+        late_start_iter: Global step before which no guidance is applied.
+        counter: Current training step.
 
-        terms = {}
+    Returns:
+        Dictionary containing loss terms.
+    """
 
-        ema_kwargs = dict(model_kwargs)
-        # guidance control
-        if model_kwargs.get("w", None) is not None:
-            # Extract guidance weight w from model_kwargs
-            w = model_kwargs["w"]
-            ema_kwargs["w"] = torch.ones_like(w)  # w = 1
-        else:
-            w = w_dog
-            if not torch.is_tensor(w):
-                w = torch.tensor(w, dtype=torch.float32, device=x_t.device)
-        y = model_kwargs["y"]
-        pretrained_kwargs = {"y": torch.full_like(y, 1000)}
+    # Debugging function
+    def norm_to_01(x):
+        """Normalize to [0,1] for visualization."""
+        return (x.clamp(-1,1) + 1) / 2
+    
+    if model_kwargs is None:
+        model_kwargs = {}
+    if noise is None:
+        noise = torch.randn_like(x_start)
+    
+    x_t = self.q_sample(x_start, t, noise=noise)
+    terms = {}
 
-        if self.loss_type == LossType.KL or self.loss_type == LossType.RESCALED_KL:
-            terms["loss"] = self._vb_terms_bpd(
-                model=model,
+    ema_kwargs = dict(model_kwargs)
+    y = model_kwargs["y"]
+    pretrained_kwargs = {"y": torch.full_like(y, 1000)}
+
+    # Get guidance strength w, (if w is provided in model_kwargs, use it as model input for control; otherwise, use fixed w_dog)
+    if model_kwargs.get("w", None) is not None:
+        # Extract guidance weight w from model_kwargs
+        w = model_kwargs["w"]
+        ema_kwargs["w"] = torch.ones_like(w)  # w = 1
+    else:
+        w = w_dog
+        if not torch.is_tensor(w):
+            w = torch.tensor(w, dtype=torch.float32, device=x_t.device)
+    
+    if self.loss_type == LossType.KL or self.loss_type == LossType.RESCALED_KL:
+        raise NotImplementedError("Support for KL-based loss is not implemented")
+    elif self.loss_type == LossType.MSE or self.loss_type == LossType.RESCALED_MSE:
+        
+        # If guidance control is enabled, we need to ensure that w = 1 when guidance is not applied.
+        if "w" in model_kwargs:
+            if pretrained_model is None or ema is None or counter <= late_start_iter:
+                model_kwargs["w"] = torch.ones_like(w)  # w = 1
+            elif guidance_cutoff:
+                # Compute mask based on t < mg_high
+                t_norm = t.float() / (self.num_timesteps - 1)  # [B]
+                mask = (t_norm < mg_high).float().view(-1, 1)  # [B,1]
+                # Set w=1 where guidance is disabled (t >= mg_high)
+                w_masked = mask * w + (1 - mask) * torch.ones_like(w)
+                model_kwargs["w"] = w_masked
+                
+        model_output = model(x_t, t, **model_kwargs)
+
+        if pretrained_model is not None and ema is not None and counter > late_start_iter:
+            # guidance DoG
+            with torch.no_grad():
+                pretrained_output = pretrained_model(x_t, t, **pretrained_kwargs)
+                ema_output = ema(x_t, t, **ema_kwargs)
+
+        if self.model_var_type in [
+            ModelVarType.LEARNED,
+            ModelVarType.LEARNED_RANGE,
+        ]:
+            B, C = x_t.shape[:2]
+            assert model_output.shape == (B, C * 2, *x_t.shape[2:])
+            model_output, model_var_values = torch.split(model_output, C, dim=1)
+            if pretrained_model is not None and ema is not None and counter > late_start_iter:
+                pretrained_output, _ = torch.split(pretrained_output, C, dim=1)
+                ema_output, _ = torch.split(ema_output, C, dim=1)
+
+            # Learn the variance using the variational bound, but don't let
+            # it affect our mean prediction.
+            frozen_out = torch.cat([model_output.detach(), model_var_values], dim=1)
+            terms["vb"] = self._vb_terms_bpd(
+                model=lambda *args, r=frozen_out: r,
                 x_start=x_start,
                 x_t=x_t,
                 t=t,
                 clip_denoised=False,
-                model_kwargs=model_kwargs,
             )["output"]
-            if self.loss_type == LossType.RESCALED_KL:
-                terms["loss"] *= self.num_timesteps
-        elif self.loss_type == LossType.MSE or self.loss_type == LossType.RESCALED_MSE:
-            
-            # If guidance control is enabled, we need to ensure that w = 1 when guidance is not applied.
-            if "w" in model_kwargs:
-                w = model_kwargs["w"]
-                if pretrained_model is None or ema is None or counter <= late_start_iter:
-                    model_kwargs["w"] = torch.ones_like(model_kwargs["w"])  # w = 1
-                elif guidance_cutoff:
-                    t_norm = t.float() / (self.num_timesteps - 1)  # [B]
-                    mask = (t_norm < mg_high).float().view(-1, 1)  # [B,1]
-                    w_masked = mask * w + (1 - mask) * torch.ones_like(w)
-                    model_kwargs["w"] = w_masked
-                    
-            model_output = model(x_t, t, **model_kwargs)
+            if self.loss_type == LossType.RESCALED_MSE:
+                # Divide by 1000 for equivalence with initial implementation.
+                # Without a factor of 1/1000, the VB term hurts the MSE term.
+                terms["vb"] *= self.num_timesteps / 1000.0
 
-            if pretrained_model is not None and ema is not None and counter > late_start_iter:
-                # guidance DoG
-                with torch.no_grad():
-                    pretrained_output = pretrained_model(x_t, t, **pretrained_kwargs)
-                    ema_output = ema(x_t, t, **ema_kwargs)
+        target = {
+            ModelMeanType.PREVIOUS_X: self.q_posterior_mean_variance(
+                x_start=x_start, x_t=x_t, t=t
+            )[0],
+            ModelMeanType.START_X: x_start,
+            ModelMeanType.EPSILON: noise,
+        }[self.model_mean_type]
 
-            if self.model_var_type in [
-                ModelVarType.LEARNED,
-                ModelVarType.LEARNED_RANGE,
-            ]:
-                B, C = x_t.shape[:2]
-                assert model_output.shape == (B, C * 2, *x_t.shape[2:])
-                model_output, model_var_values = torch.split(model_output, C, dim=1)
-                if pretrained_model is not None and ema is not None and counter > late_start_iter:
-                    pretrained_output, _ = torch.split(pretrained_output, C, dim=1)
-                    ema_output, _ = torch.split(ema_output, C, dim=1)
+        if pretrained_model is not None and ema is not None and counter > late_start_iter:
+            # Where the DoG Happens 
 
-                # Learn the variance using the variational bound, but don't let
-                # it affect our mean prediction.
-                frozen_out = torch.cat([model_output.detach(), model_var_values], dim=1)
-                terms["vb"] = self._vb_terms_bpd(
-                    model=lambda *args, r=frozen_out: r,
-                    x_start=x_start,
-                    x_t=x_t,
-                    t=t,
-                    clip_denoised=False,
-                )["output"]
-                if self.loss_type == LossType.RESCALED_MSE:
-                    # Divide by 1000 for equivalence with initial implementation.
-                    # Without a factor of 1/1000, the VB term hurts the MSE term.
-                    terms["vb"] *= self.num_timesteps / 1000.0
-
-            target = {
-                ModelMeanType.PREVIOUS_X: self.q_posterior_mean_variance(
-                    x_start=x_start, x_t=x_t, t=t
-                )[0],
-                ModelMeanType.START_X: x_start,
-                ModelMeanType.EPSILON: noise,
-            }[self.model_mean_type]
-
-            if pretrained_model is not None and ema is not None and counter > late_start_iter:
-                # Where the DoG Happens 
-
-                # Guidance Cut Off
-                initial_target = target.clone().detach()
-                if guidance_cutoff:
-                    t_norm = t.float() / (self.num_timesteps - 1)
-                    mg_high = mg_high
-                    mask = (t_norm < mg_high).float().view(-1, 1)  # [16, 1]
-                    w = w - 1
-                    w = mask * w  # now w remains [16, 1]
-                    target = target + w.view(-1, 1, 1, 1) * (ema_output.detach() - pretrained_output.detach())
-                else:
-                    target = target + (w.view(-1, 1, 1, 1) - 1) * (ema_output.detach() - pretrained_output.detach())
-
-
-            if pretrained_model is not None and ema is not None and dist.get_rank() == 0 and counter > late_start_iter and counter % 1000 == 0:
-
-                # Debugging functions
-                def norm_to_01(x):
-                    """Normalize to [0,1] for visualization."""
-                    return (x.clamp(-1,1) + 1) / 2
-
-                # -----------------------------------------
-                # Predict x0 from model and pretrained_model
-
-                # -----------------------------------------
-                alpha_bar = torch.from_numpy(self.alphas_cumprod).to(device=x_start.device, dtype=x_start.dtype)
-                sqrt_alpha_bar_t = torch.sqrt(alpha_bar[t]).view(-1, 1, 1, 1)
-                sqrt_one_minus_alpha_bar_t = torch.sqrt(1 - alpha_bar[t]).view(-1, 1, 1, 1)
-
-                # Reconstruct x0
-                x0_model = (x_t - sqrt_one_minus_alpha_bar_t * model_output) / sqrt_alpha_bar_t
-                x0_pretrained = (x_t - sqrt_one_minus_alpha_bar_t * pretrained_output) / sqrt_alpha_bar_t
-
-                # Calculate difference for visualization
-                x0_diff = (x0_model - x0_pretrained).abs()
-
-                # -----------------------------------------
-                # Save all images
-                # -----------------------------------------
-                save_dir = f"DoG_debug/{counter:06d}"
-                os.makedirs(save_dir, exist_ok=True)
-
-                with torch.no_grad():
-                    # decode from latents to images
-                    x_start_decoded = vae.decode(x_start / 0.18215).sample
-                    x0_model_decoded = vae.decode(x0_model / 0.18215).sample
-                    x0_pretrained_decoded = vae.decode(x0_pretrained / 0.18215).sample
-                    x0_diff_decoded = (x0_model_decoded - x0_pretrained_decoded).abs()
-                    model_noise_decoded = vae.decode(model_output / 0.18215).sample
-                    initial_noise_decoded = vae.decode(initial_target / 0.18215).sample
-                    
- 
-                # Save normalized images
-                save_image(norm_to_01(x_start_decoded),        f"{save_dir}/x_start.png",        nrow=8)
-                save_image(norm_to_01(x0_model_decoded),        f"{save_dir}/x0_model.png",       nrow=8)
-                save_image(norm_to_01(x0_pretrained_decoded),   f"{save_dir}/x0_pretrained.png",  nrow=8)
-                save_image(norm_to_01(x0_diff_decoded),         f"{save_dir}/x0_diff.png",        nrow=8)
-                save_image(norm_to_01(model_noise_decoded),         f"{save_dir}/model_noise.png",        nrow=8)
-                save_image(norm_to_01(initial_noise_decoded),         f"{save_dir}/initial_noise_decoded.png",        nrow=8)
-
-                print(f"[DEBUG] Saved DoG debugging images to {save_dir}")
-            counter += 1
-            
-            assert model_output.shape == target.shape == x_start.shape
-            terms["mse"] = mean_flat((target - model_output) ** 2)
-            if "vb" in terms:
-                terms["loss"] = terms["mse"] + terms["vb"]
+            # Guidance Cut Off
+            initial_target = target.clone().detach()
+            if guidance_cutoff:
+                t_norm = t.float() / (self.num_timesteps - 1)
+                mask = (t_norm < mg_high).float().view(-1, 1)  # [16, 1]
+                w = w - 1
+                w = mask * w  # now w remains [16, 1]
+                # The new noise target based on DogFit
+                target = target + w.view(-1, 1, 1, 1) * (ema_output.detach() - pretrained_output.detach())
             else:
-                terms["loss"] = terms["mse"]
-        else:
-            raise NotImplementedError(self.loss_type)
+                # The new noise target based on DogFit
+                target = target + (w.view(-1, 1, 1, 1) - 1) * (ema_output.detach() - pretrained_output.detach())
 
-        return terms
+
+        if pretrained_model is not None and ema is not None and dist.get_rank() == 0 and counter > late_start_iter and counter % 1000 == 0:
+
+            # -----------------------------------------
+            # Predict x0 from model and pretrained_model
+
+            # -----------------------------------------
+            alpha_bar = torch.from_numpy(self.alphas_cumprod).to(device=x_start.device, dtype=x_start.dtype)
+            sqrt_alpha_bar_t = torch.sqrt(alpha_bar[t]).view(-1, 1, 1, 1)
+            sqrt_one_minus_alpha_bar_t = torch.sqrt(1 - alpha_bar[t]).view(-1, 1, 1, 1)
+
+            # Reconstruct x0
+            x0_model = (x_t - sqrt_one_minus_alpha_bar_t * model_output) / sqrt_alpha_bar_t
+            x0_pretrained = (x_t - sqrt_one_minus_alpha_bar_t * pretrained_output) / sqrt_alpha_bar_t
+
+            # Calculate difference for visualization
+            x0_diff = (x0_model - x0_pretrained).abs()
+
+            # -----------------------------------------
+            # Save all images
+            # -----------------------------------------
+            save_dir = f"DoG_debug/{counter:06d}"
+            os.makedirs(save_dir, exist_ok=True)
+
+            with torch.no_grad():
+                # decode from latents to images
+                x_start_decoded = vae.decode(x_start / 0.18215).sample
+                x0_model_decoded = vae.decode(x0_model / 0.18215).sample
+                x0_pretrained_decoded = vae.decode(x0_pretrained / 0.18215).sample
+                x0_diff_decoded = (x0_model_decoded - x0_pretrained_decoded).abs()
+                model_noise_decoded = vae.decode(model_output / 0.18215).sample
+                initial_noise_decoded = vae.decode(initial_target / 0.18215).sample
+                
+
+            # Save normalized images
+            save_image(norm_to_01(x_start_decoded),        f"{save_dir}/x_start.png",        nrow=8)
+            save_image(norm_to_01(x0_model_decoded),        f"{save_dir}/x0_model.png",       nrow=8)
+            save_image(norm_to_01(x0_pretrained_decoded),   f"{save_dir}/x0_pretrained.png",  nrow=8)
+            save_image(norm_to_01(x0_diff_decoded),         f"{save_dir}/x0_diff.png",        nrow=8)
+            save_image(norm_to_01(model_noise_decoded),         f"{save_dir}/model_noise.png",        nrow=8)
+            save_image(norm_to_01(initial_noise_decoded),         f"{save_dir}/initial_noise_decoded.png",        nrow=8)
+
+            print(f"[DEBUG] Saved DoG debugging images to {save_dir}")
+        counter += 1
+        
+        assert model_output.shape == target.shape == x_start.shape
+        terms["mse"] = mean_flat((target - model_output) ** 2)
+        if "vb" in terms:
+            terms["loss"] = terms["mse"] + terms["vb"]
+        else:
+            terms["loss"] = terms["mse"]
+    else:
+        raise NotImplementedError(self.loss_type)
+
+    return terms
 
 # This is borrowed from path.py in the transport package.
 def expand_t_like_x(t, x):
@@ -279,6 +278,7 @@ def our_training_losses_transport(
     if pretrained_model is not None and ema is not None and counter > late_start_iter:
         with torch.no_grad():
             y = model_kwargs["y"]
+            # Disable label conditioning for pretrained model (use null class token)
             pretrained_kwargs = {"y": torch.full_like(y, 1000)}
             pretrained_output = pretrained_model(xt, t, **pretrained_kwargs)
             ema_output = ema(xt, t, **ema_kwargs)
@@ -299,7 +299,6 @@ def our_training_losses_transport(
     terms["loss"] = mean_flat((model_output - ut) ** 2)
 
     if pretrained_model is not None and ema is not None and counter > late_start_iter and dist.get_rank() == 0 and counter % 1000 == 0:
-        def norm_to_01(x): return (x.clamp(-1, 1) + 1) / 2
 
         alpha_t, _ = self.path_sampler.compute_alpha_t(expand_t_like_x(t, xt))
         sigma_t, _ = self.path_sampler.compute_sigma_t(expand_t_like_x(t, xt))
@@ -404,12 +403,11 @@ class GuidedWrapper(nn.Module):
         return x
 
     def __getattr__(self, name):
-        if name in self.__dict__:
-            return self.__dict__[name]
+        # Delegate unknown attributes to base model
         try:
-            return super().__getattr__(name)
-        except AttributeError:
             return getattr(self.base_model, name)
+        except AttributeError:
+            raise AttributeError(f"{self.__class__.__name__} has no attribute '{name}'")
 
 
 
@@ -786,8 +784,8 @@ def main(args):
                     # print(f"Exponential {args.control_distribution} guidance control from {args.w_min} to {args.w_max}")
                     w = sample_shifted_exp_custom((x.shape[0], 1), device, mode=args.control_distribution)
                 sample_shifted_exp_custom
-                print("[DoG] control distribution:", args.control_distribution)
-                print("[DoG] Sampled w values:", w.flatten().cpu().numpy())
+                # print("[DoG] control distribution:", args.control_distribution)
+                # print("[DoG] Sampled w values:", w.flatten().cpu().numpy())
                 model_kwargs["w"] = w
 
             if args.model in SiT_models:
