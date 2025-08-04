@@ -44,11 +44,10 @@ from torchvision.utils import save_image
 ##################################################################################
 
 
-
-# DoG
+# DogFit training loss function for diffusion models.
 def our_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, pretrained_model=None, w_dog=1.0, ema=None, vae=None, guidance_cutoff=False, mg_high=0.75, late_start_iter=0, counter=0):
     """
-    Compute training loss with Domain Guidance (DoG).
+    Compute training loss with Domain Guided Fine-tuning (DogFit).
 
     Args:
         model: The diffusion model being trained.
@@ -115,7 +114,7 @@ def our_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, 
         model_output = model(x_t, t, **model_kwargs)
 
         if pretrained_model is not None and ema is not None and counter > late_start_iter:
-            # guidance DoG
+            # guidance DogFit
             with torch.no_grad():
                 pretrained_output = pretrained_model(x_t, t, **pretrained_kwargs)
                 ema_output = ema(x_t, t, **ema_kwargs)
@@ -155,7 +154,7 @@ def our_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, 
         }[self.model_mean_type]
 
         if pretrained_model is not None and ema is not None and counter > late_start_iter:
-            # Where the DoG Happens 
+            # Where the DogFit Happens 
 
             # Guidance Cut Off
             initial_target = target.clone().detach()
@@ -191,7 +190,7 @@ def our_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, 
             # -----------------------------------------
             # Save all images
             # -----------------------------------------
-            save_dir = f"DoG_debug/{counter:06d}"
+            save_dir = f"DogFit_debug/{counter:06d}"
             os.makedirs(save_dir, exist_ok=True)
 
             with torch.no_grad():
@@ -212,7 +211,7 @@ def our_training_losses(self, model, x_start, t, model_kwargs=None, noise=None, 
             save_image(norm_to_01(model_noise_decoded),         f"{save_dir}/model_noise.png",        nrow=8)
             save_image(norm_to_01(initial_noise_decoded),         f"{save_dir}/initial_noise_decoded.png",        nrow=8)
 
-            print(f"[DEBUG] Saved DoG debugging images to {save_dir}")
+            print(f"[DEBUG] Saved DogFit debugging images to {save_dir}")
         counter += 1
         
         assert model_output.shape == target.shape == x_start.shape
@@ -258,7 +257,7 @@ def our_training_losses_transport(
         return (x.clamp(-1,1) + 1) / 2
         
     if self.model_type != ModelType.VELOCITY:
-        raise NotImplementedError("DoG is only implemented for ModelType.VELOCITY")
+        raise NotImplementedError("DogFit is only implemented for ModelType.VELOCITY")
 
     if model_kwargs is None:
         model_kwargs = {}
@@ -312,7 +311,7 @@ def our_training_losses_transport(
         x0_pretrained = xt - sigma_t * pretrained_output
         x0_diff = (x0_model - x0_pretrained).abs()
 
-        save_dir = f"DoG_debug/{counter:06d}"
+        save_dir = f"DogFit_debug/{counter:06d}"
         os.makedirs(save_dir, exist_ok=True)
 
         with torch.no_grad():
@@ -330,7 +329,7 @@ def our_training_losses_transport(
         save_image(norm_to_01(model_noise_decoded), f"{save_dir}/model_noise.png", nrow=8)
         save_image(norm_to_01(initial_noise_decoded), f"{save_dir}/initial_noise.png", nrow=8)
 
-        print(f"[DEBUG] Saved DoG debug images to {save_dir}")
+        print(f"[DEBUG] Saved DogFit debug images to {save_dir}")
 
     return terms
 
@@ -461,7 +460,7 @@ def load_pretrained_model(model, pretrained_ckpt_path, image_size, tmp_dir="tmp"
     
     Args:
         model: The DiT model instance to load into.
-        pretrained_ckpt_path: Optional path to a pre-trained checkpoint. If None, auto-downloads DiT-XL/2.
+        pretrained_ckpt_path: Optional path to a pre-trained checkpoint. If None, auto-downloads DiT-XL/2/SiT-XL/2.
         image_size: Image size (e.g., 256) to infer checkpoint name if not provided.
         tmp_dir: Temporary directory to save local checkpoint copy.
     
@@ -515,7 +514,7 @@ def load_pretrained_model(model, pretrained_ckpt_path, image_size, tmp_dir="tmp"
     return model
 
 
-# DoG
+# DogFit
 # Loads a pre-trained DiT model exactly, including y_embedder.
 def load_exact_pretrained_model(model, pretrained_ckpt_path, image_size, tmp_dir="tmp"):
     """
@@ -673,7 +672,7 @@ def main(args):
     # Load pre-trained weights if provided:
     model = load_pretrained_model(model, args.pretrained_ckpt, args.image_size)
 
-    # DoG
+    # DogFit
     # Load a pre-trained model for domain guidance
     pretrained_model = load_exact_pretrained_model(pretrained_model, args.pretrained_ckpt, args.image_size)  
     requires_grad(pretrained_model, False)
@@ -682,10 +681,10 @@ def main(args):
     
     # Guidance control:
     if args.guidance_control:
-        logger.info("[DoG] Using guided model wrapper with learnable guidance scale.")
+        logger.info("[DogFit] Using guided model wrapper with learnable guidance scale.")
         model = GuidedWrapper(model, args.zero_norm_variance).to(device)
     else:
-        logger.info("[DoG] Using standard model without guidance control.")
+        logger.info("[DogFit] Using standard model without guidance control.")
 
     # Note that parameter initialization is done within the DiT constructor
     ema = deepcopy(model).to(device)  # Create an EMA of the model for use after training
@@ -715,7 +714,7 @@ def main(args):
         vae = AutoencoderKL.from_pretrained(f"stabilityai/sd-vae-ft-{args.vae}").to(device)
     else:
         vae = AutoencoderKL.from_pretrained(vae_path).to(device)
-    logger.info("[DoG] Patched diffusion training loss with Domain Guidance (w_DoG={})".format(args.w_dog))
+    logger.info("[DogFit] Patched diffusion training loss with Domain Guidance (w_DogFit={})".format(args.w_dog))
 
     # Setup optimizer (we used default Adam betas=(0.9, 0.999) and a constant learning rate of 1e-4 in our paper):
     opt = torch.optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0)
@@ -790,8 +789,8 @@ def main(args):
                     # print(f"Exponential {args.control_distribution} guidance control from {args.w_min} to {args.w_max}")
                     w = sample_shifted_exp_custom((x.shape[0], 1), device, mode=args.control_distribution)
                 sample_shifted_exp_custom
-                # print("[DoG] control distribution:", args.control_distribution)
-                # print("[DoG] Sampled w values:", w.flatten().cpu().numpy())
+                # print("[DogFit] control distribution:", args.control_distribution)
+                # print("[DogFit] Sampled w values:", w.flatten().cpu().numpy())
                 model_kwargs["w"] = w
 
             if args.model in SiT_models:
@@ -882,6 +881,12 @@ def main(args):
 all_models = list(SiT_models.keys()) + list(DiT_models.keys())
 
 if __name__ == "__main__":
+
+    def none_or_str(value):
+        if value == 'None':
+            return None
+        return value
+
     # Default args here will train DiT-XL/2 with the hyperparameters we used in our paper (except training iters).
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-path", type=str, required=True)
@@ -899,21 +904,16 @@ if __name__ == "__main__":
     parser.add_argument("--ckpt-every", type=int, default=50_000)
     parser.add_argument("--pretrained-ckpt", type=str, default=None,
                         help="Optional path to a DiT checkpoint (default: auto-download a pre-trained DiT-XL/2 model).")
-    parser.add_argument("--w-dog",type=float,default=1.0,help="Domain Guidance strength (w_DoG)") # DOG
-    parser.add_argument("--guidance-cutoff", type=float, default=0, help="Cutoff for domain guidance") # DOG
-    parser.add_argument("--mg-high", type=float, default=0.75, help="Cutoff for domain guidance") # DOG
-    parser.add_argument("--late-start-iter", type=int, default=0, help="Late start iteration for domain guidance") # DOG
-    parser.add_argument("--dropout-ratio", type=float, default=0.1, help="Have null labels or no") # DOG
+    parser.add_argument("--w-dog",type=float,default=1.0,help="Domain Guidance strength (w_DogFit)") # DogFit
+    parser.add_argument("--guidance-cutoff", type=float, default=0, help="Cutoff for domain guidance") # DogFit
+    parser.add_argument("--mg-high", type=float, default=0.75, help="Cutoff for domain guidance") # DogFit
+    parser.add_argument("--late-start-iter", type=int, default=0, help="Late start iteration for domain guidance") # DogFit
+    parser.add_argument("--dropout-ratio", type=float, default=0.1, help="Have null labels or no") # DogFit
     parser.add_argument("--guidance-control", type=float, default=0, help="Use learnable guidance scale (w) in the model wrapper")  # DOG
-    parser.add_argument("--w-max", type=float, default=1.0, help="Maximum guidance scale") # DOG
-    parser.add_argument("--w-min", type=float, default=1.0, help="Maximum guidance scale") # DOG
-    parser.add_argument("--control-distribution", type=str, default="uniform") # DOG
-    parser.add_argument("--zero-norm-variance", type=str, default="111") # DOG
-    def none_or_str(value):
-        if value == 'None':
-            return None
-        return value
-
+    parser.add_argument("--w-max", type=float, default=1.0, help="Maximum guidance scale") # DogFit
+    parser.add_argument("--w-min", type=float, default=1.0, help="Maximum guidance scale") # DogFit
+    parser.add_argument("--control-distribution", type=str, default="uniform") # DogFit
+    parser.add_argument("--zero-norm-variance", type=str, default="111") # DogFit
     # For SiT transport models
     group = parser.add_argument_group("Transport arguments")
     group.add_argument("--path-type", type=str, default="Linear", choices=["Linear", "GVP", "VP"])
