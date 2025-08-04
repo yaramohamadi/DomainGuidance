@@ -251,6 +251,12 @@ def our_training_losses_transport(
     late_start_iter=0,
     counter=0,
 ):
+
+    # Debugging function
+    def norm_to_01(x):
+        """Normalize to [0,1] for visualization."""
+        return (x.clamp(-1,1) + 1) / 2
+        
     if self.model_type != ModelType.VELOCITY:
         raise NotImplementedError("DoG is only implemented for ModelType.VELOCITY")
 
