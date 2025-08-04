@@ -2,9 +2,9 @@
 
 # ========== GLOBAL CONFIGURATION ==========
 SERVER="bool"
-CUDA_DEVICES="0,1"
+CUDA_DEVICES="1,2"
 SCRIPT="run_DogFit.sh"
-EXPERIMENT_PRENAME="DiT_inception_DogFit"
+EXPERIMENT_PRENAME="publish"
 MODEL_NAME="SiT-XL/2"  # or "DiT-XL/2"
 FOCUS_METRIC="FD_DINOV2"  # or "FID"
 
