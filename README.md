@@ -1,119 +1,129 @@
-This repository contains source code for reproducing the results of domain guided fine-tuning (DogFit), an efficient guidance method for transfer learning of diffusion models. 
+# DogFit: Domain-Guided Fine-Tuning for Diffusion Models
 
-The experimented models are SiT/XL-2 and DiT/XL-2.
+This repository contains the official implementation of **DogFit**, an efficient domain-guided fine-tuning method for transfer learning of diffusion models.
 
-We provide a demo for fine-tuning to Food-101 target dataset, as well as calculating the FID, FD_DINOV2, and Precision and Recall values.
+We demonstrate our method using **SiT-XL/2** and **DiT-XL/2** on the **Food-101** dataset and provide support for evaluating key metrics such as **FID**, **FD_DINOV2**, **Precision**, and **Recall**.
 
-We assume that you have conda installed on your system. To work with pure python environments, please change the create_environment() function in config.sh. 
 
-The script creates a conda environment, downloads and preprocesses the food-101 dataset, trains the model, saves the checkpoints, generates 10,000 samples, and performs evaluations, saving all the logs and final results in .log file. 
+## Setup
 
+We recommend using `conda` for environment management.  
+To use a pure Python environment, modify the `create_environment()` function in `scripts/config.sh`.
+
+Change the following paths in `scripts/config.sh`:
+
+```
+CODE_PRE_DIR="/path/to/main/directory"
+DATASETS_DIR="$CODE_PRE_DIR/datasets" # "/path/to/datasets/" # Can keep this the way it is
+RESULTS_PRE_DIR="$CODE_PRE_DIR/results" # "/path/to/results/directory" # Can keep this the way it is
+ENV_PATH="path/to/python/environment" # Where you want the environment to be created 
+```
+
+### One-Line Execution
+
+This script automates the entire pipeline on Food-101, applying DogFit on DiT with Control:
+
+- Creates a conda environment and downloads packages
+- Downloads and preprocesses the Food-101 dataset
+- Fine-tunes a DiT model pre-trained on ImageNet with DogFit+Control and saves checkpoints
+- Generates 10,000 samples for a variety of guidance values using the fine-tuned model
+- Evaluates results and logs them in a `.log` file
+
+> Example script provided in: `scripts/DogFit_DiT_SiT_noControl.sh`
+
+```bash
+bash scripts/run_DogFit.sh \
+    --dataset "food-101_processed" \
+    --server "bool" \
+    --cuda_devices "0,1" \
+    --experiment_prename "DiT-XL_FD_DINOV2_control/" \
+    --latestart "12000" \
+    --mghigh "1" \
+    --model_name "DiT-XL/2" \
+    --guidance_control "1" \
+    --sample_guidance "0" \
+    --control_distribution "95in1to2"
+```
+
+Choices: model: DiT-XL/2  SiT-XL/2
+
+## 📊 Results on Food-101 (DiT with Control)
+
+| w   | FD_DINOV2 ↓ | Precision ↑ | Recall ↑ | Density ↑ | Coverage ↑ | FID ↓     | Precision ↑ | Recall ↑ | Density ↑ | Coverage ↑ |
+|-----|-------------|-------------|----------|-----------|------------|-----------|-------------|----------|-----------|------------|
+| 1.0 | 459.59      | 0.4735      | 0.6207   | 0.206     | 0.2555     | 12.98     | 0.8264      | 0.5198   | 1.3725    | 0.9291     |
+| 1.5 | 302.84      | 0.5860      | 0.6350   | 0.3224    | 0.3983     | 10.94     | 0.8802      | 0.4878   | 1.6792    | 0.9586     |
+| 2.0 | 228.32      | 0.6655      | 0.6209   | 0.4398    | 0.5011     | 13.05     | 0.9008      | 0.4377   | 1.7896    | 0.9524     |
+| 3.0 | 199.91      | 0.7441      | 0.5445   | 0.5752    | 0.5631     | 19.81     | 0.8971      | 0.3433   | 1.6148    | 0.8862     |
+| 4.0 | 219.13      | 0.7500      | 0.4904   | 0.5884    | 0.5506     | 24.84     | 0.8789      | 0.2845   | 1.4062    | 0.8240     |
+| 5.0 | 238.87      | 0.7450      | 0.4632   | 0.5729    | 0.5330     | 27.95     | 0.8625      | 0.2594   | 1.2588    | 0.7814     |
+
+
+## Guidance without Control
+
+This script applies DogFit on DiT without Control:
+
+```bash
+bash scripts/run_DogFit.sh \
+    --dataset "food-101_processed" \
+    --server "bool" \
+    --cuda_devices "0,1" \
+    --experiment_prename "DiT-XL_FD_DINOV2_control/" \
+    --latestart "12000" \
+    --mghigh "1" \
+    --model_name "DiT-XL/2" \
+```
+
+Choices: model: DiT-XL/2  SiT-XL/2
+
+
+## Guidance without Control
+
+This script applies DogFit on DiT without Control:
+
+> Example script provided in: `scripts/DogFit_DiT_SiT_noControl.sh`
+
+```bash
+bash scripts/run_DogFit.sh \
+    --dataset "food-101_processed" \
+    --server "bool" \
+    --cuda_devices "0,1" \
+    --experiment_prename "DiT-XL_FD_DINOV2_control/" \
+    --latestart "12000" \
+    --mghigh "1" \
+    --model_name "DiT-XL/2" \
+```
+
+Choices: model: DiT-XL/2  SiT-XL/2
+
+
+## Baselines
+
+> To run the baselines, refer to the example scripts provided in: `scripts/Baselines_DiT_SiT_noControl.sh`
+
+## Repository Structure
+
+This is the repository structure. 
 We further provide a code for running the baselines, normal fine-tuning, CFG, DoG, and MG. 
 
-
-Results on Food:
-
-DiT with Control:
-MODEL_NAME="SiT-XL/2"  # or "DiT-XL/2"
-FOCUS_METRIC="FD_DINOV2"  # or "FID"
-
-W=1
-fd: 459.587829108471 
-precision: 0.4735 
-recall: 0.6207 
-density: 0.20598000000000002 
-coverage: 0.2555 
--
-fd: 12.975659501012219 
-precision: 0.8264 
-recall: 0.5198 
-density: 1.3724800000000001 
-coverage: 0.9291 
-
-w=1.5
-fd: 302.8373345196511 
-precision: 0.586 
-recall: 0.635 
-density: 0.32244000000000006 
-coverage: 0.3983 
--
-fd: 10.93560115737121 
-precision: 0.8802 
-recall: 0.4878 
-density: 1.67918 
-coverage: 0.9586 
-
-w=2
-fd: 228.32099029285536 
-precision: 0.6655 
-recall: 0.6209 
-density: 0.43979999999999997 
-coverage: 0.5011 
--
-fd: 13.051355882080786 
-precision: 0.9008 
-recall: 0.4377 
-density: 1.7896 
-coverage: 0.9524 
-
-w=3
-fd: 199.90636520579284 
-precision: 0.7441 
-recall: 0.5445 
-density: 0.57524 
-coverage: 0.5631 
--
-fd: 19.812743082584866 
-precision: 0.8971 
-recall: 0.3433 
-density: 1.61484 
-coverage: 0.8862 
-
-w=4
-fd: 219.12874392745283 
-precision: 0.75 
-recall: 0.4904 
-density: 0.5883600000000001 
-coverage: 0.5506 
--
-fd: 24.83750096501344 
-precision: 0.8789 
-recall: 0.2845 
-density: 1.4062200000000002 
-coverage: 0.824 
-
-w=5
-fd: 238.86912984376175 
-precision: 0.745 
-recall: 0.4632 
-density: 0.5729000000000001 
-coverage: 0.533 
--
-fd: 27.946072503246253 
-precision: 0.8625 
-recall: 0.2594 
-density: 1.2588400000000002 
-coverage: 0.7814 
-
-
-To run:
-  bash scripts/$SCRIPT \
-    --dataset "$DATASET" \
-    --server "$SERVER" \
-    --cuda_devices "$CUDA_DEVICES" \
-    --experiment_prename "$EXPERIMENT_PRENAME" \
-    --latestart "$LATESTART" \
-    --mghigh "$MGHIGH" \
-    --model_name "$MODEL_NAME" \
-    --guidance_control "1" \
-    --w_max "$W_MAX" \
-    --w_min "$W_MIN" \
-    --sample_guidance "$SAMPLE_GUIDANCE" \
-    --control_distribution "$CONTROL_DISTRIBUTION"
-
-This code runs all steps, from environment creation to dataset preparation, model training and testing, and evaluation. If you wish to do any of them differently, or only do sampling, comment out sections you don't want to run in run_DogFit.sh
-
-e.g.:
-
-
-example script provided in DogFit_DiT_SiT_noControl.sh
+```
+.
+├── scripts/                       # Main execution scripts
+│   ├── config.sh                  # Global configurations
+│   ├── DogFit_DiT_SiT_control.sh  # Pipeline script: DogFit with guidance control
+│   ├── DogFit_DiT_SiT_nocontrol.sh# Pipeline script: DogFit without control
+│   ├── Baselines_DiT_SiT.sh       # Pipeline script: Baseline comparison script
+│   ├── run_baseline_MG.sh         # Run MG
+│   ├── run_baselines_finetune.sh  # Run Fine-tune, CFG, DoG
+│   └── run_DogFit.sh              # Run DogFit
+├── models/                        # DiT and SiT model architectures
+├── datasets/                      # Target domain datasets (e.g., Food-101)
+├── dgm-eval/                      # Evaluation metrics (from https://github.com/layer6ai-labs/dgm-eval)
+├── diffusion/                     # Diffusion code for DiT
+├── transport/                     # Diffusion code for SiT
+├── train.py                       # Training for fine-tune, CFG, DoG
+├── train_MG.py                    # Training for MG
+├── train_DogFit.py                # Training for DogFit 
+├── sample.py                      # Sampling for fine-tune, CFG, DoG, DogFit
+└── sample_DoG.py                  # Sampling for DoG
+```
