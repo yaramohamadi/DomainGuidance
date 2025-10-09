@@ -80,8 +80,8 @@ resolve_server_paths() {
             source ~/.bashrc
             CODE_PRE_DIR="/projets/Ymohammadi/DomainGuidance"
             DATA_TARGET_DIR="/projets/Ymohammadi/DomainGuidance/datasets"
-            DATASETS_DIR="projets/Ymohammadi/DomainGuidance/datasets"
-            RESULTS_PRE_DIR="projets/Ymohammadi/DomainGuidance/results"
+            DATASETS_DIR="/export/datasets/public/diffusion_datasets"
+            RESULTS_PRE_DIR="/export/datasets/public/diffusion_datasets/tmp_weights"
             ENV_PATH="/projets/Ymohammadi/envs/DiT"
             ;;
         computecanada) 
@@ -128,4 +128,64 @@ create_environment() {
       pip install timm diffusers accelerate pytorch-fid torchdiffeq
     fi
 
-    if [ ! -d "dgm
+    if [ ! -d "dgm-eval" ]; then
+      git clone https://github.com/layer6ai-labs/dgm-eval.git
+    fi
+    pushd dgm-eval
+    pip install -e .
+    popd
+  fi
+}
+
+prepare_dataset() {
+  # Clean up metadata if exists
+  find "$REAL_DATA_DIR" -name '._*' -delete
+
+  if [[ "$SERVER" == "computecanada" ]]; then
+    echo ">>> Running on Compute Canada"
+    if [ -d "$REAL_DATA_DIR" ] && [ "$(ls -A "$REAL_DATA_DIR")" ]; then
+      echo ">>> Dataset already exists at: $REAL_DATA_DIR. Proceeding..."
+    else
+      echo ">>> ERROR: Dataset not found at $REAL_DATA_DIR."
+      echo ">>> Dataset preparation must be done before SLURM job submission on Compute Canada."
+      exit 1
+    fi
+    return
+  fi
+
+  # For other servers, proceed with normal extraction
+  if [ -d "$REAL_DATA_DIR" ] && [ "$(ls -A "$REAL_DATA_DIR")" ]; then
+    echo ">>> Dataset already exists at: $REAL_DATA_DIR. Skipping extraction."
+  else
+    echo ">>> Preparing dataset..."
+    mkdir -p "$DATA_TARGET_DIR"
+    unzip -qn "$DATA_DIR_ZIP" -d "$DATA_TARGET_DIR"
+    # Special case: ffhq256 needs images inside a dummy class folder
+    if [[ "$DATASET" == "ffhq256" ]]; then
+      echo ">>> Detected ffhq256: moving images to dummy class folder..."
+      mkdir -p "$REAL_DATA_DIR/dummy_class"
+      find "$REAL_DATA_DIR" -maxdepth 1 -type f -iname '*.png' -exec mv {} "$REAL_DATA_DIR/dummy_class/" \;
+    fi
+  fi
+  find "$REAL_DATA_DIR" -name '._*' -delete
+  echo ">>> Dataset prepared at: $REAL_DATA_DIR"
+
+}
+
+
+# ====================== HELPER ======================
+log_and_run() {
+    echo ">>> $1"
+    shift
+    "$@" 2>&1 | tee -a "$LOG_FILE"
+}
+
+cleanup_dataset() {
+    if [[ "$SERVER" == "bool" ]]; then
+        echo ">>> Cleaning up dataset..."
+        rm -rf "$DATA_TARGET_DIR"
+        echo ">>> Dataset removed."
+    else
+        echo ">>> Skipping dataset cleanup (SERVER = $SERVER)"
+    fi
+}
