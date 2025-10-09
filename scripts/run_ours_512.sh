@@ -14,7 +14,7 @@
 
 # ====================== DEFAULT CONFIGURATION ======================
 
-CUDA_DEVICES="0,1"
+CUDA_DEVICES="2,3"
 DATASET="food-101_processed"
 SERVER="bool"
 EXPERIMENT_PRENAME=""
@@ -188,6 +188,6 @@ for ((i=0; i<=TOTAL_STEPS; i+=CKPT_EVERY)); do
   fi
 done
 
-cleanup_dataset
+# cleanup_dataset
 
 echo ">>> All tasks completed successfully!"

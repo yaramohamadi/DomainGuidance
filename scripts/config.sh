@@ -78,10 +78,10 @@ resolve_server_paths() {
         bool)
             conda init
             source ~/.bashrc
-            CODE_PRE_DIR="/projets/Ymohammadi/DomainGuidance-1"
-            DATA_TARGET_DIR="/projets/Ymohammadi/DomainGuidance-1/datasets"
-            DATASETS_DIR="projets/Ymohammadi/DomainGuidance-1/datasets"
-            RESULTS_PRE_DIR="projets/Ymohammadi/DomainGuidance-1/results"
+            CODE_PRE_DIR="/projets/Ymohammadi/DomainGuidance"
+            DATA_TARGET_DIR="/projets/Ymohammadi/DomainGuidance/datasets"
+            DATASETS_DIR="projets/Ymohammadi/DomainGuidance/datasets"
+            RESULTS_PRE_DIR="projets/Ymohammadi/DomainGuidance/results"
             ENV_PATH="/projets/Ymohammadi/envs/DiT"
             ;;
         computecanada) 
