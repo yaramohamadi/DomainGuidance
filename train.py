@@ -15,6 +15,7 @@ import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
+from diffusion.gaussian_diffusion import LossType, ModelMeanType, ModelVarType, mean_flat
 from torchvision.datasets import ImageFolder
 from torchvision import transforms
 import numpy as np
@@ -34,6 +35,80 @@ from diffusion import create_diffusion
 from transport import create_transport, Sampler
 
 from diffusers.models import AutoencoderKL
+
+
+from torchvision.utils import save_image, make_grid
+import math
+
+
+
+
+
+from torchvision.utils import make_grid
+import os
+
+
+############################## Setup logging ######################################
+
+
+def _unique_step_path(out_dir: str, step: int, prefix: str = "x0_step_", ext: str = ".png") -> str:
+    """Return a unique path like out_dir/x0_step_0000100.png (or ..._1.png if exists)."""
+    os.makedirs(out_dir, exist_ok=True)
+    base = os.path.join(out_dir, f"{prefix}{step:07d}")
+    cand = base + ext
+    if not os.path.exists(cand):
+        return cand
+    k = 1
+    while True:
+        cand = f"{base}_{k}{ext}"
+        if not os.path.exists(cand):
+            return cand
+        k += 1
+
+@torch.no_grad()
+def _predict_x0_from_eps(diffusion, eps, x_t, t):
+    """
+    x0 = (x_t - sqrt(1-ᾱ_t) * eps) / sqrt(ᾱ_t)
+    Works for the common DiT setup where the model predicts ε.
+    """
+    alpha_bar = torch.from_numpy(diffusion.alphas_cumprod).to(device=x_t.device, dtype=x_t.dtype)
+    sqrt_ab_t = torch.sqrt(alpha_bar[t]).view(-1, 1, 1, 1)
+    sqrt_one_minus_ab_t = torch.sqrt(1.0 - alpha_bar[t]).view(-1, 1, 1, 1)
+    return (x_t - sqrt_one_minus_ab_t * eps) / sqrt_ab_t
+
+@torch.no_grad()
+def save_x0_grid_DiT(step, out_dir, model_for_log, diffusion, vae, batch_latents, labels, device):
+    """
+    Recompute one forward on a fresh x_t:
+      1) sample t and noise
+      2) build x_t = q_sample(x0, t, noise)
+      3) model(x_t, t, y) -> eps
+      4) x0_hat from eps, decode, and save a grid for the whole batch
+    """
+    B = batch_latents.size(0)
+    t = torch.randint(0, diffusion.num_timesteps, (B,), device=device)
+    noise = torch.randn_like(batch_latents)
+    x_t = diffusion.q_sample(batch_latents, t, noise=noise)
+
+    # forward (if the model learns variance, split off the extra channels)
+    out = model_for_log(x_t, t, y=labels)
+    if isinstance(out, tuple):
+        out = out[0]
+    if diffusion.model_var_type in [ModelVarType.LEARNED, ModelVarType.LEARNED_RANGE]:
+        C = x_t.shape[1]
+        out, _ = torch.split(out, C, dim=1)  # keep ε
+
+    x0_hat = _predict_x0_from_eps(diffusion, out, x_t, t)
+    imgs = vae.decode(x0_hat / 0.18215).sample  # [-1,1]
+    imgs = (imgs.clamp(-1, 1) + 1) * 0.5        # [0,1]
+
+    nrow = int(math.sqrt(B)) if int(math.sqrt(B))**2 == B else min(8, B)
+    grid = make_grid(imgs, nrow=nrow, padding=2)
+    save_path = _unique_step_path(out_dir, step, prefix="x0_step_", ext=".png")
+    save_image(grid, save_path)
+    return save_path
+
+
 
 #################################################################################
 #                             Training Helper Functions                         #
@@ -183,8 +258,12 @@ def main(args):
         os.makedirs(checkpoint_dir, exist_ok=True)
         logger = create_logger(experiment_dir)
         logger.info(f"Experiment directory created at {experiment_dir}")
+
+        
     else:
         logger = create_logger(None)
+
+    x0_preview_dir = os.path.join(args.results_dir, "_x0_preview")
 
     # Create model:
     assert args.image_size % 8 == 0, "Image size must be divisible by 8 (for the VAE encoder)."
@@ -221,7 +300,7 @@ def main(args):
         transport_sampler = Sampler(transport)
         logger.info(f"SiT Parameters: {sum(p.numel() for p in model.parameters()):,}")
     elif args.model in DiT_models:
-        logger.info(f"SiT Parameters: {sum(p.numel() for p in model.parameters()):,}")
+        logger.info(f"DiT Parameters: {sum(p.numel() for p in model.parameters()):,}")
         diffusion = create_diffusion(timestep_respacing="")  # default: 1000 steps, linear noise schedule
     vae_path = f"pretrained_models/sd-vae-ft-{args.vae}"
     if not os.path.exists(vae_path):
@@ -375,6 +454,29 @@ def main(args):
                     torch.save(checkpoint, checkpoint_path)
                     logger.info(f"Saved checkpoint to {checkpoint_path}")
                 dist.barrier()
+
+
+            # ---- x0 preview logging (mirrors DogFit style) ----
+            if (train_steps % args.log_every == 0) and (rank == 0):
+                try:
+                    if args.model in DiT_models:
+                        # use EMA for prettier previews (you can use model.module if you prefer raw net)
+                        save_path = save_x0_grid_DiT(
+                            step=train_steps,
+                            out_dir=x0_preview_dir,
+                            model_for_log=ema,
+                            diffusion=diffusion,     # already created above for DiT path
+                            vae=vae,
+                            batch_latents=x,         # current batch after VAE.encode(...)*0.18215
+                            labels=y,
+                            device=device,
+                        )
+                        if save_path:
+                            logger.info(f"[x0-preview] saved {save_path}")
+                    # (SiT preview needs transport path math; skip here to keep this file minimal)
+                except Exception as e:
+                    logger.info(f"[x0-preview] skipped due to error: {e}")
+            # ---------------------------------------------------
 
             if train_steps > args.total_steps:
                 break

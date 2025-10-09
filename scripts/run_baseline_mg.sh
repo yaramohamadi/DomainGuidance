@@ -16,14 +16,17 @@
 
 # Define CUDA devices here
 CUDA_DEVICES="0,1"
-DATASET="stanford-cars_processed"  # Options: caltech, birds, etc.
+DATASET="EuroSAT"  # Options: caltech, birds, etc.
 SERVER="taylor"  # Options: taylor, bool, computecanada
 EXPERIMENT_PRENAME=""
 
 W_TRAIN_CFG=1.5
 USE_GUIDANCE_CUTOFF=0
 
+MODEL="DiT-XL-2"
+
 source scripts/config.sh
+
 
 # ====================== ARGUMENT PARSING ======================
 
