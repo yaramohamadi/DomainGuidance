@@ -2,7 +2,7 @@
 
 # Global Constants
 TOTAL_STEPS=24000
-LOG_EVERY=1000
+LOG_EVERY=100
 CKPT_EVERY=24000
 SKIP_FIRST_CKPT=1
 
@@ -40,6 +40,7 @@ resolve_dataset_config() {
     df-20m_processed) NUM_CLASSES=1577 ;;
     artbench-10_processed) NUM_CLASSES=10 ;;
     ffhq256) NUM_CLASSES=1 ;;
+    EuroSAT) NUM_CLASSES=10 ;;
     *) echo "Unknown dataset: $DATASET"; exit 1 ;;
   esac
   DATA_DIR_ZIP="$DATASETS_DIR/$DATASET.zip"
@@ -69,9 +70,9 @@ resolve_server_paths() {
             ~/miniconda3/bin/conda init bash
             source ~/.bashrc
             CODE_PRE_DIR="/home/ens/AT74470/DomainGuidance"
-            DATA_TARGET_DIR="/home/ens/AT74470/datasets"
+            DATA_TARGET_DIR="/home/ens/AT74470/DomainGuidance/datasets"
             DATASETS_DIR="/home/ens/AT74470/datasets"
-            RESULTS_PRE_DIR="/home/ens/AT74470/results/DoG"
+            RESULTS_PRE_DIR="/home/ens/AT74470/DomainGuidance/results/DoG"
             ENV_PATH="/home/ens/AT74470/envs/DiT"
             ;;
         bool)

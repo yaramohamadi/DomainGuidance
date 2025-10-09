@@ -445,7 +445,7 @@ def main(args):
         logger.info(f"SiT Parameters: {sum(p.numel() for p in model.parameters()):,}")
         transport.training_losses = MethodType(mg_training_losses_transport, transport)  # MG
     elif args.model in DiT_models:
-        logger.info(f"SiT Parameters: {sum(p.numel() for p in model.parameters()):,}")
+        logger.info(f"DiT Parameters: {sum(p.numel() for p in model.parameters()):,}")
         diffusion = create_diffusion(timestep_respacing="")  # default: 1000 steps, linear noise schedule
         diffusion.training_losses = MethodType(mg_training_losses, diffusion) # CG
     vae_path = f"pretrained_models/sd-vae-ft-{args.vae}"

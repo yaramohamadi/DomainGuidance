@@ -13,7 +13,9 @@ import os
 
 pretrained_models = {
                         'DiT-XL-2-256x256.pt',
+                        'DiT-XL-2-512x512.pt',
                         'SiT-XL-2-256x256.pt',
+                        'SiT-XL-2-512x512.pt',
                     } 
 
 def find_model(model_name):
