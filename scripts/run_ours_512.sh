@@ -14,9 +14,9 @@
 
 # ====================== DEFAULT CONFIGURATION ======================
 
-CUDA_DEVICES="0,1"
+CUDA_DEVICES="2,3"
 DATASET="food-101_processed"
-SERVER="taylor"
+SERVER="bool"
 EXPERIMENT_PRENAME=""
 USE_GUIDANCE_CUTOFF=1
 MG_HIGH=0.5
@@ -40,8 +40,6 @@ IMAGE_SIZE=512
 BATCH_SIZE=12
 
 # ====================== ARGUMENT PARSING ======================
-
-
 
 while [[ "$#" -gt 0 ]]; do
   case $1 in
@@ -69,7 +67,7 @@ done
 echo "Zero norm variance is $ZERO_NORM_VARIANCE"
 
 
-EXPERIMENT_NAME="${EXPERIMENT_PRENAME}_${IMAGE_SIZE}/dogfinetune_LATE_START_ITER${LATE_START}_MG${MG_HIGH}_W_TRAIN_DOG${W_TRAIN_DOG}_control${GUIDANCE_CONTROL}_W_MIN${W_MIN}_W_MAX${W_MAX}"
+EXPERIMENT_NAME="${EXPERIMENT_PRENAME}/dogfinetune_LATE_START_ITER${LATE_START}_MG${MG_HIGH}_W_TRAIN_DOG${W_TRAIN_DOG}_control${GUIDANCE_CONTROL}_W_MIN${W_MIN}_W_MAX${W_MAX}"
 
 resolve_server_paths
 resolve_dataset_config
@@ -190,6 +188,6 @@ for ((i=0; i<=TOTAL_STEPS; i+=CKPT_EVERY)); do
   fi
 done
 
-cleanup_dataset
+# cleanup_dataset
 
 echo ">>> All tasks completed successfully!"

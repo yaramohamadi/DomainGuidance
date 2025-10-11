@@ -14,8 +14,8 @@
 
 # ====================== DEFAULT CONFIGURATION ======================
 
-CUDA_DEVICES="0,1"
-DATASET="EuroSAT"  # Options: caltech, birds, etc.
+CUDA_DEVICES="2,3"
+DATASET="food-101_processed"  # Options: caltech, birds, etc.
 SERVER="taylor"  # Options: taylor, bool, computecanada
 EXPERIMENT_PRENAME=""
 DROPOUT_RATIO=0.1
@@ -25,6 +25,9 @@ W_CFG=1.5
 
 # Load all logic
 source scripts/config.sh
+
+IMAGE_SIZE=512
+BATCH_SIZE=12
 
 # ====================== ARGUMENT PARSING ======================
 
@@ -43,7 +46,7 @@ while [[ "$#" -gt 0 ]]; do
   shift
 done
 
-EXPERIMENT_NAME="$EXPERIMENT_PRENAME/baselines_finetune_W_CFG${W_CFG}"
+EXPERIMENT_NAME="$EXPERIMENT_PRENAME/baselines_finetune_W_CFG${W_CFG}_${IMAGE_SIZE}"
 
 resolve_server_paths
 resolve_dataset_config
@@ -157,7 +160,7 @@ if [[ "$DATASET" == "ffhq256" ]]; then
     exit 0
 fi
 
-# train_model
+train_model
 
 for ((i=0; i<=TOTAL_STEPS; i+=CKPT_EVERY)); do
     if [[ $i -eq 0 && "$SKIP_FIRST_CKPT" -eq 1 ]]; then
