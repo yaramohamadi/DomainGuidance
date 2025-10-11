@@ -79,8 +79,8 @@ resolve_server_paths() {
             source ~/.bashrc
             CODE_PRE_DIR="/projets/Ymohammadi/DomainGuidance"
             DATA_TARGET_DIR="/projets/Ymohammadi/DomainGuidance/datasets"
-            DATASETS_DIR="/export/datasets/public/diffusion_datasets"
-            RESULTS_PRE_DIR="/export/datasets/public/diffusion_datasets/tmp_weights"
+            DATASETS_DIR="/projets/Ymohammadi/DomainGuidance/datasets"
+            RESULTS_PRE_DIR="/projets/Ymohammadi/DomainGuidance/results"
             ENV_PATH="/projets/Ymohammadi/envs/DiT"
             ;;
         computecanada) 
