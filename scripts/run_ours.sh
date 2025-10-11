@@ -15,12 +15,12 @@
 # ====================== DEFAULT CONFIGURATION ======================
 
 CUDA_DEVICES="0,1"
-DATASET="cub-200-2011_processed"
+DATASET="food-101_processed"
 SERVER="taylor"
 EXPERIMENT_PRENAME=""
 USE_GUIDANCE_CUTOFF=1
-MG_HIGH=1
-LATE_START=0
+MG_HIGH=0.5
+LATE_START=12000
 
 GUIDANCE_CONTROL=0
 W_MAX=1.0
@@ -35,6 +35,9 @@ ZERO_NORM_VARIANCE="011"
 
 # Load all logic
 source scripts/config.sh
+
+IMAGE_SIZE=512
+BATCH_SIZE=12
 
 # ====================== ARGUMENT PARSING ======================
 
@@ -66,7 +69,7 @@ done
 echo "Zero norm variance is $ZERO_NORM_VARIANCE"
 
 
-EXPERIMENT_NAME="${EXPERIMENT_PRENAME}/dogfinetune_LATE_START_ITER${LATE_START}_MG${MG_HIGH}_W_TRAIN_DOG${W_TRAIN_DOG}_control${GUIDANCE_CONTROL}_W_MIN${W_MIN}_W_MAX${W_MAX}"
+EXPERIMENT_NAME="${EXPERIMENT_PRENAME}_${IMAGE_SIZE}/dogfinetune_LATE_START_ITER${LATE_START}_MG${MG_HIGH}_W_TRAIN_DOG${W_TRAIN_DOG}_control${GUIDANCE_CONTROL}_W_MIN${W_MIN}_W_MAX${W_MAX}"
 
 resolve_server_paths
 resolve_dataset_config
