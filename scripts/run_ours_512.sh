@@ -130,7 +130,7 @@ calculate_fid() {
         --device "$FID_DEVICE" \
         --nsample "$NSAMPLE" \
         --clean_resize \
-        --metrics fd prdc \
+        --metrics fd prdc kd \
         --save \
         --output_dir "$RESULTS_FILE"
 
@@ -140,7 +140,7 @@ calculate_fid() {
         --device "$FID_DEVICE" \
         --nsample "$NSAMPLE" \
         --clean_resize \
-        --metrics fd prdc \
+        --metrics fd prdc kd \
         --save \
         --output_dir "$RESULTS_FILE"
 }
