@@ -26,7 +26,7 @@ fi
 # ========== Per-task configuration: w_min, w_max, sample_guidance, control_dist ==========
 declare -A PARAMS_MAP
 # Format: "w_min,w_max,sample_guidance,control_distribution" (w_min and w_max are only used when control_distribution is 'uniform')
-PARAMS_MAP["food-101_processed"]="1,1.25,0,uniform 1,1.1,0,uniform"
+PARAMS_MAP["food-101_processed"]="1,1.1,0,uniform"
 
 # ========== EXECUTION LOOP ==========
 for DATASET in "${TASKS[@]}"; do

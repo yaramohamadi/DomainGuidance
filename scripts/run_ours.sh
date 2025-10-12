@@ -190,6 +190,6 @@ for ((i=0; i<=TOTAL_STEPS; i+=CKPT_EVERY)); do
   fi
 done
 
-cleanup_dataset
+# cleanup_dataset
 
 echo ">>> All tasks completed successfully!"
